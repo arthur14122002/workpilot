@@ -11,6 +11,17 @@ process.env.SUPABASE_SERVICE_ROLE_KEY
 
 
 const app = express();
+
+
+app.get("/api/test", (req, res) => {
+console.log("TEST ROUTE HIT");
+res.json({
+ok: true,
+message: "API läuft"
+});
+});
+
+
 const PORT = 3000;
 
 app.use(express.json());
