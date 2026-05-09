@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+console.log("WORKPILOT SERVER VERSION: API TEST ROUTES ACTIVE");
 
 const { createClient } = require("@supabase/supabase-js");
 
@@ -13,7 +14,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+
 
 app.get("/api/test", (req, res) => {
 res.json({
@@ -22,6 +23,23 @@ message: "WorkPilot API läuft",
 time: new Date().toISOString()
 });
 });
+
+
+app.get("/api/health/supabase", async (req, res) => {
+const { data, error } = await supabase
+.from("contacts")
+.select("id")
+.limit(1);
+
+if (error) {
+return res.status(500).json({ ok: false, error: error.message });
+}
+
+res.json({ ok: true, data });
+});
+
+
+app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "index.html"));
@@ -61,19 +79,6 @@ res.sendFile(path.join(__dirname, "public/html/invoice-create.html"));
 
 app.get("/invoice-editor", (req, res) => {
 res.sendFile(path.join(__dirname, "public/html/invoice-editor.html"));
-});
-
-app.get("/api/health/supabase", async (req, res) => {
-const { data, error } = await supabase
-.from("contacts")
-.select("id")
-.limit(1);
-
-if (error) {
-return res.status(500).json({ ok: false, error: error.message });
-}
-
-res.json({ ok: true, data });
 });
 
 app.listen(PORT, () => {
