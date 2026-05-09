@@ -15,6 +15,14 @@ const PORT = 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get("/api/test", (req, res) => {
+res.json({
+ok: true,
+message: "WorkPilot API läuft",
+time: new Date().toISOString()
+});
+});
+
 app.get("/", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "index.html"));
 });
