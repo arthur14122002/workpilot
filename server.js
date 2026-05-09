@@ -16,6 +16,13 @@ const PORT = 3000;
 app.use(express.json());
 
 
+
+
+app.use((req, res, next) => {
+console.log("REQUEST:", req.method, req.url);
+next();
+});
+
 app.get("/api/test", (req, res) => {
 res.json({
 ok: true,
@@ -80,6 +87,19 @@ res.sendFile(path.join(__dirname, "public/html/invoice-create.html"));
 app.get("/invoice-editor", (req, res) => {
 res.sendFile(path.join(__dirname, "public/html/invoice-editor.html"));
 });
+
+
+
+app.use((req, res) => {
+console.log("404 ROUTE:", req.method, req.url);
+res.status(404).json({
+ok: false,
+message: "Route nicht gefunden",
+path: req.url
+});
+});
+
+
 
 app.listen(PORT, () => {
 console.log(`WorkPilot läuft auf http://localhost:${PORT}`);
