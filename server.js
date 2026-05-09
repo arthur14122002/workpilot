@@ -1,11 +1,33 @@
 const express = require("express");
 const path = require("path");
 
+const { createClient } = require("@supabase/supabase-js");
+
+const supabase = createClient(
+process.env.SUPABASE_URL,
+process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/api/health/supabase", async (req, res) => {
+const { data, error } = await supabase
+.from("contacts")
+.select("id")
+.limit(1);
+
+if (error) {
+return res.status(500).json({ ok: false, error: error.message });
+}
+
+res.json({ ok: true, data });
+});
+
 
 app.get("/", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "index.html"));
