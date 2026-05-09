@@ -1,0 +1,109 @@
+.invoicesCard {
+max-width: 1100px;
+}
+
+.invoicesHeader {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+gap: 18px;
+margin-bottom: 24px;
+}
+
+.invoicesHeader h2 {
+margin: 0;
+font-size: 21px;
+letter-spacing: -0.03em;
+}
+
+.invoicesHeader p {
+margin: 8px 0 0;
+color: var(--wp-muted);
+font-size: 14px;
+line-height: 1.5;
+}
+
+.invoicesList {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+
+.invoiceItem {
+border: 1px solid var(--wp-border);
+border-radius: 16px;
+padding: 18px;
+background: #fff;
+transition: 0.18s ease;
+}
+
+.invoiceItem:hover {
+border-color: #fdba74;
+background: var(--wp-orange-soft);
+}
+
+.emptyState {
+text-align: center;
+padding: 44px;
+color: var(--wp-muted);
+}
+
+.invoiceItem {
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+
+.invoiceInfo {
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+
+.invoiceTitle {
+font-size: 16px;
+font-weight: 650;
+}
+
+.invoiceMeta {
+font-size: 13px;
+color: var(--wp-muted);
+}
+
+.invoiceBadge {
+display: inline-flex;
+width: fit-content;
+padding: 6px 10px;
+border-radius: 999px;
+background: #fff;
+border: 1px solid #fed7aa;
+color: var(--wp-orange-dark);
+font-size: 12px;
+font-weight: 700;
+}
+
+.invoiceActions {
+display: flex;
+gap: 10px;
+align-items: center;
+}
+
+.contactSelect {
+min-width: 220px;
+}
+
+.statusBadge {
+display: inline-flex;
+width: fit-content;
+padding: 6px 10px;
+border-radius: 999px;
+background: #f9fafb;
+border: 1px solid var(--wp-border);
+color: #374151;
+font-size: 12px;
+font-weight: 700;
+}
+
+.statusSelect {
+min-width: 140px;
+}

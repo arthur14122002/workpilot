@@ -1,0 +1,35 @@
+.loginPage {
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+background: var(--wp-bg);
+padding: 24px;
+}
+
+.loginCard {
+width: 100%;
+max-width: 420px;
+background: #fff;
+border: 1px solid var(--wp-border);
+border-radius: 22px;
+box-shadow: var(--wp-shadow);
+padding: 28px;
+}
+
+.loginCard h1 {
+margin: 20px 0 8px;
+font-size: 28px;
+letter-spacing: -0.04em;
+}
+
+.loginCard p {
+color: var(--wp-muted);
+line-height: 1.6;
+margin-bottom: 22px;
+}
+
+.loginCard a {
+display: inline-block;
+text-decoration: none;
+}

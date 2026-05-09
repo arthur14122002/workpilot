@@ -1,0 +1,301 @@
+.editorActions {
+display: flex;
+gap: 12px;
+margin-bottom: 22px;
+justify-content: flex-end;
+}
+
+.editorActions a {
+text-decoration: none;
+}
+
+.senderSmall {
+font-size: 11px;
+color: #6b7280;
+margin-bottom: 28px;
+}
+
+.recipientBlock {
+font-size: 14px;
+line-height: 1.55;
+}
+
+.metaCompany {
+font-weight: 700;
+}
+
+.metaSpacer {
+height: 18px;
+}
+
+.offerTitle {
+margin: 0 0 24px;
+font-size: 26px;
+letter-spacing: -0.04em;
+font-weight: 680;
+}
+
+.followPageHeader {
+font-size: 14px;
+color: #374151;
+margin-bottom: 18px;
+}
+
+.offerDocument {
+display: flex;
+flex-direction: column;
+gap: 22px;
+}
+
+.offerPage {
+width: 210mm;
+height: 297mm;
+max-width: 210mm;
+overflow: hidden;
+background: #fff;
+border: 1px solid var(--wp-border);
+border-radius: 14px;
+box-shadow: var(--wp-shadow);
+padding: 20mm 18mm 7mm;
+color: #111827;
+position: relative;
+margin: 0 auto;
+display: flex;
+flex-direction: column;
+}
+
+.offerTop {
+display: grid;
+grid-template-columns: 1fr 70mm;
+gap: 24mm;
+margin-bottom: 28mm;
+}
+
+.offerMeta {
+font-size: 13px;
+line-height: 1.55;
+border-left: 1px solid #d1d5db;
+padding-left: 14px;
+}
+
+.offerContent {
+flex: 1;
+}
+
+.editableText {
+font-size: 14px;
+line-height: 1.7;
+min-height: 28px;
+padding: 0;
+margin: 0 0 18px;
+border-radius: 8px;
+outline: none;
+}
+
+.editableText:hover,
+.editableText:focus {
+background: var(--wp-orange-soft);
+padding: 6px 8px;
+margin-left: -8px;
+}
+
+.offerTable {
+width: 100%;
+border-collapse: collapse;
+margin-top: 26px;
+font-size: 13px;
+}
+
+.offerTable th {
+text-align: left;
+font-size: 12px;
+font-weight: 650;
+color: #374151;
+border-bottom: 1px solid #d1d5db;
+padding: 9px 6px;
+}
+
+.offerTable td {
+border-bottom: 1px solid #f0f0f0;
+padding: 8px 6px;
+vertical-align: top;
+}
+
+.offerTable input,
+.offerTable textarea {
+border: 1px solid transparent;
+background: transparent;
+border-radius: 8px;
+padding: 7px 8px;
+font-size: 13px;
+}
+
+.offerTable textarea {
+min-height: 34px;
+height: 34px;
+resize: none;
+overflow: hidden;
+line-height: 1.35;
+}
+
+.offerTable input:hover,
+.offerTable textarea:hover,
+.offerTable input:focus,
+.offerTable textarea:focus {
+border-color: #fdba74;
+background: #fffaf5;
+box-shadow: none;
+}
+
+.posInput {
+width: 48px;
+}
+
+.descInput {
+width: 100%;
+}
+
+.qtyInput,
+.unitInput,
+.priceInput,
+.totalInput {
+width: 92px;
+}
+
+.totalInput {
+font-weight: 650;
+}
+
+.iconBtn {
+border: none;
+background: transparent;
+cursor: pointer;
+color: #9ca3af;
+font-size: 20px;
+padding: 4px 8px;
+border-radius: 8px;
+}
+
+.iconBtn:hover {
+background: #f3f4f6;
+color: #111827;
+}
+
+.sumWrap {
+display: flex;
+justify-content: flex-end;
+margin-top: 34px;
+}
+
+.sumBox {
+width: 340px;
+border-top: 1px solid #111827;
+font-size: 13px;
+}
+
+.sumRow {
+display: flex;
+justify-content: space-between;
+padding: 9px 10px;
+border-left: 1px solid #d1d5db;
+border-right: 1px solid #d1d5db;
+border-bottom: 1px solid #d1d5db;
+}
+
+.sumRow.total {
+background: #fff;
+font-weight: 750;
+color: #111827;
+}
+
+.paymentTerm {
+margin-top: 34px;
+font-size: 13px;
+}
+
+.signature {
+margin-top: 28px;
+font-size: 14px;
+line-height: 1.7;
+}
+
+.offerFooter {
+margin-top: auto;
+border-top: 1px solid #e5e7eb;
+padding-top: 10px;
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 22px;
+font-size: 10px;
+color: #374151;
+line-height: 1.45;
+}
+
+@page {
+size: A4;
+margin: 0;
+}
+
+@media print {
+body {
+background: #fff;
+margin: 0;
+}
+
+body * {
+visibility: hidden;
+}
+
+#offerDocument,
+#offerDocument * {
+visibility: visible;
+}
+
+#offerDocument {
+display: block;
+width: 210mm;
+margin: 0;
+padding: 0;
+}
+
+.offerPage {
+width: 210mm;
+height: 297mm;
+max-width: 210mm;
+overflow: hidden;
+background: #fff;
+padding: 20mm 18mm 7mm;
+color: #111827;
+position: relative;
+margin: 0;
+display: flex;
+flex-direction: column;
+
+border: none;
+border-radius: 0;
+box-shadow: none;
+
+page-break-after: always;
+break-after: page;
+}
+
+.offerPage:last-child {
+page-break-after: auto;
+break-after: auto;
+}
+
+.editorActions,
+.sidebar,
+.pageHeader,
+.iconBtn {
+display: none !important;
+}
+
+.offerTable input,
+.offerTable textarea {
+border: none !important;
+background: transparent !important;
+box-shadow: none !important;
+resize: none;
+}
+}

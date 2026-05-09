@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>WorkPilot – Angebote</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/offers.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink" href="/">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink" href="/settings">Einstellungen</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Angebote</div>
+
+<h1 class="pageTitle">
+Angebotsübersicht
+</h1>
+
+<p class="pageSubtitle">
+Verwalte, bearbeite und ordne deine Angebote Kontakten zu.
+</p>
+</header>
+
+<section class="card offersCard">
+<div class="offersHeader">
+<div>
+<h2>Alle Angebote</h2>
+<p>
+Noch nicht zugeordnete Angebote bleiben ebenfalls hier sichtbar.
+</p>
+</div>
+
+<a href="/offer-create" class="btn btnPrimary">
++ Neues Angebot
+</a>
+</div>
+
+<div id="offersList" class="offersList"></div>
+
+<div id="emptyOffers" class="emptyState">
+<p>Noch keine Angebote vorhanden.</p>
+</div>
+</section>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/offers.js"></script>
+</body>
+</html>

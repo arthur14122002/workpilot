@@ -1,0 +1,281 @@
+:root {
+--wp-orange: #f97316;
+--wp-orange-soft: #fff7ed;
+--wp-orange-dark: #9a3412;
+
+--wp-bg: #f7f7f5;
+--wp-card: #ffffff;
+--wp-text: #1f2937;
+--wp-muted: #6b7280;
+--wp-border: #e5e7eb;
+
+--wp-sidebar: #ffffff;
+--wp-radius: 18px;
+--wp-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+* {
+box-sizing: border-box;
+}
+
+body {
+margin: 0;
+font-family: Inter, Arial, sans-serif;
+background: var(--wp-bg);
+color: var(--wp-text);
+}
+
+.appShell {
+min-height: 100vh;
+display: flex;
+}
+
+.sidebar {
+width: 260px;
+background: var(--wp-sidebar);
+border-right: 1px solid var(--wp-border);
+padding: 22px 18px;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+
+position: sticky;
+top: 0;
+height: 100vh;
+align-self: flex-start;
+}
+
+.logoWrap {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 34px;
+}
+
+.logoBox {
+width: 38px;
+height: 38px;
+border-radius: 12px;
+background: var(--wp-orange-soft);
+border: 1px solid #fed7aa;
+display: flex;
+align-items: center;
+justify-content: center;
+color: var(--wp-orange);
+font-weight: 700;
+}
+
+.logoText {
+font-size: 20px;
+font-weight: 650;
+letter-spacing: -0.03em;
+}
+
+.navGroup {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.navLink {
+text-decoration: none;
+color: var(--wp-text);
+padding: 12px 14px;
+border-radius: 12px;
+font-size: 15px;
+font-weight: 500;
+transition: 0.18s ease;
+}
+
+.navLink:hover,
+.navLink.active {
+background: var(--wp-orange-soft);
+color: var(--wp-orange-dark);
+}
+
+.sidebarBottom {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.content {
+flex: 1;
+padding: 34px;
+}
+
+.pageHeader {
+margin-bottom: 26px;
+}
+
+.pageEyebrow {
+color: var(--wp-orange-dark);
+font-size: 13px;
+font-weight: 650;
+margin-bottom: 8px;
+}
+
+.pageTitle {
+font-size: 32px;
+line-height: 1.15;
+letter-spacing: -0.04em;
+margin: 0;
+font-weight: 680;
+}
+
+.pageSubtitle {
+margin: 10px 0 0;
+color: var(--wp-muted);
+font-size: 15px;
+line-height: 1.6;
+}
+
+.card {
+background: var(--wp-card);
+border: 1px solid var(--wp-border);
+border-radius: var(--wp-radius);
+box-shadow: var(--wp-shadow);
+padding: 24px;
+}
+
+.formGrid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 18px;
+}
+
+.formField {
+display: flex;
+flex-direction: column;
+gap: 7px;
+}
+
+.formField.full {
+grid-column: 1 / -1;
+}
+
+label {
+font-size: 13px;
+font-weight: 620;
+color: #374151;
+}
+
+input,
+select,
+textarea {
+width: 100%;
+border: 1px solid var(--wp-border);
+border-radius: 12px;
+padding: 12px 13px;
+font-size: 14px;
+outline: none;
+background: #fff;
+color: var(--wp-text);
+}
+
+textarea {
+min-height: 110px;
+resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+border-color: #fdba74;
+box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.11);
+}
+
+.buttonRow {
+display: flex;
+gap: 12px;
+margin-top: 22px;
+justify-content: flex-end;
+}
+
+.btn {
+border: none;
+border-radius: 999px;
+padding: 12px 18px;
+font-size: 14px;
+font-weight: 650;
+cursor: pointer;
+transition: 0.18s ease;
+}
+
+.btnPrimary {
+background: var(--wp-orange);
+color: white;
+}
+
+.btnPrimary:hover {
+background: #ea580c;
+}
+
+.btnSecondary {
+background: #fff;
+color: var(--wp-text);
+border: 1px solid var(--wp-border);
+}
+
+.btnSecondary:hover {
+background: #f9fafb;
+}
+
+.notice {
+margin-top: 16px;
+padding: 12px 14px;
+border-radius: 12px;
+background: var(--wp-orange-soft);
+color: var(--wp-orange-dark);
+font-size: 14px;
+display: none;
+}
+
+.notice.show {
+display: block;
+}
+
+@media (max-width: 850px) {
+.appShell {
+flex-direction: column;
+}
+
+.formGrid {
+grid-template-columns: 1fr;
+}
+
+.content {
+padding: 22px;
+}
+}
+
+.toastContainer {
+position: fixed;
+top: 22px;
+right: 22px;
+z-index: 9999;
+display: flex;
+flex-direction: column;
+gap: 10px;
+pointer-events: none;
+}
+
+.toastMessage {
+min-width: 260px;
+max-width: 360px;
+background: var(--wp-orange);
+color: #fff;
+padding: 13px 16px;
+border-radius: 14px;
+box-shadow: 0 14px 35px rgba(15, 23, 42, 0.18);
+font-size: 14px;
+font-weight: 600;
+opacity: 0;
+transform: translateX(24px);
+transition: 0.25s ease;
+}
+
+.toastMessage.show {
+opacity: 1;
+transform: translateX(0);
+}

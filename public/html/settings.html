@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WorkPilot – Einstellungen</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/settings.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink" href="/">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink" href="/settings">Einstellungen</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Firmendaten</div>
+<h1 class="pageTitle">Angebotsdaten einrichten</h1>
+<p class="pageSubtitle">
+Diese Informationen werden später automatisch in deine Angebote übernommen.
+</p>
+</header>
+
+<section class="card">
+<form id="settingsForm">
+<div class="formGrid">
+<div class="formField">
+<label for="companyName">Firmenname</label>
+<input id="companyName" name="companyName" placeholder="Muster Handwerk GmbH" />
+</div>
+
+<div class="formField">
+<label for="ownerName">Inhaber / Geschäftsführer</label>
+<input id="ownerName" name="ownerName" placeholder="Max Mustermann" />
+</div>
+
+<div class="formField">
+<label for="street">Straße</label>
+<input id="street" name="street" placeholder="Musterstraße 123" />
+</div>
+
+<div class="formField">
+<label for="city">PLZ / Ort</label>
+<input id="city" name="city" placeholder="12345 Berlin" />
+</div>
+
+<div class="formField">
+<label for="phone">Telefon</label>
+<input id="phone" name="phone" placeholder="+49 123 456789" />
+</div>
+
+<div class="formField">
+<label for="email">E-Mail</label>
+<input id="email" name="email" placeholder="info@firma.de" />
+</div>
+
+<div class="formField">
+<label for="website">Website</label>
+<input id="website" name="website" placeholder="www.firma.de" />
+</div>
+
+<div class="formField">
+<label for="taxId">USt-ID / Steuernummer</label>
+<input id="taxId" name="taxId" placeholder="DE123456789" />
+</div>
+
+<div class="formField">
+<label for="bankName">Bank</label>
+<input id="bankName" name="bankName" placeholder="Musterbank" />
+</div>
+
+<div class="formField">
+<label for="iban">IBAN</label>
+<input id="iban" name="iban" placeholder="DE12 3456 7890 0000 1234 56" />
+</div>
+
+<div class="formField">
+<label for="bic">BIC</label>
+<input id="bic" name="bic" placeholder="MUSTERBICXXX" />
+</div>
+
+<div class="formField">
+<label for="vatRate">Umsatzsteuer</label>
+<select id="vatRate" name="vatRate">
+<option value="19">19 %</option>
+<option value="7">7 %</option>
+<option value="0">0 % / Kleinunternehmer</option>
+</select>
+</div>
+
+<div class="formField">
+<label for="paymentTerm">Zahlungsziel</label>
+<input id="paymentTerm" name="paymentTerm" placeholder="14 Tage ab Angebotsdatum" />
+</div>
+
+<div class="formField full">
+<label for="footerNote">Hinweis / Footer-Text</label>
+<textarea id="footerNote" name="footerNote" placeholder="Vielen Dank für Ihr Vertrauen."></textarea>
+</div>
+</div>
+
+<div class="buttonRow">
+<button type="button" class="btn btnSecondary" id="resetSettingsBtn">Zurücksetzen</button>
+<button type="submit" class="btn btnPrimary">Speichern</button>
+</div>
+
+<div class="notice" id="settingsNotice">Firmendaten wurden gespeichert.</div>
+</form>
+</section>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/settings.js"></script>
+</body>
+</html>

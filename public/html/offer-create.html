@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WorkPilot – Neues Angebot</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/offer-create.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink" href="/">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink" href="/settings">Einstellungen</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Angebot erstellen</div>
+<h1 class="pageTitle">Neues Angebot vorbereiten</h1>
+<p class="pageSubtitle">
+Gib Empfänger und kurze Stichpunkte ein. WorkPilot bereitet daraus die Angebotsstruktur vor.
+</p>
+</header>
+
+<section class="card createCard">
+<form id="offerCreateForm">
+<div class="formGrid">
+<div class="formField">
+<label for="trade">Gewerk</label>
+<select id="trade" name="trade">
+<option value="maler">Maler</option>
+<option value="elektro">Elektro</option>
+<option value="sanitaer">Sanitär / Heizung</option>
+<option value="abriss">Abriss</option>
+<option value="kfz">KFZ</option>
+<option value="allgemein">Allgemein</option>
+</select>
+</div>
+
+<div class="formField">
+<label for="recipientName">Empfänger / Kunde</label>
+<input id="recipientName" name="recipientName" placeholder="Max Mustermann" required />
+</div>
+
+<div class="formField">
+<label for="recipientStreet">Straße</label>
+<input id="recipientStreet" name="recipientStreet" placeholder="Musterstraße 123" />
+</div>
+
+<div class="formField">
+<label for="recipientCity">PLZ / Ort</label>
+<input id="recipientCity" name="recipientCity" placeholder="12345 Berlin" />
+</div>
+
+<div class="formField">
+<label for="recipientEmail">E-Mail des Kunden</label>
+<input id="recipientEmail" name="recipientEmail" placeholder="kunde@email.de" />
+</div>
+
+<div class="formField">
+<label for="validDays">Gültigkeit</label>
+<select id="validDays" name="validDays">
+<option value="14">14 Tage</option>
+<option value="21">21 Tage</option>
+<option value="30">30 Tage</option>
+</select>
+</div>
+
+<div class="formField full">
+<label for="requestPoints">Stichpunkte zur Anfrage</label>
+<div class="formField full">
+<label>Anfrage-Stichpunkte</label>
+
+<div id="requestPoints"></div>
+
+<button
+type="button"
+class="btn btnSecondary addPointBtn"
+id="addRequestPointBtn"
+>
++ Stichpunkt hinzufügen
+</button>
+</div>
+</div>
+</div>
+
+<div class="buttonRow">
+<a class="btn btnSecondary" href="/" style="text-decoration:none;">Abbrechen</a>
+<button type="submit" class="btn btnPrimary">Angebot erstellen</button>
+</div>
+
+<div class="notice" id="createNotice">
+Angebot wurde vorbereitet.
+</div>
+</form>
+</section>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/offer-create.js"></script>
+</body>
+</html>

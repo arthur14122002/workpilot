@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WorkPilot – Angebot bearbeiten</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/offer-editor.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink" href="/">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink" href="/settings">Einstellungen</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Angebot bearbeiten</div>
+<h1 class="pageTitle">Angebotsvorschau</h1>
+<p class="pageSubtitle">
+Prüfe den Text und trage Menge, Einheitspreis und Positionen ein.
+</p>
+</header>
+
+<div class="editorActions">
+<a class="btn btnSecondary" href="/offer-create">Zurück</a>
+<button class="btn btnSecondary" id="addPositionBtn">Position hinzufügen</button>
+<button class="btn btnSecondary" id="printBtn">Drucken / PDF</button>
+<button class="btn btnPrimary" id="saveOfferBtn">Speichern</button>
+<button class="btn btnPrimary" id="convertToInvoiceBtn">
+In Rechnung umwandeln
+</button>
+</div>
+
+<div id="offerDocument" class="offerDocument"></div>
+
+<div class="notice" id="editorNotice">Angebot wurde gespeichert.</div>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/offer-editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+.createCard {
+max-width: 980px;
+}
+
+.invoicePoint {
+display: flex;
+gap: 10px;
+margin-bottom: 12px;
+}
+
+.invoicePoint textarea {
+min-height: 54px;
+}
+
+.invoicePointRemove {
+width: 46px;
+min-width: 46px;
+border-radius: 12px;
+}
+
+.addPointBtn {
+margin-top: 6px;
+}

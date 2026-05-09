@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WorkPilot</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/index.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink" href="/">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink" href="/settings">Einstellungen</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Übersicht</div>
+<h1 class="pageTitle">Deine Kontakte</h1>
+<p class="pageSubtitle">
+Verwalte Kunden und ordne später Angebote, Rechnungen und Notizen zu.
+</p>
+</header>
+
+<section class="kpiGrid">
+<div class="kpiCard">
+<div class="kpiLabel">Kontakte</div>
+<div class="kpiValue" id="contactsKpi">0</div>
+</div>
+
+<div class="kpiCard">
+<div class="kpiLabel">Offene Angebote</div>
+<div class="kpiValue" id="openOffersKpi">0</div>
+</div>
+
+<div class="kpiCard">
+<div class="kpiLabel">Offene Rechnungen</div>
+<div class="kpiValue" id="openInvoicesKpi">0</div>
+</div>
+
+<div class="kpiCard">
+<div class="kpiLabel">Offener Umsatz</div>
+<div class="kpiValue" id="openRevenueKpi">0 €</div>
+</div>
+</section>
+
+<section class="card indexCard">
+<div class="contactsHeader">
+<div>
+<h2>Kontaktübersicht</h2>
+<p>Wähle einen Buchstaben oder lege einen neuen Kontakt an.</p>
+</div>
+
+<button class="btn btnPrimary" id="toggleContactFormBtn">
++ Kontakt
+</button>
+</div>
+
+<form id="contactForm" class="contactForm hidden">
+<div class="formGrid">
+<div class="formField">
+<label for="contactName">Name / Firma</label>
+<input id="contactName" placeholder="Muster GmbH" required />
+</div>
+
+<div class="formField">
+<label for="contactEmail">E-Mail</label>
+<input id="contactEmail" placeholder="kunde@email.de" />
+</div>
+
+<div class="formField">
+<label for="contactPhone">Telefon</label>
+<input id="contactPhone" placeholder="+49 123 456789" />
+</div>
+
+<div class="formField">
+<label for="contactStreet">Straße</label>
+<input id="contactStreet" placeholder="Musterstraße 123" />
+</div>
+
+<div class="formField">
+<label for="contactCity">PLZ / Ort</label>
+<input id="contactCity" placeholder="12345 Berlin" />
+</div>
+</div>
+
+<div class="buttonRow">
+<button type="button" class="btn btnSecondary" id="cancelContactBtn">
+Abbrechen
+</button>
+<button class="btn btnPrimary" type="submit">
+Kontakt speichern
+</button>
+</div>
+</form>
+
+<div id="letterNav" class="letterNav"></div>
+
+<div id="contactsList" class="contactsList"></div>
+
+<div id="emptyContacts" class="emptyState">
+<p>Noch keine Kontakte vorhanden.</p>
+</div>
+</section>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/index.js"></script>
+</body>
+</html>

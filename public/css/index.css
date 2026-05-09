@@ -1,0 +1,175 @@
+.indexCard {
+max-width: 980px;
+}
+
+.contactsHeader {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+gap: 18px;
+margin-bottom: 22px;
+}
+
+.contactsHeader h2 {
+margin: 0;
+font-size: 20px;
+letter-spacing: -0.03em;
+}
+
+.contactsHeader p {
+margin: 8px 0 0;
+color: var(--wp-muted);
+font-size: 14px;
+line-height: 1.5;
+}
+
+.contactForm {
+border: 1px solid var(--wp-border);
+background: #fffaf5;
+border-radius: 16px;
+padding: 18px;
+margin-bottom: 22px;
+}
+
+.contactForm.hidden {
+display: none;
+}
+
+.letterNav {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin: 18px 0 22px;
+}
+
+.letterBtn {
+border: 1px solid var(--wp-border);
+background: #fff;
+color: var(--wp-text);
+border-radius: 999px;
+padding: 8px 12px;
+font-size: 13px;
+font-weight: 650;
+cursor: pointer;
+}
+
+.letterBtn:hover,
+.letterBtn.active {
+background: var(--wp-orange-soft);
+color: var(--wp-orange-dark);
+border-color: #fdba74;
+}
+
+.letterBtn.disabled {
+opacity: 0.35;
+cursor: default;
+}
+
+.contactsList {
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.contactSectionTitle {
+font-size: 13px;
+font-weight: 750;
+color: var(--wp-orange-dark);
+margin-bottom: 4px;
+}
+
+.contactItem {
+border: 1px solid var(--wp-border);
+border-radius: 14px;
+padding: 16px 18px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+transition: 0.15s ease;
+background: #fff;
+}
+
+.contactItem:hover {
+background: var(--wp-orange-soft);
+border-color: #fdba74;
+}
+
+.contactInfo {
+display: flex;
+flex-direction: column;
+gap: 4px;
+}
+
+.contactName {
+font-weight: 650;
+font-size: 15px;
+}
+
+.contactMeta {
+font-size: 13px;
+color: var(--wp-muted);
+}
+
+.contactActions {
+display: flex;
+gap: 10px;
+}
+
+.emptyState {
+text-align: center;
+padding: 40px;
+color: var(--wp-muted);
+}
+
+@media (max-width: 850px) {
+.contactsHeader {
+flex-direction: column;
+}
+
+.contactItem {
+flex-direction: column;
+align-items: flex-start;
+gap: 14px;
+}
+}
+
+.kpiGrid {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 18px;
+margin-bottom: 28px;
+}
+
+.kpiCard {
+background: #fff;
+border: 1px solid var(--wp-border);
+border-radius: 18px;
+padding: 22px;
+box-shadow: var(--wp-shadow);
+}
+
+.kpiLabel {
+font-size: 13px;
+color: var(--wp-muted);
+margin-bottom: 10px;
+font-weight: 600;
+}
+
+.kpiValue {
+font-size: 32px;
+font-weight: 750;
+letter-spacing: -0.04em;
+color: var(--wp-text);
+}
+
+@media (max-width: 1100px) {
+.kpiGrid {
+grid-template-columns: repeat(2, 1fr);
+}
+}
+
+@media (max-width: 700px) {
+.kpiGrid {
+grid-template-columns: 1fr;
+}
+}

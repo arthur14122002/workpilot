@@ -1,0 +1,27 @@
+.createCard {
+max-width: 980px;
+}
+
+#createNotice {
+margin-top: 18px;
+}
+
+.requestPoint {
+display: flex;
+gap: 10px;
+margin-bottom: 12px;
+}
+
+.requestPoint textarea {
+min-height: 54px;
+}
+
+.requestPointRemove {
+width: 46px;
+min-width: 46px;
+border-radius: 12px;
+}
+
+.addPointBtn {
+margin-top: 6px;
+}
