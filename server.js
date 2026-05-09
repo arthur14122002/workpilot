@@ -1,7 +1,5 @@
 const express = require("express");
 const path = require("path");
-console.log("WORKPILOT SERVER VERSION: API TEST ROUTES ACTIVE");
-
 const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
@@ -12,6 +10,10 @@ process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const app = express();
 
+
+
+
+console.log("WORKPILOT SERVER VERSION: API TEST ROUTES ACTIVE");
 
 app.get("/api/test", (req, res) => {
 console.log("TEST ROUTE HIT");
