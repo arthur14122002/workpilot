@@ -68,7 +68,6 @@ return res.status(500).json({ ok: false, error: error.message });
 res.json({ ok: true, data });
 });
 
-
 app.listen(PORT, () => {
 console.log(`WorkPilot läuft auf http://localhost:${PORT}`);
 });
