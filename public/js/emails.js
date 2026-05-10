@@ -1,14 +1,6 @@
 const emailThreadsList = document.getElementById("emailThreadsList");
 const emptyEmails = document.getElementById("emptyEmails");
 
-const emailMessagesView = document.getElementById("emailMessagesView");
-const emailMessagesList = document.getElementById("emailMessagesList");
-
-const emailThreadTitle = document.getElementById("emailThreadTitle");
-const emailThreadMeta = document.getElementById("emailThreadMeta");
-
-const backToThreadsBtn = document.getElementById("backToThreadsBtn");
-
 const createDemoEmailBtn = document.getElementById("createDemoEmailBtn");
 
 let activeFilter = "all";
@@ -54,7 +46,7 @@ const item = document.createElement("div");
 item.className = "emailThreadItem";
 
 item.addEventListener("click", () => {
-openThread(thread);
+toggleThread(item, thread);
 });
 
 item.innerHTML = `
@@ -104,36 +96,56 @@ throw new Error(result.error || "Nachrichten konnten nicht geladen werden.");
 return result.messages || [];
 }
 
-async function openThread(thread) {
-emailMessagesView.classList.remove("hidden");
+async function toggleThread(item, thread) {
+const existingDetails = item.querySelector(".emailThreadDetails");
 
-emailThreadTitle.textContent =
-thread.subject || "Ohne Betreff";
+if (existingDetails) {
+existingDetails.remove();
+item.classList.remove("open");
+return;
+}
 
-emailThreadMeta.textContent =
-`${thread.related_type || "general"} • ${thread.status || "open"}`;
+document.querySelectorAll(".emailThreadDetails").forEach((detail) => {
+detail.remove();
+});
 
-emailMessagesList.innerHTML = "";
+document.querySelectorAll(".emailThreadItem.open").forEach((entry) => {
+entry.classList.remove("open");
+});
+
+item.classList.add("open");
+
+const details = document.createElement("div");
+details.className = "emailThreadDetails";
+details.innerHTML = `<p class="emailMeta">Nachrichten werden geladen...</p>`;
+
+item.appendChild(details);
 
 let messages = [];
 
 try {
 messages = await apiGetEmailMessages(thread.id);
 } catch (error) {
-console.error(error);
+details.innerHTML = `<p class="emailMeta">${error.message}</p>`;
 return;
 }
 
-messages.forEach((message) => {
-const item = document.createElement("div");
-item.className = "emailMessageItem";
+if (!messages.length) {
+details.innerHTML = `<p class="emailMeta">Noch keine Nachrichten vorhanden.</p>`;
+return;
+}
 
-item.innerHTML = `
+details.innerHTML = messages
+.map((message) => {
+return `
+<div class="emailMessageItem">
 <div class="emailMessageTop">
 <div class="emailMessageDirection">
-${message.direction === "inbound"
+${
+message.direction === "inbound"
 ? "Kunde → WorkPilot"
-: "WorkPilot → Kunde"}
+: "WorkPilot → Kunde"
+}
 </div>
 
 <div class="emailMeta">
@@ -155,10 +167,10 @@ ${message.ai_suggested_reply}
 `
 : ""
 }
+</div>
 `;
-
-emailMessagesList.appendChild(item);
-});
+})
+.join("");
 }
 
 function bindFilters() {
@@ -180,10 +192,6 @@ renderEmailThreads();
 document.addEventListener("DOMContentLoaded", () => {
 bindFilters();
 renderEmailThreads();
-});
-
-backToThreadsBtn.addEventListener("click", () => {
-emailMessagesView.classList.add("hidden");
 });
 
 createDemoEmailBtn.addEventListener("click", async () => {
