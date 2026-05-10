@@ -545,6 +545,40 @@ messages: data
 });
 });
 
+app.post("/api/email-reply", async (req, res) => {
+const {
+threadId,
+body
+} = req.body;
+
+const { data, error } = await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: threadId,
+direction: "outbound",
+sender: "workpilot@example.com",
+recipient: "kunde@example.com",
+body,
+message_status: "sent"
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+message: data
+});
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {

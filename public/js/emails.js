@@ -85,6 +85,27 @@ emailThreadsList.appendChild(item);
 });
 }
 
+async function sendReply(threadId, body) {
+const response = await fetch("/api/email-reply", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+threadId,
+body
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Antwort konnte nicht gespeichert werden.");
+}
+
+return result.message;
+}
+
 async function apiGetEmailMessages(threadId) {
 const response = await fetch(`/api/email-messages/${threadId}`);
 const result = await response.json();
@@ -130,12 +151,8 @@ details.innerHTML = `<p class="emailMeta">${error.message}</p>`;
 return;
 }
 
-if (!messages.length) {
-details.innerHTML = `<p class="emailMeta">Noch keine Nachrichten vorhanden.</p>`;
-return;
-}
-
-details.innerHTML = messages
+const messagesHtml = messages.length
+? messages
 .map((message) => {
 return `
 <div class="emailMessageItem">
@@ -170,7 +187,68 @@ ${message.ai_suggested_reply}
 </div>
 `;
 })
-.join("");
+.join("")
+: `<p class="emailMeta">Noch keine Nachrichten vorhanden.</p>`;
+
+details.innerHTML =
+messagesHtml +
+`
+<div class="replyBox">
+<textarea
+class="replyTextarea"
+placeholder="Antwort schreiben..."
+></textarea>
+
+<div class="replyActions">
+<button class="btn btnSecondary aiReplyBtn">
+KI-Vorschlag übernehmen
+</button>
+
+<button class="btn btnPrimary sendReplyBtn">
+Antwort senden
+</button>
+</div>
+</div>
+`;
+
+const textarea = details.querySelector(".replyTextarea");
+const aiButton = details.querySelector(".aiReplyBtn");
+const sendButton = details.querySelector(".sendReplyBtn");
+
+const latestAiSuggestion = [...messages]
+.reverse()
+.find((message) => message.ai_suggested_reply);
+
+aiButton.addEventListener("click", () => {
+if (!latestAiSuggestion) {
+showToast("Kein KI-Vorschlag vorhanden.");
+return;
+}
+
+textarea.value = latestAiSuggestion.ai_suggested_reply;
+});
+
+sendButton.addEventListener("click", async () => {
+const text = textarea.value.trim();
+
+if (!text) {
+showToast("Bitte eine Antwort eingeben.");
+return;
+}
+
+try {
+await sendReply(thread.id, text);
+
+showToast("Antwort wurde gespeichert.");
+
+details.remove();
+item.classList.remove("open");
+
+await toggleThread(item, thread);
+} catch (error) {
+showToast(error.message);
+}
+});
 }
 
 function bindFilters() {
