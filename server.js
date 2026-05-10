@@ -49,18 +49,8 @@ contacts: data
 });
 });
 
-
 app.post("/api/contacts", async (req, res) => {
-const {
-name,
-email,
-phone,
-company,
-street,
-city,
-postal_code,
-notes
-} = req.body;
+const { name, email, phone, street, city } = req.body;
 
 const { data, error } = await supabase
 .from("contacts")
@@ -69,11 +59,8 @@ const { data, error } = await supabase
 name,
 email,
 phone,
-company,
 street,
-city,
-postal_code,
-notes
+city
 }
 ])
 .select()
@@ -91,7 +78,6 @@ ok: true,
 contact: data
 });
 });
-
 
 app.delete("/api/contacts/:id", async (req, res) => {
 const { id } = req.params;

@@ -10,6 +10,48 @@ const toggleContactFormBtn = document.getElementById("toggleContactFormBtn");
 const cancelContactBtn = document.getElementById("cancelContactBtn");
 
 let activeLetter = "ALLE";
+let contactsCache = [];
+
+async function apiGetContacts() {
+const response = await fetch("/api/contacts");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakte konnten nicht geladen werden.");
+}
+
+return result.contacts || [];
+}
+
+async function apiCreateContact(contact) {
+const response = await fetch("/api/contacts", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify(contact)
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakt konnte nicht gespeichert werden.");
+}
+
+return result.contact;
+}
+
+async function apiDeleteContact(contactId) {
+const response = await fetch(`/api/contacts/${contactId}`, {
+method: "DELETE"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakt konnte nicht gelöscht werden.");
+}
+}
 
 function parseMoney(value) {
 if (!value) return 0;
@@ -159,7 +201,9 @@ letterNav.appendChild(button);
 }
 
 function renderContacts() {
-const contacts = getSortedContacts();
+const contacts = contactsCache.sort((a, b) => {
+return (a.name || "").localeCompare(b.name || "", "de");
+});
 
 contactsList.innerHTML = "";
 renderLetterNav(contacts);
@@ -224,7 +268,7 @@ const contactId = event.target.dataset.open;
 window.location.href = `/contact-detail?id=${contactId}`;
 }
 
-function createContact(event) {
+async function createContact(event) {
 event.preventDefault();
 
 const contact = getContactFormData();
@@ -234,28 +278,38 @@ showToast("Bitte einen Namen eingeben.");
 return;
 }
 
-const contacts = getSavedJson(CONTACTS_KEY, []);
-contacts.push(contact);
+try {
+await apiCreateContact(contact);
 
-saveJson(CONTACTS_KEY, contacts);
 contactForm.reset();
 contactForm.classList.add("hidden");
 
 activeLetter = getContactLetter(contact);
 
 showToast("Kontakt wurde gespeichert.");
+
+contactsCache = await apiGetContacts();
 renderContacts();
+renderKpis();
+} catch (error) {
+showToast(error.message);
+}
 }
 
-function deleteContact(event) {
+async function deleteContact(event) {
 const contactId = event.target.dataset.delete;
-const contacts = getSavedJson(CONTACTS_KEY, []);
 
-const filtered = contacts.filter((contact) => contact.id !== contactId);
+try {
+await apiDeleteContact(contactId);
 
-saveJson(CONTACTS_KEY, filtered);
 showToast("Kontakt wurde gelöscht.");
+
+contactsCache = await apiGetContacts();
 renderContacts();
+renderKpis();
+} catch (error) {
+showToast(error.message);
+}
 }
 
 function bindContactActions() {
@@ -279,7 +333,15 @@ contactForm.classList.add("hidden");
 
 contactForm.addEventListener("submit", createContact);
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+try {
+contactsCache = await apiGetContacts();
 renderContacts();
 renderKpis();
+} catch (error) {
+showToast(error.message);
+renderContacts();
+renderKpis();
+}
 });
+
