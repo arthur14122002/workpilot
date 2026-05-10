@@ -1,6 +1,11 @@
 const express = require("express");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+apiKey: process.env.OPENAI_API_KEY
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -577,6 +582,73 @@ res.json({
 ok: true,
 message: data
 });
+});
+
+app.post("/api/ai/analyze-email", async (req, res) => {
+const { messageId, body } = req.body;
+
+if (!body) {
+return res.status(400).json({
+ok: false,
+error: "Kein Nachrichtentext übergeben."
+});
+}
+
+try {
+const response = await openai.responses.create({
+model: "gpt-4.1-mini",
+input: [
+{
+role: "system",
+content: `
+Du bist der WorkPilot E-Mail-Assistent für Handwerks- und Dienstleistungsbetriebe.
+Analysiere Kunden-E-Mails knapp und praktisch.
+
+Antworte ausschließlich als JSON mit:
+{
+"intent": "question | price_negotiation | appointment | acceptance_hint | rejection_hint | general",
+"summary": "kurze deutsche Zusammenfassung",
+"suggestedReply": "professioneller deutscher Antwortvorschlag"
+}
+
+Wichtig:
+- Setze niemals verbindlich accepted/rejected.
+- Wenn Zustimmung/Ablehnung erkennbar ist, nur als Hinweis formulieren.
+- Der echte Status wird nur über Kundenbuttons geändert.
+`
+},
+{
+role: "user",
+content: body
+}
+]
+});
+
+const rawText = response.output_text;
+const analysis = JSON.parse(rawText);
+
+if (messageId) {
+await supabase
+.from("email_messages")
+.update({
+ai_detected_intent: analysis.intent,
+ai_suggested_reply: analysis.suggestedReply
+})
+.eq("id", messageId);
+}
+
+res.json({
+ok: true,
+analysis
+});
+} catch (error) {
+console.error("AI Fehler:", error);
+
+res.status(500).json({
+ok: false,
+error: "KI-Analyse konnte nicht erstellt werden."
+});
+}
 });
 
 app.use(express.static(path.join(__dirname, "public")));
