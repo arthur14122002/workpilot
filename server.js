@@ -11,7 +11,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY
 const app = express();
 
 
-app.get("*", (req, res) => {
+app.use((req, res) => {
 console.log("CATCH ALL HIT:", req.method, req.url);
 
 res.json({
