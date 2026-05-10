@@ -11,15 +11,6 @@ process.env.SUPABASE_SERVICE_ROLE_KEY
 const app = express();
 
 
-app.use((req, res) => {
-console.log("CATCH ALL HIT:", req.method, req.url);
-
-res.json({
-ok: true,
-message: "Catch-All funktioniert",
-path: req.url
-});
-});
 
 console.log("WORKPILOT SERVER VERSION: API TEST ROUTES ACTIVE");
 
@@ -31,6 +22,16 @@ message: "API läuft"
 });
 });
 
+
+app.use((req, res) => {
+console.log("CATCH ALL HIT:", req.method, req.url);
+
+res.json({
+ok: true,
+message: "Catch-All funktioniert",
+path: req.url
+});
+});
 
 const PORT = 3000;
 
