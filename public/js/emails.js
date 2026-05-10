@@ -235,7 +235,7 @@ if (!messageResult.ok) {
 throw new Error(messageResult.error);
 }
 
-await loadEmailThreads();
+await renderEmailThreads();
 
 alert("Demo-E-Mail erstellt");
 
