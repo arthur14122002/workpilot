@@ -2,17 +2,22 @@ const express = require("express");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 const supabase = createClient(
 process.env.SUPABASE_URL,
 process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+console.log("WORKPILOT SERVER VERSION: API ROUTES ACTIVE");
 
-const app = express();
+app.use(express.json());
 
-
-
-console.log("WORKPILOT SERVER VERSION: API TEST ROUTES ACTIVE");
+app.use((req, res, next) => {
+console.log("REQUEST:", req.method, req.url);
+next();
+});
 
 app.get("/api/test", (req, res) => {
 console.log("TEST ROUTE HIT");
@@ -21,38 +26,6 @@ ok: true,
 message: "API läuft"
 });
 });
-
-
-app.use((req, res) => {
-console.log("CATCH ALL HIT:", req.method, req.url);
-
-res.json({
-ok: true,
-message: "Catch-All funktioniert",
-path: req.url
-});
-});
-
-const PORT = 3000;
-
-app.use(express.json());
-
-
-
-
-app.use((req, res, next) => {
-console.log("REQUEST:", req.method, req.url);
-next();
-});
-
-app.get("/api/test", (req, res) => {
-res.json({
-ok: true,
-message: "WorkPilot API läuft",
-time: new Date().toISOString()
-});
-});
-
 
 app.get("/api/health/supabase", async (req, res) => {
 const { data, error } = await supabase
@@ -66,7 +39,6 @@ return res.status(500).json({ ok: false, error: error.message });
 
 res.json({ ok: true, data });
 });
-
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -87,7 +59,7 @@ res.sendFile(path.join(__dirname, "public", "html", "offer-create.html"));
 });
 
 app.get("/offers", (req, res) => {
-res.sendFile(path.join(__dirname, "public/html/offers.html"));
+res.sendFile(path.join(__dirname, "public", "html", "offers.html"));
 });
 
 app.get("/offer-editor", (req, res) => {
@@ -95,22 +67,20 @@ res.sendFile(path.join(__dirname, "public", "html", "offer-editor.html"));
 });
 
 app.get("/contact-detail", (req, res) => {
-res.sendFile(path.join(__dirname, "public/html/contact-detail.html"));
+res.sendFile(path.join(__dirname, "public", "html", "contact-detail.html"));
 });
 
 app.get("/invoices", (req, res) => {
-res.sendFile(path.join(__dirname, "public/html/invoices.html"));
+res.sendFile(path.join(__dirname, "public", "html", "invoices.html"));
 });
 
 app.get("/invoice-create", (req, res) => {
-res.sendFile(path.join(__dirname, "public/html/invoice-create.html"));
+res.sendFile(path.join(__dirname, "public", "html", "invoice-create.html"));
 });
 
 app.get("/invoice-editor", (req, res) => {
-res.sendFile(path.join(__dirname, "public/html/invoice-editor.html"));
+res.sendFile(path.join(__dirname, "public", "html", "invoice-editor.html"));
 });
-
-
 
 app.use((req, res) => {
 console.log("404 ROUTE:", req.method, req.url);
@@ -121,7 +91,6 @@ path: req.url
 });
 });
 
-
 app.listen(PORT, () => {
-console.log(`WorkPilot läuft auf http://localhost:${PORT}`);
+console.log(`WorkPilot läuft auf Port ${PORT}`);
 });
