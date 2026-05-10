@@ -91,6 +91,17 @@ path: req.url
 });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
 console.log(`WorkPilot läuft auf Port ${PORT}`);
+
+const { data, error } = await supabase
+.from("contacts")
+.select("id")
+.limit(1);
+
+if (error) {
+console.log("SUPABASE TEST FEHLER:", error.message);
+} else {
+console.log("SUPABASE TEST OK:", data);
+}
 });
