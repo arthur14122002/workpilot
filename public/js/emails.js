@@ -211,6 +211,10 @@ Antwort senden
 </div>
 `;
 
+details.addEventListener("click", (event) => {
+event.stopPropagation();
+});
+
 const textarea = details.querySelector(".replyTextarea");
 const aiButton = details.querySelector(".aiReplyBtn");
 const sendButton = details.querySelector(".sendReplyBtn");
