@@ -10,21 +10,11 @@ process.env.SUPABASE_URL,
 process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-console.log("WORKPILOT SERVER VERSION: API ROUTES ACTIVE");
-
 app.use(express.json());
 
 app.use((req, res, next) => {
 console.log("REQUEST:", req.method, req.url);
 next();
-});
-
-app.get("/api/test", (req, res) => {
-console.log("TEST ROUTE HIT");
-res.json({
-ok: true,
-message: "API läuft"
-});
 });
 
 app.get("/api/health/supabase", async (req, res) => {
@@ -38,6 +28,89 @@ return res.status(500).json({ ok: false, error: error.message });
 }
 
 res.json({ ok: true, data });
+});
+
+app.get("/api/contacts", async (req, res) => {
+const { data, error } = await supabase
+.from("contacts")
+.select("*")
+.order("created_at", { ascending: false });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+contacts: data
+});
+});
+
+
+app.post("/api/contacts", async (req, res) => {
+const {
+name,
+email,
+phone,
+company,
+street,
+city,
+postal_code,
+notes
+} = req.body;
+
+const { data, error } = await supabase
+.from("contacts")
+.insert([
+{
+name,
+email,
+phone,
+company,
+street,
+city,
+postal_code,
+notes
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+contact: data
+});
+});
+
+
+app.delete("/api/contacts/:id", async (req, res) => {
+const { id } = req.params;
+
+const { error } = await supabase
+.from("contacts")
+.delete()
+.eq("id", id);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true
+});
 });
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -93,15 +166,4 @@ path: req.url
 
 app.listen(PORT, async () => {
 console.log(`WorkPilot läuft auf Port ${PORT}`);
-
-const { data, error } = await supabase
-.from("contacts")
-.select("id")
-.limit(1);
-
-if (error) {
-console.log("SUPABASE TEST FEHLER:", error.message);
-} else {
-console.log("SUPABASE TEST OK:", data);
-}
 });
