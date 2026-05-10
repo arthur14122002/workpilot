@@ -44,10 +44,14 @@ Behalte Angebote, Rechnungen, Rückfragen und spätere KI-Vorschläge im Blick.
 <section class="card emailsCard">
 <div class="emailsHeader">
 <div>
-<h2>Kommunikationscockpit</h2>
+<h2>Postfach</h2>
 <p>Hier erscheinen später gesendete und empfangene WorkPilot-E-Mails.</p>
 </div>
 </div>
+
+<button id="createDemoEmailBtn" class="primaryBtn">
+Demo-E-Mail erstellen
+</button>
 
 <div class="emailFilters">
 <button class="emailFilter active" data-filter="all">Alle</button>
@@ -58,6 +62,21 @@ Behalte Angebote, Rechnungen, Rückfragen und spätere KI-Vorschläge im Blick.
 </div>
 
 <div id="emailThreadsList" class="emailThreadsList"></div>
+
+<div id="emailMessagesView" class="emailMessagesView hidden">
+<div class="emailMessagesHeader">
+<button id="backToThreadsBtn" class="btn btnSecondary">
+Zurück
+</button>
+
+<div>
+<h3 id="emailThreadTitle">E-Mail-Verlauf</h3>
+<p id="emailThreadMeta"></p>
+</div>
+</div>
+
+<div id="emailMessagesList" class="emailMessagesList"></div>
+</div>
 
 <div id="emptyEmails" class="emptyState">
 <p>Noch keine E-Mail-Verläufe vorhanden.</p>

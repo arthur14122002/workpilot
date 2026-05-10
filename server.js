@@ -438,6 +438,113 @@ ok: true
 });
 });
 
+app.get("/api/email-threads", async (req, res) => {
+const { data, error } = await supabase
+.from("email_threads")
+.select("*")
+.order("created_at", { ascending: false });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+threads: data
+});
+});
+
+app.post("/api/email-threads", async (req, res) => {
+const thread = req.body;
+
+const { data, error } = await supabase
+.from("email_threads")
+.insert([
+{
+contact_id: thread.contactId || null,
+related_type: thread.relatedType || "general",
+related_id: thread.relatedId || null,
+subject: thread.subject || "Ohne Betreff",
+status: thread.status || "open",
+ai_summary: thread.aiSummary || null,
+ai_category: thread.aiCategory || null
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+thread: data
+});
+});
+
+app.post("/api/email-messages", async (req, res) => {
+const message = req.body;
+
+const { data, error } = await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: message.threadId,
+direction: message.direction || "outbound",
+sender: message.sender || null,
+recipient: message.recipient || null,
+subject: message.subject || null,
+body: message.body || "",
+ai_detected_intent: message.aiDetectedIntent || null,
+ai_suggested_reply: message.aiSuggestedReply || null,
+message_status: message.messageStatus || "sent"
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+message: data
+});
+});
+
+app.get("/api/email-messages/:threadId", async (req, res) => {
+const { threadId } = req.params;
+
+const { data, error } = await supabase
+.from("email_messages")
+.select("*")
+.eq("thread_id", threadId)
+.order("created_at", { ascending: true });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+messages: data
+});
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {

@@ -115,3 +115,70 @@ text-align: center;
 padding: 44px;
 color: var(--wp-muted);
 }
+
+.hidden {
+display: none;
+}
+
+.emailMessagesView {
+margin-top: 22px;
+}
+
+.emailMessagesHeader {
+display: flex;
+align-items: flex-start;
+gap: 16px;
+margin-bottom: 18px;
+}
+
+.emailMessagesHeader h3 {
+margin: 0;
+font-size: 20px;
+}
+
+.emailMessagesHeader p {
+margin: 6px 0 0;
+color: var(--wp-muted);
+font-size: 14px;
+}
+
+.emailMessagesList {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+
+.emailMessageItem {
+border: 1px solid var(--wp-border);
+border-radius: 16px;
+padding: 16px;
+background: #fff;
+}
+
+.emailMessageTop {
+display: flex;
+justify-content: space-between;
+gap: 18px;
+margin-bottom: 10px;
+}
+
+.emailMessageDirection {
+font-size: 13px;
+font-weight: 700;
+}
+
+.emailMessageBody {
+font-size: 14px;
+line-height: 1.6;
+white-space: pre-wrap;
+}
+
+.emailMessageAi {
+margin-top: 14px;
+padding: 12px;
+border-radius: 14px;
+background: var(--wp-orange-soft);
+color: var(--wp-orange-dark);
+font-size: 13px;
+line-height: 1.5;
+}
