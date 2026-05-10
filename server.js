@@ -245,6 +245,199 @@ return res.status(500).json({ ok: false, error: error.message });
 res.json({ ok: true });
 });
 
+app.get("/api/invoices", async (req, res) => {
+const { data, error } = await supabase
+.from("invoices")
+.select("*")
+.order("created_at", { ascending: false });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+invoices: data
+});
+});
+
+app.get("/api/invoices/:id", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("invoices")
+.select("*")
+.eq("id", id)
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+invoice: data
+});
+});
+
+app.post("/api/invoices", async (req, res) => {
+const invoice = req.body;
+
+const { data, error } = await supabase
+.from("invoices")
+.insert([
+{
+id: invoice.id,
+contact_id: invoice.contactId || null,
+invoice_number: invoice.invoiceNumber || null,
+status: invoice.status || "open",
+data: invoice
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+invoice: data
+});
+});
+
+app.put("/api/invoices/:id", async (req, res) => {
+const { id } = req.params;
+const invoice = req.body;
+
+const { data, error } = await supabase
+.from("invoices")
+.update({
+contact_id: invoice.contactId || null,
+invoice_number: invoice.invoiceNumber || null,
+status: invoice.status || "open",
+data: invoice,
+updated_at: new Date().toISOString()
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+invoice: data
+});
+});
+
+app.delete("/api/invoices/:id", async (req, res) => {
+const { id } = req.params;
+
+const { error } = await supabase
+.from("invoices")
+.delete()
+.eq("id", id);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true
+});
+});
+
+app.get("/api/notes/:contactId", async (req, res) => {
+const { contactId } = req.params;
+
+const { data, error } = await supabase
+.from("notes")
+.select("*")
+.eq("contact_id", contactId)
+.order("created_at", { ascending: false });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+notes: data
+});
+});
+
+app.post("/api/notes", async (req, res) => {
+const note = req.body;
+
+const { data, error } = await supabase
+.from("notes")
+.insert([
+{
+contact_id: note.contactId,
+type: note.type || "note",
+text: note.text,
+source: note.source || "manual",
+data: note.data || {}
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+note: data
+});
+});
+
+app.delete("/api/notes/:id", async (req, res) => {
+const { id } = req.params;
+
+const { error } = await supabase
+.from("notes")
+.delete()
+.eq("id", id);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true
+});
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {

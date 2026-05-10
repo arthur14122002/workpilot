@@ -17,8 +17,8 @@ function saveJson(key, value) {
 localStorage.setItem(key, JSON.stringify(value));
 }
 
-function getSavedOffers() {
-return getSavedJson(OFFERS_KEY, []);
+async function getSavedOffers() {
+return await apiGetOffers();
 }
 
 function getContacts() {
@@ -56,8 +56,14 @@ ${contact.name}
 `;
 }
 
-function renderOffers() {
-const offers = getSavedOffers();
+async function renderOffers() {
+let offers = [];
+
+try {
+offers = await apiGetOffers();
+} catch (error) {
+showToast(error.message);
+}
 
 offersList.innerHTML = "";
 
@@ -69,9 +75,7 @@ return;
 emptyOffers.style.display = "none";
 
 offers
-.sort((a, b) => {
-return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-})
+.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
 .forEach((offer) => {
 const item = document.createElement("div");
 item.className = "offerItem";
@@ -101,37 +105,21 @@ ${contactLabel}
 <div class="statusBadge">
 ${getOfferStatusLabel(offer.status)}
 </div>
-
 </div>
 
 <div class="offerActions">
-
 <select class="statusSelect" data-status="${offer.id}">
 <option value="open" ${offer.status === "open" || !offer.status ? "selected" : ""}>Offen</option>
 <option value="accepted" ${offer.status === "accepted" ? "selected" : ""}>Angenommen</option>
 <option value="rejected" ${offer.status === "rejected" ? "selected" : ""}>Abgelehnt</option>
 </select>
 
-<select
-class="contactSelect"
-data-assign="${offer.id}"
->
+<select class="contactSelect" data-assign="${offer.id}">
 ${renderContactOptions(offer.contactId)}
 </select>
 
-<button
-class="btn btnSecondary"
-data-open="${offer.id}"
->
-Öffnen
-</button>
-
-<button
-class="btn btnSecondary"
-data-delete="${offer.id}"
->
-Löschen
-</button>
+<button class="btn btnSecondary" data-open="${offer.id}">Öffnen</button>
+<button class="btn btnSecondary" data-delete="${offer.id}">Löschen</button>
 </div>
 `;
 
@@ -141,68 +129,60 @@ offersList.appendChild(item);
 bindActions();
 }
 
-function assignContact(event) {
+async function assignContact(event) {
 const offerId = event.target.dataset.assign;
 const contactId = event.target.value || null;
 
-const offers = getSavedOffers();
+try {
+const offers = await apiGetOffers();
+const offer = offers.find((entry) => entry.id === offerId);
 
-const updated = offers.map((offer) => {
-if (offer.id !== offerId) return offer;
-
-return {
-...offer,
-contactId
-};
-});
-
-saveJson(OFFERS_KEY, updated);
-
-showToast(
-contactId
-? "Kontakt wurde zugeordnet."
-: "Kontaktzuordnung entfernt."
-);
-
-renderOffers();
+if (!offer) {
+showToast("Angebot wurde nicht gefunden.");
+return;
 }
 
-function openOffer(event) {
+offer.contactId = contactId;
+
+await apiSaveOffer(offer);
+
+showToast(contactId ? "Kontakt wurde zugeordnet." : "Kontaktzuordnung entfernt.");
+renderOffers();
+} catch (error) {
+showToast(error.message);
+}
+}
+
+async function openOffer(event) {
 const offerId = event.target.dataset.open;
 
-const offers = getSavedOffers();
-
-const offer = offers.find(
-(entry) => entry.id === offerId
-);
+try {
+const offers = await apiGetOffers();
+const offer = offers.find((entry) => entry.id === offerId);
 
 if (!offer) {
 showToast("Angebot konnte nicht geöffnet werden.");
 return;
 }
 
-localStorage.setItem(
-DRAFT_KEY,
-JSON.stringify(offer)
-);
-
+localStorage.setItem(DRAFT_KEY, JSON.stringify(offer));
 window.location.href = "/offer-editor";
+} catch (error) {
+showToast(error.message);
+}
 }
 
-function deleteOffer(event) {
+async function deleteOffer(event) {
 const offerId = event.target.dataset.delete;
 
-const offers = getSavedOffers();
-
-const filtered = offers.filter(
-(offer) => offer.id !== offerId
-);
-
-saveJson(OFFERS_KEY, filtered);
+try {
+await apiDeleteOffer(offerId);
 
 showToast("Angebot wurde gelöscht.");
-
 renderOffers();
+} catch (error) {
+showToast(error.message);
+}
 }
 
 function bindActions() {
@@ -225,6 +205,51 @@ select.addEventListener("change", assignContact);
 
 document.addEventListener("DOMContentLoaded", renderOffers);
 
+async function apiGetOffers() {
+const response = await fetch("/api/offers");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Angebote konnten nicht geladen werden.");
+}
+
+return (result.offers || []).map((row) => ({
+...row.data,
+id: row.id,
+contactId: row.contact_id,
+status: row.status,
+offerNumber: row.offer_number
+}));
+}
+
+async function apiSaveOffer(offer) {
+const response = await fetch(`/api/offers/${offer.id}`, {
+method: "PUT",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify(offer)
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Angebot konnte nicht gespeichert werden.");
+}
+}
+
+async function apiDeleteOffer(offerId) {
+const response = await fetch(`/api/offers/${offerId}`, {
+method: "DELETE"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Angebot konnte nicht gelöscht werden.");
+}
+}
+
 function getOfferStatusLabel(status) {
 const labels = {
 open: "Offen",
@@ -235,18 +260,29 @@ rejected: "Abgelehnt"
 return labels[status] || "Offen";
 }
 
-function updateOfferStatus(event) {
+async function updateOfferStatus(event) {
 const offerId = event.target.dataset.status;
 const status = event.target.value;
 
-const updated = getSavedOffers().map((offer) => {
-if (offer.id !== offerId) return offer;
+try {
+const offers = await apiGetOffers();
+const offer = offers.find((entry) => entry.id === offerId);
 
-return {
-...offer,
-status
-};
-});
+if (!offer) {
+showToast("Angebot wurde nicht gefunden.");
+return;
+}
+
+offer.status = status;
+
+await apiSaveOffer(offer);
+
+showToast("Status wurde aktualisiert.");
+renderOffers();
+} catch (error) {
+showToast(error.message);
+}
+}
 
 saveJson(OFFERS_KEY, updated);
 showToast("Status wurde aktualisiert.");

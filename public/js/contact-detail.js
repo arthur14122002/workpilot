@@ -20,6 +20,49 @@ const noteText = document.getElementById("noteText");
 const notesList = document.getElementById("notesList");
 const emptyNotes = document.getElementById("emptyNotes");
 
+let notesCache = [];
+
+async function apiGetNotes(contactId) {
+const response = await fetch(`/api/notes/${contactId}`);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Notizen konnten nicht geladen werden.");
+}
+
+return result.notes || [];
+}
+
+async function apiCreateNote(note) {
+const response = await fetch("/api/notes", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify(note)
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Notiz konnte nicht gespeichert werden.");
+}
+
+return result.note;
+}
+
+async function apiDeleteNote(noteId) {
+const response = await fetch(`/api/notes/${noteId}`, {
+method: "DELETE"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Notiz konnte nicht gelöscht werden.");
+}
+}
+
 function generateId(prefix = "id") {
 return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -28,9 +71,8 @@ function saveJson(key, value) {
 localStorage.setItem(key, JSON.stringify(value));
 }
 
-function getNotesForContact(contactId) {
-const notes = getSavedJson(NOTES_KEY, []);
-return notes.filter((note) => note.contactId === contactId);
+async function getNotesForContact(contactId) {
+return await apiGetNotes(contactId);
 }
 
 function getNoteTypeLabel(type) {
@@ -44,38 +86,46 @@ ai: "KI-Zusammenfassung"
 return labels[type] || "Notiz";
 }
 
-function renderNotes(contactId) {
-const notes = getNotesForContact(contactId).sort((a, b) => {
-return new Date(b.createdAt) - new Date(a.createdAt);
-});
+async function renderNotes(contactId) {
+try {
+notesCache = await apiGetNotes(contactId);
+} catch (error) {
+showToast(error.message);
+return;
+}
 
 notesList.innerHTML = "";
 
-if (!notes.length) {
+if (!notesCache.length) {
 emptyNotes.style.display = "block";
 return;
 }
 
 emptyNotes.style.display = "none";
 
-notes.forEach((note) => {
+notesCache.forEach((note) => {
 const item = document.createElement("div");
 item.className = "noteItem";
 
 item.innerHTML = `
 <div class="noteTop">
 <div class="noteType">${getNoteTypeLabel(note.type)}</div>
-<div class="noteDate">${new Date(note.createdAt).toLocaleString("de-DE")}</div>
+
+<div class="noteDate">
+${new Date(note.created_at).toLocaleString("de-DE")}
+</div>
 </div>
 
-<div class="noteText">${note.text}</div>
+<div class="noteText">
+${note.text}
+</div>
 `;
 
 notesList.appendChild(item);
 });
 }
 
-function createNote(event) {
+async function createNote(event) {
 event.preventDefault();
 
 const contactId = getContactIdFromUrl();
@@ -86,24 +136,23 @@ showToast("Bitte eine Notiz eingeben.");
 return;
 }
 
-const notes = getSavedJson(NOTES_KEY, []);
-
-notes.push({
-id: generateId("note"),
+try {
+await apiCreateNote({
 contactId,
 type: noteType.value,
 text,
-source: "manual",
-createdAt: new Date().toISOString()
+source: "manual"
 });
-
-saveJson(NOTES_KEY, notes);
 
 noteText.value = "";
 noteType.value = "note";
 
 showToast("Notiz wurde gespeichert.");
+
 renderNotes(contactId);
+} catch (error) {
+showToast(error.message);
+}
 }
 
 function getSavedJson(key, fallback) {
@@ -119,9 +168,15 @@ const params = new URLSearchParams(window.location.search);
 return params.get("id");
 }
 
-function findContact(contactId) {
-const contacts = getSavedJson(CONTACTS_KEY, []);
-return contacts.find((contact) => contact.id === contactId);
+async function apiGetContact(contactId) {
+const response = await fetch(`/api/contacts/${contactId}`);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakt konnte nicht geladen werden.");
+}
+
+return result.contact;
 }
 
 function getOffersForContact(contactId) {
@@ -250,15 +305,17 @@ button.addEventListener("click", openOffer);
 });
 }
 
-function init() {
+async function init() {
 const contactId = getContactIdFromUrl();
-const contact = findContact(contactId);
 
-if (!contact) {
+if (!contactId) {
 showToast("Kontakt wurde nicht gefunden.");
 window.location.href = "/";
 return;
 }
+
+try {
+const contact = await apiGetContact(contactId);
 
 renderContact(contact);
 renderOffers(contactId);
@@ -266,6 +323,10 @@ renderInvoices(contactId);
 renderNotes(contactId);
 
 noteForm.addEventListener("submit", createNote);
+} catch (error) {
+showToast(error.message);
+window.location.href = "/";
+}
 }
 
 document.addEventListener("DOMContentLoaded", init);
