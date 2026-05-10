@@ -153,6 +153,98 @@ contact: updatedContact
 });
 });
 
+app.get("/api/offers", async (req, res) => {
+const { data, error } = await supabase
+.from("offers")
+.select("*")
+.order("created_at", { ascending: false });
+
+if (error) {
+return res.status(500).json({ ok: false, error: error.message });
+}
+
+res.json({ ok: true, offers: data });
+});
+
+app.get("/api/offers/:id", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("offers")
+.select("*")
+.eq("id", id)
+.single();
+
+if (error) {
+return res.status(500).json({ ok: false, error: error.message });
+}
+
+res.json({ ok: true, offer: data });
+});
+
+app.post("/api/offers", async (req, res) => {
+const offer = req.body;
+
+const { data, error } = await supabase
+.from("offers")
+.insert([
+{
+id: offer.id,
+contact_id: offer.contactId || null,
+offer_number: offer.offerNumber || null,
+status: offer.status || "open",
+data: offer
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({ ok: false, error: error.message });
+}
+
+res.json({ ok: true, offer: data });
+});
+
+app.put("/api/offers/:id", async (req, res) => {
+const { id } = req.params;
+const offer = req.body;
+
+const { data, error } = await supabase
+.from("offers")
+.update({
+contact_id: offer.contactId || null,
+offer_number: offer.offerNumber || null,
+status: offer.status || "open",
+data: offer,
+updated_at: new Date().toISOString()
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({ ok: false, error: error.message });
+}
+
+res.json({ ok: true, offer: data });
+});
+
+app.delete("/api/offers/:id", async (req, res) => {
+const { id } = req.params;
+
+const { error } = await supabase
+.from("offers")
+.delete()
+.eq("id", id);
+
+if (error) {
+return res.status(500).json({ ok: false, error: error.message });
+}
+
+res.json({ ok: true });
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
