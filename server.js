@@ -480,6 +480,10 @@ app.get("/invoice-editor", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "invoice-editor.html"));
 });
 
+app.get("/emails", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "emails.html"));
+});
+
 app.use((req, res) => {
 console.log("404 ROUTE:", req.method, req.url);
 res.status(404).json({

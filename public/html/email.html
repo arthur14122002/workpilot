@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>WorkPilot – E-Mails</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/emails.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink" href="/">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink active" href="/emails">E-Mails</a>
+<a class="navLink" href="/settings">Einstellungen</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Kommunikation</div>
+<h1 class="pageTitle">E-Mails</h1>
+<p class="pageSubtitle">
+Behalte Angebote, Rechnungen, Rückfragen und spätere KI-Vorschläge im Blick.
+</p>
+</header>
+
+<section class="card emailsCard">
+<div class="emailsHeader">
+<div>
+<h2>Kommunikationscockpit</h2>
+<p>Hier erscheinen später gesendete und empfangene WorkPilot-E-Mails.</p>
+</div>
+</div>
+
+<div class="emailFilters">
+<button class="emailFilter active" data-filter="all">Alle</button>
+<button class="emailFilter" data-filter="offer">Angebote</button>
+<button class="emailFilter" data-filter="invoice">Rechnungen</button>
+<button class="emailFilter" data-filter="question">Rückfragen</button>
+<button class="emailFilter" data-filter="ai">KI-Vorschläge</button>
+</div>
+
+<div id="emailThreadsList" class="emailThreadsList"></div>
+
+<div id="emptyEmails" class="emptyState">
+<p>Noch keine E-Mail-Verläufe vorhanden.</p>
+</div>
+</section>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/emails.js"></script>
+</body>
+</html>

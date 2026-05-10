@@ -1,0 +1,117 @@
+.emailsCard {
+max-width: 1100px;
+}
+
+.emailsHeader {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+gap: 18px;
+margin-bottom: 22px;
+}
+
+.emailsHeader h2 {
+margin: 0;
+font-size: 21px;
+letter-spacing: -0.03em;
+}
+
+.emailsHeader p {
+margin: 8px 0 0;
+color: var(--wp-muted);
+font-size: 14px;
+line-height: 1.5;
+}
+
+.emailFilters {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-bottom: 22px;
+}
+
+.emailFilter {
+border: 1px solid var(--wp-border);
+background: #fff;
+color: var(--wp-text);
+border-radius: 999px;
+padding: 8px 12px;
+font-size: 13px;
+font-weight: 650;
+cursor: pointer;
+}
+
+.emailFilter:hover,
+.emailFilter.active {
+background: var(--wp-orange-soft);
+color: var(--wp-orange-dark);
+border-color: #fdba74;
+}
+
+.emailThreadsList {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+
+.emailThreadItem {
+border: 1px solid var(--wp-border);
+border-radius: 16px;
+padding: 18px;
+background: #fff;
+transition: 0.18s ease;
+}
+
+.emailThreadItem:hover {
+background: var(--wp-orange-soft);
+border-color: #fdba74;
+}
+
+.emailThreadTop {
+display: flex;
+justify-content: space-between;
+gap: 18px;
+margin-bottom: 10px;
+}
+
+.emailSubject {
+font-size: 16px;
+font-weight: 700;
+}
+
+.emailMeta {
+font-size: 13px;
+color: var(--wp-muted);
+}
+
+.emailSummary {
+font-size: 14px;
+line-height: 1.55;
+color: var(--wp-text);
+margin-top: 10px;
+}
+
+.emailBadgeRow {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-top: 12px;
+}
+
+.emailBadge {
+display: inline-flex;
+width: fit-content;
+padding: 6px 10px;
+border-radius: 999px;
+background: #f9fafb;
+border: 1px solid var(--wp-border);
+color: #374151;
+font-size: 12px;
+font-weight: 700;
+}
+
+.emptyState {
+text-align: center;
+padding: 44px;
+color: var(--wp-muted);
+}
