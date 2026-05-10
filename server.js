@@ -99,6 +99,60 @@ ok: true
 });
 });
 
+app.get("/api/contacts/:id", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("contacts")
+.select("*")
+.eq("id", id)
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+contact: data
+});
+});
+
+app.put("/api/contacts/:id", async (req, res) => {
+const { id } = req.params;
+const { name, email, phone, street, city, data } = req.body;
+
+const { data: updatedContact, error } = await supabase
+.from("contacts")
+.update({
+name,
+email,
+phone,
+street,
+city,
+data: data || {},
+updated_at: new Date().toISOString()
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+contact: updatedContact
+});
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
