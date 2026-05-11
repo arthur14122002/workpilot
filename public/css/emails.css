@@ -260,3 +260,30 @@ display: flex;
 gap: 10px;
 margin-top: 12px;
 }
+
+.toggleOriginalBtn {
+margin-top: 12px;
+border: none;
+background: transparent;
+color: var(--wp-orange-dark);
+font-size: 13px;
+font-weight: 700;
+cursor: pointer;
+padding: 0;
+}
+
+.toggleOriginalBtn:hover {
+opacity: 0.8;
+}
+
+.originalEmail {
+margin-top: 14px;
+padding: 14px;
+border-radius: 14px;
+background: #f9fafb;
+border: 1px solid var(--wp-border);
+}
+
+.hidden {
+display: none;
+}

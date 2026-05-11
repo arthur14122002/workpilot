@@ -170,8 +170,14 @@ ${new Date(message.created_at).toLocaleString("de-DE")}
 </div>
 </div>
 
+<button class="toggleOriginalBtn">
+Original-E-Mail anzeigen
+</button>
+
+<div class="originalEmail hidden">
 <div class="emailMessageBody">
 ${message.body || ""}
+</div>
 </div>
 
 ${
@@ -218,6 +224,21 @@ event.stopPropagation();
 const textarea = details.querySelector(".replyTextarea");
 const aiButton = details.querySelector(".aiReplyBtn");
 const sendButton = details.querySelector(".sendReplyBtn");
+
+details.querySelectorAll(".toggleOriginalBtn").forEach((button) => {
+button.addEventListener("click", (event) => {
+event.stopPropagation();
+
+const original =
+button.parentElement.querySelector(".originalEmail");
+
+original.classList.toggle("hidden");
+
+button.textContent = original.classList.contains("hidden")
+? "Original-E-Mail anzeigen"
+: "Original-E-Mail ausblenden";
+});
+});
 
 const latestAiSuggestion = [...messages]
 .reverse()
