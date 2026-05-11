@@ -7,6 +7,10 @@ const openai = new OpenAI({
 apiKey: process.env.OPENAI_API_KEY
 });
 
+const { Resend } = require("resend");
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -632,6 +636,7 @@ await supabase
 .from("email_messages")
 .update({
 ai_detected_intent: analysis.intent,
+ai_summary: analysis.summary,
 ai_suggested_reply: analysis.suggestedReply
 })
 .eq("id", messageId);
@@ -647,6 +652,61 @@ console.error("AI Fehler:", error);
 res.status(500).json({
 ok: false,
 error: "KI-Analyse konnte nicht erstellt werden."
+});
+}
+});
+
+app.post("/api/send-email", async (req, res) => {
+const {
+to,
+subject,
+html,
+threadId
+} = req.body;
+
+if (!to || !subject || !html) {
+return res.status(400).json({
+ok: false,
+error: "Fehlende E-Mail-Daten."
+});
+}
+
+try {
+
+const email = await resend.emails.send({
+from: "WorkPilot <onboarding@resend.dev>",
+to,
+subject,
+html
+});
+
+if (threadId) {
+await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: threadId,
+direction: "outbound",
+sender: "workpilot@example.com",
+recipient: to,
+subject,
+body: html,
+message_status: "sent"
+}
+]);
+}
+
+res.json({
+ok: true,
+email
+});
+
+} catch (error) {
+console.error("RESEND ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: "E-Mail konnte nicht gesendet werden."
 });
 }
 });

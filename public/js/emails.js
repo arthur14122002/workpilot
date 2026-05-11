@@ -346,6 +346,35 @@ if (!messageResult.ok) {
 throw new Error(messageResult.error);
 }
 
+const sendResponse = await fetch("/api/send-email", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+to: "arthur.02@gmx.de",
+subject: "WorkPilot Testmail",
+html: `
+<h1>WorkPilot funktioniert 😄</h1>
+
+<p>
+Diese E-Mail wurde erfolgreich über Resend versendet.
+</p>
+
+<p>
+Das Postfach-System von WorkPilot funktioniert 😄
+</p>
+`,
+threadId: thread.id
+})
+});
+
+const sendResult = await sendResponse.json();
+
+if (!sendResult.ok) {
+throw new Error(sendResult.error);
+}
+
 await renderEmailThreads();
 
 alert("Demo-E-Mail erstellt");
