@@ -674,7 +674,7 @@ error: "Fehlende E-Mail-Daten."
 try {
 
 const email = await resend.emails.send({
-from: "WorkPilot <onboarding@resend.dev>",
+from: "WorkPilot <mail@workpilot-app.de>",
 to,
 subject,
 html
