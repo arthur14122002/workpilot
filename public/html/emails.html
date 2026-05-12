@@ -42,37 +42,35 @@ Behalte Angebote, Rechnungen, Rückfragen und spätere KI-Vorschläge im Blick.
 </header>
 
 <section class="card emailsCard">
-<div class="emailsHeader">
-<div>
+<div class="mailLayout">
+<div class="mailSidebar">
+<div class="mailSidebarTop">
 <h2>Postfach</h2>
-<p>Hier erscheinen später gesendete und empfangene WorkPilot-E-Mails.</p>
-</div>
-</div>
-
-<button id="createDemoEmailBtn" class="primaryBtn">
-Demo-E-Mail erstellen
-</button>
+<p>Gesendete und empfangene WorkPilot-E-Mails.</p>
 
 <div class="emailFilters">
 <button class="emailFilter active" data-filter="all">Alle</button>
 <button class="emailFilter" data-filter="offer">Angebote</button>
 <button class="emailFilter" data-filter="invoice">Rechnungen</button>
 <button class="emailFilter" data-filter="question">Rückfragen</button>
-<button class="emailFilter" data-filter="ai">KI-Vorschläge</button>
+<button class="emailFilter" data-filter="other">Sonstiges</button>
+</div>
 </div>
 
 <div id="emailThreadsList" class="emailThreadsList"></div>
 
-<h3 id="emailThreadTitle">E-Mail-Verlauf</h3>
-<p id="emailThreadMeta"></p>
-</div>
-</div>
-
-<div id="emailMessagesList" class="emailMessagesList"></div>
-</div>
-
 <div id="emptyEmails" class="emptyState">
 <p>Noch keine E-Mail-Verläufe vorhanden.</p>
+</div>
+</div>
+
+<div class="mailViewer">
+<div id="emptyMailState" class="emptyMailState">
+E-Mail auswählen
+</div>
+
+<div id="mailDetailView" class="mailDetailView hidden"></div>
+</div>
 </div>
 </section>
 </main>
