@@ -341,3 +341,89 @@ padding:24px;
 .hidden{
 display:none;
 }
+
+.emailThreadItem.selected {
+border-color: #fdba74;
+background: var(--wp-orange-soft);
+}
+
+.mailDetailHeader {
+display: flex;
+justify-content: space-between;
+gap: 20px;
+padding-bottom: 20px;
+border-bottom: 1px solid var(--wp-border);
+margin-bottom: 20px;
+}
+
+.mailDetailHeader h2 {
+margin: 6px 0 8px;
+font-size: 24px;
+letter-spacing: -0.03em;
+}
+
+.mailDetailHeader p {
+margin: 0;
+color: var(--wp-muted);
+font-size: 14px;
+line-height: 1.5;
+}
+
+.mailDetailType {
+font-size: 12px;
+font-weight: 800;
+color: var(--wp-orange-dark);
+text-transform: uppercase;
+}
+
+.mailDetailDate {
+color: var(--wp-muted);
+font-size: 13px;
+white-space: nowrap;
+}
+
+.mailMessagesDetailList {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+
+.detailMessageItem {
+border: 1px solid var(--wp-border);
+border-radius: 16px;
+padding: 16px;
+background: #fff;
+}
+
+.detailMessageTop {
+display: flex;
+justify-content: space-between;
+gap: 18px;
+margin-bottom: 12px;
+font-size: 13px;
+}
+
+.detailMessageTop span {
+color: var(--wp-muted);
+}
+
+.detailMessageBody {
+font-size: 14px;
+line-height: 1.6;
+white-space: pre-wrap;
+}
+
+.detailAiSummary,
+.detailAiReply {
+margin: 12px 0;
+padding: 12px;
+border-radius: 14px;
+background: var(--wp-orange-soft);
+color: var(--wp-orange-dark);
+font-size: 13px;
+line-height: 1.5;
+}
+
+.mailDetailLoading {
+color: var(--wp-muted);
+}

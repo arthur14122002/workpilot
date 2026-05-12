@@ -1,10 +1,111 @@
 const emailThreadsList = document.getElementById("emailThreadsList");
 const emptyEmails = document.getElementById("emptyEmails");
 
+const emptyMailState = document.getElementById("emptyMailState");
+const mailDetailView = document.getElementById("mailDetailView");
+
 const createDemoEmailBtn = document.getElementById("createDemoEmailBtn");
 
 let activeFilter = "all";
 let emailThreadsCache = [];
+
+async function openMailDetail(thread) {
+emptyMailState.classList.add("hidden");
+mailDetailView.classList.remove("hidden");
+
+mailDetailView.innerHTML = `
+<div class="mailDetailHeader">
+<div>
+<div class="mailDetailType">${thread.related_type || "E-Mail"}</div>
+<h2>${thread.subject || "Ohne Betreff"}</h2>
+<p>${thread.ai_summary || "Noch keine Zusammenfassung vorhanden."}</p>
+</div>
+
+<div class="mailDetailDate">
+${new Date(thread.created_at).toLocaleDateString("de-DE")}
+</div>
+</div>
+
+<div class="mailDetailLoading">Nachrichten werden geladen...</div>
+`;
+
+let messages = [];
+
+try {
+messages = await apiGetEmailMessages(thread.id);
+} catch (error) {
+mailDetailView.innerHTML += `<p class="emailMeta">${error.message}</p>`;
+return;
+}
+
+const messagesHtml = messages.length
+? messages
+.map((message) => {
+return `
+<div class="detailMessageItem">
+<div class="detailMessageTop">
+<strong>
+${
+message.direction === "inbound"
+? "Kunde → WorkPilot"
+: "WorkPilot → Kunde"
+}
+</strong>
+
+<span>
+${new Date(message.created_at).toLocaleString("de-DE")}
+</span>
+</div>
+
+${
+message.ai_summary
+? `
+<div class="detailAiSummary">
+<strong>KI-Zusammenfassung:</strong><br>
+${message.ai_summary}
+</div>
+`
+: ""
+}
+
+<div class="detailMessageBody">
+${message.body || ""}
+</div>
+
+${
+message.ai_suggested_reply
+? `
+<div class="detailAiReply">
+<strong>KI-Antwortvorschlag:</strong><br><br>
+${message.ai_suggested_reply}
+</div>
+`
+: ""
+}
+</div>
+`;
+})
+.join("")
+: `<p class="emailMeta">Noch keine Nachrichten vorhanden.</p>`;
+
+mailDetailView.innerHTML = `
+<div class="mailDetailHeader">
+<div>
+<div class="mailDetailType">${thread.related_type || "E-Mail"}</div>
+<h2>${thread.subject || "Ohne Betreff"}</h2>
+<p>${thread.ai_summary || "Noch keine Zusammenfassung vorhanden."}</p>
+</div>
+
+<div class="mailDetailDate">
+${new Date(thread.created_at).toLocaleDateString("de-DE")}
+</div>
+</div>
+
+<div class="mailMessagesDetailList">
+${messagesHtml}
+</div>
+`;
+}
 
 async function apiGetEmailThreads() {
 const response = await fetch("/api/email-threads");
@@ -46,7 +147,13 @@ const item = document.createElement("div");
 item.className = "emailThreadItem";
 
 item.addEventListener("click", () => {
-toggleThread(item, thread);
+document.querySelectorAll(".emailThreadItem").forEach((entry) => {
+entry.classList.remove("selected");
+});
+
+item.classList.add("selected");
+
+openMailDetail(thread);
 });
 
 item.innerHTML = `
