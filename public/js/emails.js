@@ -57,17 +57,6 @@ ${new Date(message.created_at).toLocaleString("de-DE")}
 </span>
 </div>
 
-${
-message.ai_summary
-? `
-<div class="detailAiSummary">
-<strong>KI-Zusammenfassung:</strong><br>
-${message.ai_summary}
-</div>
-`
-: ""
-}
-
 <div class="detailMessageBody">
 ${message.body || ""}
 </div>
@@ -157,34 +146,22 @@ openMailDetail(thread);
 });
 
 item.innerHTML = `
-<div class="emailThreadTop">
-<div>
-<div class="emailSubject">
-${thread.subject || "Ohne Betreff"}
+<div class="threadTop">
+<div class="threadSender">
+${thread.customer_name || "Unbekannt"}
 </div>
 
-<div class="emailMeta">
-${thread.related_type || "general"}
-</div>
-</div>
-
-<div class="emailMeta">
+<div class="threadDate">
 ${new Date(thread.created_at).toLocaleDateString("de-DE")}
 </div>
 </div>
 
-<div class="emailSummary">
-${thread.ai_summary || "Noch keine KI-Zusammenfassung vorhanden."}
+<div class="threadSubject">
+${thread.subject || "Ohne Betreff"}
 </div>
 
-<div class="emailBadgeRow">
-<div class="emailBadge">
-${thread.status || "open"}
-</div>
-
-<div class="emailBadge">
-${thread.ai_category || "Keine Kategorie"}
-</div>
+<div class="threadPreview">
+${thread.last_message_preview || "Keine Vorschau verfügbar"}
 </div>
 `;
 
