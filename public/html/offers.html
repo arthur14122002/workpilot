@@ -68,6 +68,66 @@ Noch nicht zugeordnete Angebote bleiben ebenfalls hier sichtbar.
 </main>
 </div>
 
+<div id="offerMailModal" class="modalOverlay hidden">
+<div class="modalCard offerMailModalCard">
+
+<div class="modalHeader">
+<h2>Angebot per E-Mail senden</h2>
+
+<button
+id="closeOfferMailModal"
+class="iconButton"
+>
+✕
+</button>
+</div>
+
+<div class="modalBody">
+
+<label class="fieldLabel">
+Empfänger
+</label>
+
+<input
+id="offerMailRecipient"
+class="textInput"
+type="email"
+placeholder="kunde@example.com"
+/>
+
+<label class="fieldLabel">
+Betreff
+</label>
+
+<input
+id="offerMailSubject"
+class="textInput"
+type="text"
+/>
+
+<label class="fieldLabel">
+Nachricht
+</label>
+
+<textarea
+id="offerMailMessage"
+class="textArea"
+></textarea>
+
+</div>
+
+<div class="modalActions">
+<button
+id="sendOfferMailBtn"
+class="btn btnPrimary"
+>
+E-Mail senden
+</button>
+</div>
+
+</div>
+</div>
+
 <script src="/js/app-layout.js"></script>
 <script src="/js/offers.js"></script>
 </body>

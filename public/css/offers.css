@@ -133,3 +133,40 @@ display: flex;
 gap: 10px;
 align-items: center;
 }
+
+.offerMailModalCard{
+width:min(680px, 92vw);
+}
+
+.modalBody{
+display:flex;
+flex-direction:column;
+gap:14px;
+margin-top:18px;
+}
+
+.fieldLabel{
+font-size:13px;
+font-weight:700;
+color:#444;
+}
+
+.textInput,
+.textArea{
+width:100%;
+border:1px solid #ddd;
+border-radius:14px;
+padding:12px 14px;
+font:inherit;
+outline:none;
+}
+
+.textArea{
+min-height:180px;
+resize:vertical;
+}
+
+.textInput:focus,
+.textArea:focus{
+border-color:#fdba74;
+}

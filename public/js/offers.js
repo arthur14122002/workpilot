@@ -5,6 +5,64 @@ const DRAFT_KEY = "workpilot_current_offer_draft";
 const offersList = document.getElementById("offersList");
 const emptyOffers = document.getElementById("emptyOffers");
 
+const offerMailModal =
+document.getElementById("offerMailModal");
+
+const closeOfferMailModal =
+document.getElementById("closeOfferMailModal");
+
+const offerMailRecipient =
+document.getElementById("offerMailRecipient");
+
+const offerMailSubject =
+document.getElementById("offerMailSubject");
+
+const offerMailMessage =
+document.getElementById("offerMailMessage");
+
+const sendOfferMailBtn =
+document.getElementById("sendOfferMailBtn");
+
+let activeOfferForMail = null;
+
+async function openOfferMailModal(offerId) {
+const offers = await apiGetOffers();
+
+const offer = offers.find(
+(entry) => entry.id === offerId
+);
+
+if (!offer) {
+showToast("Angebot wurde nicht gefunden.");
+return;
+}
+
+activeOfferForMail = offer;
+
+offerMailRecipient.value =
+offer.recipientEmail || "";
+
+offerMailSubject.value =
+`Angebot ${offer.offerNumber || ""}`;
+
+offerMailMessage.value =
+`Hallo ${offer.recipientName || ""},
+
+anbei erhalten Sie unser Angebot.
+
+Bei Fragen können Sie sich jederzeit gerne melden.
+
+Mit freundlichen Grüßen
+${offer.companyName || "WorkPilot"}
+`;
+
+offerMailModal.classList.remove("hidden");
+}
+
+closeOfferMailModal.addEventListener("click", () => {
+offerMailModal.classList.add("hidden");
+});
+
 function getSavedJson(key, fallback = []) {
 try {
 return JSON.parse(localStorage.getItem(key)) || fallback;
@@ -119,6 +177,12 @@ ${renderContactOptions(offer.contactId)}
 </select>
 
 <button class="btn btnSecondary" data-open="${offer.id}">Öffnen</button>
+<button
+class="btn btnSecondary sendOfferMailBtn"
+data-offer-id="${offer.id}"
+>
+Per E-Mail senden
+</button>
 <button class="btn btnSecondary" data-delete="${offer.id}">Löschen</button>
 </div>
 `;
@@ -201,6 +265,14 @@ select.addEventListener("change", updateOfferStatus);
 document.querySelectorAll("[data-assign]").forEach((select) => {
 select.addEventListener("change", assignContact);
 });
+
+document.querySelectorAll(".sendOfferMailBtn").forEach((button) => {
+button.addEventListener("click", () => {
+const offerId = button.dataset.offerId;
+
+openOfferMailModal(offerId);
+});
+});
 }
 
 document.addEventListener("DOMContentLoaded", renderOffers);
@@ -282,9 +354,4 @@ renderOffers();
 } catch (error) {
 showToast(error.message);
 }
-}
-
-saveJson(OFFERS_KEY, updated);
-showToast("Status wurde aktualisiert.");
-renderOffers();
 }
