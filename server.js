@@ -555,10 +555,18 @@ messages: data
 });
 
 app.post("/api/email-reply", async (req, res) => {
-const {
-threadId,
-body
-} = req.body;
+const { threadId, body, subject, recipient } = req.body;
+
+if (!threadId || !body) {
+return res.status(400).json({
+ok: false,
+error: "Thread oder Antworttext fehlt."
+});
+}
+
+const replySubject = subject?.startsWith("RE:")
+? subject
+: `RE: ${subject || "Ohne Betreff"}`;
 
 const { data, error } = await supabase
 .from("email_messages")
@@ -566,8 +574,9 @@ const { data, error } = await supabase
 {
 thread_id: threadId,
 direction: "outbound",
-sender: "workpilot@example.com",
-recipient: "kunde@example.com",
+sender: "mail@workpilot-app.de",
+recipient: recipient || "kunde@example.com",
+subject: replySubject,
 body,
 message_status: "sent"
 }
@@ -709,6 +718,35 @@ ok: false,
 error: "E-Mail konnte nicht gesendet werden."
 });
 }
+});
+
+app.get("/api/email-inbox", async (req, res) => {
+const { data, error } = await supabase
+.from("email_messages")
+.select(`
+*,
+email_threads (
+id,
+subject,
+related_type,
+related_id,
+status,
+ai_category
+)
+`)
+.order("created_at", { ascending: false });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+messages: data || []
+});
 });
 
 app.use(express.static(path.join(__dirname, "public")));

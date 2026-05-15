@@ -9,45 +9,44 @@ const createDemoEmailBtn = document.getElementById("createDemoEmailBtn");
 let activeFilter = "all";
 let emailThreadsCache = [];
 
-async function openMailDetail(thread) {
+async function openMailDetail(message) {
 emptyMailState.classList.add("hidden");
 mailDetailView.classList.remove("hidden");
+
+const relatedThread = message.email_threads || {};
+const subject =
+message.subject ||
+relatedThread.subject ||
+"Ohne Betreff";
 
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
 <div>
-<div class="mailDetailType">${thread.related_type || "E-Mail"}</div>
-<h2>${thread.subject || "Ohne Betreff"}</h2>
+<div class="mailDetailType">
+${relatedThread.related_type || "E-Mail"}
+</div>
+
+<h2>${subject}</h2>
+
+<p>
+Von: ${message.sender || "Unbekannt"}<br>
+An: ${message.recipient || "Unbekannt"}
+</p>
 </div>
 
 <div class="mailDetailDate">
-${new Date(thread.created_at).toLocaleDateString("de-DE")}
+${new Date(message.created_at).toLocaleDateString("de-DE")}
 </div>
 </div>
 
-<div class="mailDetailLoading">Nachrichten werden geladen...</div>
-`;
-
-let messages = [];
-
-try {
-messages = await apiGetEmailMessages(thread.id);
-} catch (error) {
-mailDetailView.innerHTML += `<p class="emailMeta">${error.message}</p>`;
-return;
-}
-
-const messagesHtml = messages.length
-? messages
-.map((message) => {
-return `
+<div class="mailMessagesDetailList">
 <div class="detailMessageItem">
 <div class="detailMessageTop">
 <strong>
 ${
 message.direction === "inbound"
-? "Kunde → WorkPilot"
-: "WorkPilot → Kunde"
+? "Eingegangen"
+: "Gesendet"
 }
 </strong>
 
@@ -71,25 +70,6 @@ ${message.ai_suggested_reply}
 : ""
 }
 </div>
-`;
-})
-.join("")
-: `<p class="emailMeta">Noch keine Nachrichten vorhanden.</p>`;
-
-mailDetailView.innerHTML = `
-<div class="mailDetailHeader">
-<div>
-<div class="mailDetailType">${thread.related_type || "E-Mail"}</div>
-<h2>${thread.subject || "Ohne Betreff"}</h2>
-</div>
-
-<div class="mailDetailDate">
-${new Date(thread.created_at).toLocaleDateString("de-DE")}
-</div>
-</div>
-
-<div class="mailMessagesDetailList">
-${messagesHtml}
 </div>
 
 <div class="mailReplyBox">
@@ -115,17 +95,13 @@ const replyTextarea = document.getElementById("mailReplyTextarea");
 const useAiSuggestionBtn = document.getElementById("useAiSuggestionBtn");
 const sendMailReplyBtn = document.getElementById("sendMailReplyBtn");
 
-const latestAiSuggestion = [...messages]
-.reverse()
-.find((message) => message.ai_suggested_reply);
-
 useAiSuggestionBtn.addEventListener("click", () => {
-if (!latestAiSuggestion) {
+if (!message.ai_suggested_reply) {
 showToast("Kein KI-Vorschlag vorhanden.");
 return;
 }
 
-replyTextarea.value = latestAiSuggestion.ai_suggested_reply;
+replyTextarea.value = message.ai_suggested_reply;
 });
 
 sendMailReplyBtn.addEventListener("click", async () => {
@@ -137,9 +113,26 @@ return;
 }
 
 try {
-await sendReply(thread.id, text);
+await sendReply(
+message.thread_id,
+text,
+subject,
+message.sender
+);
 showToast("Antwort wurde gespeichert.");
-await openMailDetail(thread);
+await renderEmailThreads();
+
+const latestMessages = await apiGetEmailThreads();
+const newestReply = latestMessages.find((entry) => {
+return (
+entry.thread_id === message.thread_id &&
+entry.direction === "outbound"
+);
+});
+
+if (newestReply) {
+openMailDetail(newestReply);
+}
 } catch (error) {
 showToast(error.message);
 }
@@ -147,14 +140,14 @@ showToast(error.message);
 }
 
 async function apiGetEmailThreads() {
-const response = await fetch("/api/email-threads");
+const response = await fetch("/api/email-inbox");
 const result = await response.json();
 
 if (!result.ok) {
-throw new Error(result.error || "E-Mail-Verläufe konnten nicht geladen werden.");
+throw new Error(result.error || "E-Mails konnten nicht geladen werden.");
 }
 
-return result.threads || [];
+return result.messages || [];
 }
 
 async function renderEmailThreads() {
@@ -171,7 +164,8 @@ const visibleThreads =
 activeFilter === "all"
 ? emailThreadsCache
 : emailThreadsCache.filter(
-(thread) => thread.related_type === activeFilter
+(message) =>
+message.email_threads?.related_type === activeFilter
 );
 
 if (!visibleThreads.length) {
@@ -198,7 +192,7 @@ openMailDetail(thread);
 item.innerHTML = `
 <div class="threadTop">
 <div class="threadSender">
-${thread.customer_name || "Unbekannt"}
+${thread.sender || "Unbekannt"}
 </div>
 
 <div class="threadDate">
@@ -207,11 +201,13 @@ ${new Date(thread.created_at).toLocaleDateString("de-DE")}
 </div>
 
 <div class="threadSubject">
-${thread.subject || "Ohne Betreff"}
+${thread.subject ||
+thread.email_threads?.subject ||
+"Ohne Betreff"}
 </div>
 
 <div class="threadPreview">
-${thread.last_message_preview || "Keine Vorschau verfügbar"}
+${thread.body?.slice(0, 120) || "Keine Vorschau verfügbar"}
 </div>
 `;
 
@@ -219,7 +215,7 @@ emailThreadsList.appendChild(item);
 });
 }
 
-async function sendReply(threadId, body) {
+async function sendReply(threadId, body, subject, recipient) {
 const response = await fetch("/api/email-reply", {
 method: "POST",
 headers: {
@@ -227,7 +223,9 @@ headers: {
 },
 body: JSON.stringify({
 threadId,
-body
+body,
+subject,
+recipient
 })
 });
 
