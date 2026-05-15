@@ -29,6 +29,40 @@ ${new Date(thread.created_at).toLocaleDateString("de-DE")}
 <div class="mailDetailLoading">Nachrichten werden geladen...</div>
 `;
 
+const replyTextarea = document.getElementById("mailReplyTextarea");
+const useAiSuggestionBtn = document.getElementById("useAiSuggestionBtn");
+const sendMailReplyBtn = document.getElementById("sendMailReplyBtn");
+
+const latestAiSuggestion = [...messages]
+.reverse()
+.find((message) => message.ai_suggested_reply);
+
+useAiSuggestionBtn.addEventListener("click", () => {
+if (!latestAiSuggestion) {
+showToast("Kein KI-Vorschlag vorhanden.");
+return;
+}
+
+replyTextarea.value = latestAiSuggestion.ai_suggested_reply;
+});
+
+sendMailReplyBtn.addEventListener("click", async () => {
+const text = replyTextarea.value.trim();
+
+if (!text) {
+showToast("Bitte eine Antwort eingeben.");
+return;
+}
+
+try {
+await sendReply(thread.id, text);
+showToast("Antwort wurde gespeichert.");
+await openMailDetail(thread);
+} catch (error) {
+showToast(error.message);
+}
+});
+
 let messages = [];
 
 try {
@@ -92,6 +126,24 @@ ${new Date(thread.created_at).toLocaleDateString("de-DE")}
 
 <div class="mailMessagesDetailList">
 ${messagesHtml}
+</div>
+
+<div class="mailReplyBox">
+<textarea
+id="mailReplyTextarea"
+class="mailReplyTextarea"
+placeholder="Antwort schreiben..."
+></textarea>
+
+<div class="mailReplyActions">
+<button id="useAiSuggestionBtn" class="btn btnSecondary">
+KI-Vorschlag übernehmen
+</button>
+
+<button id="sendMailReplyBtn" class="btn btnPrimary">
+Antwort senden
+</button>
+</div>
 </div>
 `;
 }
