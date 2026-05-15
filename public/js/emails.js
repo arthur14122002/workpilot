@@ -18,7 +18,6 @@ mailDetailView.innerHTML = `
 <div>
 <div class="mailDetailType">${thread.related_type || "E-Mail"}</div>
 <h2>${thread.subject || "Ohne Betreff"}</h2>
-<p>${thread.ai_summary || "Noch keine Zusammenfassung vorhanden."}</p>
 </div>
 
 <div class="mailDetailDate">
@@ -28,40 +27,6 @@ ${new Date(thread.created_at).toLocaleDateString("de-DE")}
 
 <div class="mailDetailLoading">Nachrichten werden geladen...</div>
 `;
-
-const replyTextarea = document.getElementById("mailReplyTextarea");
-const useAiSuggestionBtn = document.getElementById("useAiSuggestionBtn");
-const sendMailReplyBtn = document.getElementById("sendMailReplyBtn");
-
-const latestAiSuggestion = [...messages]
-.reverse()
-.find((message) => message.ai_suggested_reply);
-
-useAiSuggestionBtn.addEventListener("click", () => {
-if (!latestAiSuggestion) {
-showToast("Kein KI-Vorschlag vorhanden.");
-return;
-}
-
-replyTextarea.value = latestAiSuggestion.ai_suggested_reply;
-});
-
-sendMailReplyBtn.addEventListener("click", async () => {
-const text = replyTextarea.value.trim();
-
-if (!text) {
-showToast("Bitte eine Antwort eingeben.");
-return;
-}
-
-try {
-await sendReply(thread.id, text);
-showToast("Antwort wurde gespeichert.");
-await openMailDetail(thread);
-} catch (error) {
-showToast(error.message);
-}
-});
 
 let messages = [];
 
@@ -116,7 +81,6 @@ mailDetailView.innerHTML = `
 <div>
 <div class="mailDetailType">${thread.related_type || "E-Mail"}</div>
 <h2>${thread.subject || "Ohne Betreff"}</h2>
-<p>${thread.ai_summary || "Noch keine Zusammenfassung vorhanden."}</p>
 </div>
 
 <div class="mailDetailDate">
@@ -146,6 +110,40 @@ Antwort senden
 </div>
 </div>
 `;
+
+const replyTextarea = document.getElementById("mailReplyTextarea");
+const useAiSuggestionBtn = document.getElementById("useAiSuggestionBtn");
+const sendMailReplyBtn = document.getElementById("sendMailReplyBtn");
+
+const latestAiSuggestion = [...messages]
+.reverse()
+.find((message) => message.ai_suggested_reply);
+
+useAiSuggestionBtn.addEventListener("click", () => {
+if (!latestAiSuggestion) {
+showToast("Kein KI-Vorschlag vorhanden.");
+return;
+}
+
+replyTextarea.value = latestAiSuggestion.ai_suggested_reply;
+});
+
+sendMailReplyBtn.addEventListener("click", async () => {
+const text = replyTextarea.value.trim();
+
+if (!text) {
+showToast("Bitte eine Antwort eingeben.");
+return;
+}
+
+try {
+await sendReply(thread.id, text);
+showToast("Antwort wurde gespeichert.");
+await openMailDetail(thread);
+} catch (error) {
+showToast(error.message);
+}
+});
 }
 
 async function apiGetEmailThreads() {
