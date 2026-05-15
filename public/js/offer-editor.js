@@ -385,30 +385,39 @@ if (closing) currentDraft.closingText = closing.textContent.trim();
 localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 }
 
-function saveOffer() {
+async function saveOffer() {
 persistDraft();
-
-const savedOffers = getSavedJson(SAVED_KEY, []);
 
 const saved = {
 ...currentDraft,
 companySettings,
+status: currentDraft.status || "open",
 savedAt: new Date().toISOString()
 };
 
-const existingIndex = savedOffers.findIndex(
-(offer) => offer.id === currentDraft.id
-);
+try {
+const response = await fetch("/api/offers", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify(saved)
+});
 
-if (existingIndex !== -1) {
-savedOffers[existingIndex] = saved;
-} else {
-savedOffers.unshift(saved);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Angebot konnte nicht gespeichert werden.");
 }
 
-localStorage.setItem(SAVED_KEY, JSON.stringify(savedOffers));
-
 showToast("Angebot wurde gespeichert.");
+
+setTimeout(() => {
+window.location.href = "/offers";
+}, 500);
+} catch (error) {
+showToast(error.message);
+}
 }
 
 function createInvoiceNumber() {
