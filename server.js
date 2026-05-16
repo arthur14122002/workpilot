@@ -27,6 +27,18 @@ console.log("REQUEST:", req.method, req.url);
 next();
 });
 
+app.get("/pdf-test", (req, res) => {
+console.log("PDF TEST ROUTE HIT");
+
+res.send(`
+<html>
+<body data-pdf-ready="true">
+<h1>PDF TEST FUNKTIONIERT</h1>
+</body>
+</html>
+`);
+});
+
 app.get("/api/health/supabase", async (req, res) => {
 const { data, error } = await supabase
 .from("contacts")
