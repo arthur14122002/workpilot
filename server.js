@@ -839,7 +839,7 @@ await page.setContent(html, {
 waitUntil: "networkidle0"
 });
 
-const pdfData = await page.pdf({
+const pdfBuffer = await page.pdf({
 format: "A4",
 printBackground: true,
 margin: {
@@ -850,7 +850,7 @@ left: "0mm"
 }
 });
 
-return Buffer.from(pdfData);
+return pdfBuffer;
 } finally {
 await browser.close();
 }
