@@ -894,6 +894,23 @@ messages: data || []
 });
 });
 
+app.get("/offer-pdf", (req, res) => {
+console.log("OFFER PDF ROUTE HIT:", req.query.id);
+
+res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>Offer PDF Test</title>
+</head>
+<body data-pdf-ready="true">
+<h1>PDF Route funktioniert</h1>
+<p>ID: ${req.query.id || "keine ID"}</p>
+</body>
+</html>
+`);
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
@@ -920,9 +937,11 @@ app.get("/offer-editor", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "offer-editor.html"));
 });
 
+/*
 app.get("/offer-pdf", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "offer-pdf.html"));
 });
+*/
 
 app.get("/contact-detail", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "contact-detail.html"));
