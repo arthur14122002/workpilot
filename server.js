@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 const OpenAI = require("openai");
+const PDFDocument = require("pdfkit");
 
 const openai = new OpenAI({
 apiKey: process.env.OPENAI_API_KEY
@@ -665,12 +666,168 @@ error: "KI-Analyse konnte nicht erstellt werden."
 }
 });
 
+function createOfferPdfBuffer(offer) {
+return new Promise((resolve, reject) => {
+const doc = new PDFDocument({ size: "A4", margin: 50 });
+const chunks = [];
+
+doc.on("data", (chunk) => chunks.push(chunk));
+doc.on("end", () => resolve(Buffer.concat(chunks)));
+doc.on("error", reject);
+
+doc.fontSize(20).text("Angebot", { align: "right" });
+doc.moveDown();
+
+doc.fontSize(10).text(offer.companySettings?.companyName || "WorkPilot");
+doc.text(offer.companySettings?.street || "");
+doc.text(offer.companySettings?.city || "");
+doc.moveDown();
+
+doc.fontSize(11).text(offer.recipientName || "");
+doc.text(offer.recipientStreet || "");
+doc.text(offer.recipientCity || "");
+doc.moveDown();
+
+doc.text(`Angebotsnummer: ${offer.offerNumber || "-"}`);
+doc.text(`Datum: ${offer.offerDate || "-"}`);
+doc.text(`Gültig bis: ${offer.validUntil || "-"}`);
+doc.moveDown();
+
+doc.fontSize(12).text(offer.introText || "");
+doc.moveDown();
+
+doc.fontSize(12).text("Positionen", { underline: true });
+doc.moveDown(0.5);
+
+(offer.positions || []).forEach((position, index) => {
+doc.fontSize(10).text(`${index + 1}. ${position.description || ""}`);
+doc.text(`Menge: ${position.quantity || "-"} ${position.unit || ""}`);
+doc.text(`Einzelpreis: ${position.unitPrice || "-"} €`);
+doc.text(`Gesamt: ${position.total || "-"} €`);
+doc.moveDown();
+});
+
+doc.moveDown();
+doc.fontSize(12).text(offer.closingText || "");
+doc.moveDown();
+
+doc.text("Mit freundlichen Grüßen");
+doc.text(offer.companySettings?.ownerName || offer.companySettings?.companyName || "");
+
+doc.end();
+});
+}
+
+app.post("/api/send-offer-email", async (req, res) => {
+const { offerId, to, subject, message } = req.body;
+
+if (!offerId || !to || !subject || !message) {
+return res.status(400).json({
+ok: false,
+error: "Fehlende Daten für den Angebotsversand."
+});
+}
+
+try {
+const { data: offerRow, error: offerError } = await supabase
+.from("offers")
+.select("*")
+.eq("id", offerId)
+.single();
+
+if (offerError) {
+throw offerError;
+}
+
+const offer = {
+...offerRow.data,
+id: offerRow.id,
+contactId: offerRow.contact_id,
+status: offerRow.status,
+offerNumber: offerRow.offer_number
+};
+
+const { data: thread, error: threadError } = await supabase
+.from("email_threads")
+.insert([
+{
+contact_id: offer.contactId || null,
+related_type: "offer",
+related_id: offer.id,
+subject,
+status: "sent",
+ai_category: "Angebot"
+}
+])
+.select()
+.single();
+
+if (threadError) {
+throw threadError;
+}
+
+const pdfBuffer = await createOfferPdfBuffer(offer);
+
+const html = `
+<div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #111827;">
+<p>${message.replaceAll("\n", "<br>")}</p>
+
+<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+
+<p style="font-size: 12px; color: #6b7280;">
+Gesendet über WorkPilot
+</p>
+</div>
+`;
+
+const email = await resend.emails.send({
+from: "WorkPilot <mail@workpilot-app.de>",
+to,
+subject,
+html,
+attachments: [
+{
+filename: `Angebot-${offer.offerNumber || offer.id}.pdf`,
+content: pdfBuffer.toString("base64")
+}
+]
+});
+
+await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: thread.id,
+direction: "outbound",
+sender: "mail@workpilot-app.de",
+recipient: to,
+subject,
+body: html,
+message_status: "sent"
+}
+]);
+
+res.json({
+ok: true,
+email
+});
+} catch (error) {
+console.error("SEND OFFER EMAIL ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: "Angebot konnte nicht per E-Mail gesendet werden."
+});
+}
+});
+
 app.post("/api/send-email", async (req, res) => {
 const {
 to,
 subject,
 html,
-threadId
+threadId,
+attachments
 } = req.body;
 
 if (!to || !subject || !html) {
@@ -686,7 +843,9 @@ const email = await resend.emails.send({
 from: "WorkPilot <mail@workpilot-app.de>",
 to,
 subject,
-html
+html,
+
+attachments: attachments || []
 });
 
 if (threadId) {
