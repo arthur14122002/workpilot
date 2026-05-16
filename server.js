@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 const OpenAI = require("openai");
-const PDFDocument = require("pdfkit");
+const puppeteer = require("puppeteer");
 
 const openai = new OpenAI({
 apiKey: process.env.OPENAI_API_KEY
@@ -666,56 +666,38 @@ error: "KI-Analyse konnte nicht erstellt werden."
 }
 });
 
-function createOfferPdfBuffer(offer) {
-return new Promise((resolve, reject) => {
-const doc = new PDFDocument({ size: "A4", margin: 50 });
-const chunks = [];
-
-doc.on("data", (chunk) => chunks.push(chunk));
-doc.on("end", () => resolve(Buffer.concat(chunks)));
-doc.on("error", reject);
-
-doc.fontSize(20).text("Angebot", { align: "right" });
-doc.moveDown();
-
-doc.fontSize(10).text(offer.companySettings?.companyName || "WorkPilot");
-doc.text(offer.companySettings?.street || "");
-doc.text(offer.companySettings?.city || "");
-doc.moveDown();
-
-doc.fontSize(11).text(offer.recipientName || "");
-doc.text(offer.recipientStreet || "");
-doc.text(offer.recipientCity || "");
-doc.moveDown();
-
-doc.text(`Angebotsnummer: ${offer.offerNumber || "-"}`);
-doc.text(`Datum: ${offer.offerDate || "-"}`);
-doc.text(`Gültig bis: ${offer.validUntil || "-"}`);
-doc.moveDown();
-
-doc.fontSize(12).text(offer.introText || "");
-doc.moveDown();
-
-doc.fontSize(12).text("Positionen", { underline: true });
-doc.moveDown(0.5);
-
-(offer.positions || []).forEach((position, index) => {
-doc.fontSize(10).text(`${index + 1}. ${position.description || ""}`);
-doc.text(`Menge: ${position.quantity || "-"} ${position.unit || ""}`);
-doc.text(`Einzelpreis: ${position.unitPrice || "-"} €`);
-doc.text(`Gesamt: ${position.total || "-"} €`);
-doc.moveDown();
+async function createOfferPdfBuffer(offer) {
+const browser = await puppeteer.launch({
+headless: "new",
+args: ["--no-sandbox", "--disable-setuid-sandbox"]
 });
 
-doc.moveDown();
-doc.fontSize(12).text(offer.closingText || "");
-doc.moveDown();
+try {
+const page = await browser.newPage();
 
-doc.text("Mit freundlichen Grüßen");
-doc.text(offer.companySettings?.ownerName || offer.companySettings?.companyName || "");
+const html = renderOfferPdfHtml(offer);
 
-doc.end();
+await page.setContent(html, {
+waitUntil: "networkidle0"
 });
+
+await page.emulateMediaType("screen");
+
+const pdfBuffer = await page.pdf({
+format: "A4",
+printBackground: true,
+margin: {
+top: "0mm",
+right: "0mm",
+bottom: "0mm",
+left: "0mm"
+}
+});
+
+return pdfBuffer;
+} finally {
+await browser.close();
+}
 }
 
 app.post("/api/send-offer-email", async (req, res) => {
@@ -932,6 +914,12 @@ res.sendFile(path.join(__dirname, "public", "html", "offers.html"));
 
 app.get("/offer-editor", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "offer-editor.html"));
+});
+
+app.get("/offer-pdf", (req, res) => {
+res.sendFile(
+path.join(__dirname, "public", "html", "offer-pdf.html")
+);
 });
 
 app.get("/contact-detail", (req, res) => {
