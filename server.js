@@ -27,18 +27,6 @@ console.log("REQUEST:", req.method, req.url);
 next();
 });
 
-app.get("/pdf-test", (req, res) => {
-console.log("PDF TEST ROUTE HIT");
-
-res.send(`
-<html>
-<body data-pdf-ready="true">
-<h1>PDF TEST FUNKTIONIERT</h1>
-</body>
-</html>
-`);
-});
-
 app.get("/api/health/supabase", async (req, res) => {
 const { data, error } = await supabase
 .from("contacts")
@@ -906,23 +894,6 @@ messages: data || []
 });
 });
 
-app.get("/offer-pdf", (req, res) => {
-console.log("OFFER PDF ROUTE HIT:", req.query.id);
-
-res.send(`
-<!DOCTYPE html>
-<html>
-<head>
-<title>Offer PDF Test</title>
-</head>
-<body data-pdf-ready="true">
-<h1>PDF Route funktioniert</h1>
-<p>ID: ${req.query.id || "keine ID"}</p>
-</body>
-</html>
-`);
-});
-
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
@@ -949,11 +920,9 @@ app.get("/offer-editor", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "offer-editor.html"));
 });
 
-/*
 app.get("/offer-pdf", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "offer-pdf.html"));
 });
-*/
 
 app.get("/contact-detail", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "contact-detail.html"));
