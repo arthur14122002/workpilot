@@ -18,7 +18,9 @@ offerDocument.innerHTML = "<p>Angebot konnte nicht geladen werden.</p>";
 return;
 }
 
-const offer = result.offer.data;
+console.log(result);
+
+const offer = result.offer;
 
 offerDocument.innerHTML = `
 <div class="offerPage">
