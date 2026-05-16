@@ -926,7 +926,14 @@ html,
 attachments: [
 {
 filename: `Angebot-${offer.offerNumber || offer.id}.pdf`,
-content: pdfBuffer.toString("base64")
+
+console.log("PDF BUFFER CHECK:", {
+isBuffer: Buffer.isBuffer(pdfBuffer),
+size: pdfBuffer.length,
+header: Buffer.from(pdfBuffer).slice(0, 5).toString()
+});
+
+content:Buffer.from(pdfBuffer).toString("base64")
 }
 ]
 });
