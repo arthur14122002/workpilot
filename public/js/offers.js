@@ -355,3 +355,84 @@ renderOffers();
 showToast(error.message);
 }
 }
+
+sendOfferMailBtn.addEventListener("click", async () => {
+if (!activeOfferForMail) {
+showToast("Kein Angebot ausgewählt.");
+return;
+}
+
+const to = offerMailRecipient.value.trim();
+const subject = offerMailSubject.value.trim();
+const message = offerMailMessage.value.trim();
+
+if (!to || !subject || !message) {
+showToast("Bitte Empfänger, Betreff und Nachricht ausfüllen.");
+return;
+}
+
+sendOfferMailBtn.disabled = true;
+sendOfferMailBtn.textContent = "Wird gesendet...";
+
+try {
+const threadResponse = await fetch("/api/email-threads", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+subject,
+relatedType: "offer",
+relatedId: activeOfferForMail.id,
+status: "sent",
+aiCategory: "Angebot"
+})
+});
+
+const threadResult = await threadResponse.json();
+
+if (!threadResult.ok) {
+throw new Error(threadResult.error || "E-Mail-Verlauf konnte nicht erstellt werden.");
+}
+
+const html = `
+<div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #111827;">
+<p>${message.replaceAll("\n", "<br>")}</p>
+
+<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+
+<p style="font-size: 12px; color: #6b7280;">
+Gesendet über WorkPilot
+</p>
+</div>
+`;
+
+const sendResponse = await fetch("/api/send-email", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+to,
+subject,
+html,
+threadId: threadResult.thread.id
+})
+});
+
+const sendResult = await sendResponse.json();
+
+if (!sendResult.ok) {
+throw new Error(sendResult.error || "E-Mail konnte nicht gesendet werden.");
+}
+
+showToast("Angebot wurde per E-Mail gesendet.");
+offerMailModal.classList.add("hidden");
+
+} catch (error) {
+showToast(error.message);
+} finally {
+sendOfferMailBtn.disabled = false;
+sendOfferMailBtn.textContent = "E-Mail senden";
+}
+});
