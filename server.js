@@ -918,6 +918,12 @@ Gesendet über WorkPilot
 </div>
 `;
 
+console.log("PDF BUFFER CHECK:", {
+isBuffer: Buffer.isBuffer(pdfBuffer),
+size: pdfBuffer.length,
+header: Buffer.from(pdfBuffer).slice(0, 5).toString()
+});
+
 const email = await resend.emails.send({
 from: "WorkPilot <mail@workpilot-app.de>",
 to,
@@ -926,12 +932,6 @@ html,
 attachments: [
 {
 filename: `Angebot-${offer.offerNumber || offer.id}.pdf`,
-
-console.log("PDF BUFFER CHECK:", {
-isBuffer: Buffer.isBuffer(pdfBuffer),
-size: pdfBuffer.length,
-header: Buffer.from(pdfBuffer).slice(0, 5).toString()
-});
 
 content:Buffer.from(pdfBuffer).toString("base64")
 }
