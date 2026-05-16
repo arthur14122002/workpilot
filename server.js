@@ -666,7 +666,7 @@ error: "KI-Analyse konnte nicht erstellt werden."
 }
 });
 
-async function createOfferPdfBuffer(offer) {
+async function createOfferPdfBuffer(offerId) {
 const browser = await puppeteer.launch({
 headless: "new",
 args: ["--no-sandbox", "--disable-setuid-sandbox"]
@@ -675,13 +675,13 @@ args: ["--no-sandbox", "--disable-setuid-sandbox"]
 try {
 const page = await browser.newPage();
 
-const html = renderOfferPdfHtml(offer);
+const baseUrl =
+process.env.PUBLIC_BASE_URL ||
+"https://workpilot-vt1v.onrender.com";
 
-await page.setContent(html, {
+await page.goto(`${baseUrl}/offer-pdf?id=${offerId}`, {
 waitUntil: "networkidle0"
 });
-
-await page.emulateMediaType("screen");
 
 const pdfBuffer = await page.pdf({
 format: "A4",
@@ -748,7 +748,7 @@ if (threadError) {
 throw threadError;
 }
 
-const pdfBuffer = await createOfferPdfBuffer(offer);
+const pdfBuffer = await createOfferPdfBuffer(offer.id);
 
 const html = `
 <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #111827;">
