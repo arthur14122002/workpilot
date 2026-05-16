@@ -683,6 +683,10 @@ await page.goto(`${baseUrl}/offer-pdf?id=${offerId}`, {
 waitUntil: "networkidle0"
 });
 
+await page.waitForSelector("body[data-pdf-ready='true']", {
+timeout: 10000
+});
+
 const pdfBuffer = await page.pdf({
 format: "A4",
 printBackground: true,
