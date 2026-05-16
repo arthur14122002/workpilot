@@ -836,7 +836,8 @@ ${company.ownerName || company.companyName || "WorkPilot"}
 `;
 
 await page.setContent(html, {
-waitUntil: "networkidle0"
+waitUntil: "domcontentloaded",
+timeout: 0
 });
 
 const pdfBuffer = await page.pdf({
