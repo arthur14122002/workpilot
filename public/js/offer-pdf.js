@@ -10,6 +10,8 @@ offerDocument.innerHTML = `
 Angebots-ID fehlt.
 </div>
 `;
+
+document.body.dataset.pdfReady = "true";
 return;
 }
 
@@ -115,15 +117,17 @@ ${offer.closingText || ""}
 `;
 
 document.body.dataset.pdfReady = "true";
-
 } catch (error) {
-console.error(error);
+console.error("OFFER PDF ERROR:", error);
 
 offerDocument.innerHTML = `
 <div class="pdfError">
-PDF konnte nicht geladen werden.
+PDF konnte nicht geladen werden.<br>
+${error.message}
 </div>
 `;
+
+document.body.dataset.pdfReady = "true";
 }
 }
 
