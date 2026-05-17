@@ -697,7 +697,7 @@ error: "KI-Analyse konnte nicht erstellt werden."
 }
 });
 
-async function createOfferPdfBuffer(offer) {
+async function createOfferPdfBuffer(offerId) {
 const browser = await puppeteer.launch({
 headless: "new",
 args: ["--no-sandbox", "--disable-setuid-sandbox"]
@@ -706,172 +706,22 @@ args: ["--no-sandbox", "--disable-setuid-sandbox"]
 try {
 const page = await browser.newPage();
 
-const company = offer.companySettings || {};
-const positions = offer.positions || [];
+const baseUrl =
+process.env.PUBLIC_BASE_URL ||
+"https://workpilot-vt1v.onrender.com";
 
-const positionsHtml = positions
-.map((position, index) => {
-return `
-<tr>
-<td>${index + 1}</td>
-<td>${position.description || ""}</td>
-<td>${position.quantity || ""}</td>
-<td>${position.unit || ""}</td>
-<td>${position.unitPrice || ""} €</td>
-<td>${position.total || ""} €</td>
-</tr>
-`;
-})
-.join("");
-
-const html = `
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8" />
-<style>
-body {
-margin: 0;
-background: white;
-font-family: Arial, sans-serif;
-color: #111827;
-}
-
-.page {
-width: 210mm;
-min-height: 297mm;
-padding: 22mm;
-box-sizing: border-box;
-}
-
-.top {
-display: flex;
-justify-content: space-between;
-gap: 40px;
-margin-bottom: 45px;
-}
-
-.senderSmall {
-font-size: 11px;
-color: #6b7280;
-margin-bottom: 30px;
-}
-
-.recipient {
-font-size: 14px;
-line-height: 1.6;
-}
-
-.meta {
-font-size: 13px;
-line-height: 1.7;
-min-width: 210px;
-}
-
-h1 {
-font-size: 28px;
-margin: 0 0 22px;
-}
-
-.intro,
-.closing {
-font-size: 14px;
-line-height: 1.7;
-margin: 22px 0;
-}
-
-table {
-width: 100%;
-border-collapse: collapse;
-margin-top: 24px;
-font-size: 12px;
-}
-
-th {
-text-align: left;
-border-bottom: 1px solid #d1d5db;
-padding: 8px 6px;
-}
-
-td {
-border-bottom: 1px solid #e5e7eb;
-padding: 8px 6px;
-vertical-align: top;
-}
-
-.footer {
-margin-top: 50px;
-font-size: 13px;
-line-height: 1.6;
-}
-</style>
-</head>
-
-<body>
-<div class="page">
-<div class="top">
-<div>
-<div class="senderSmall">
-${company.companyName || "WorkPilot"}
-</div>
-
-<div class="recipient">
-<div>${offer.recipientName || ""}</div>
-<div>${offer.recipientStreet || ""}</div>
-<div>${offer.recipientCity || ""}</div>
-</div>
-</div>
-
-<div class="meta">
-<strong>Angebot</strong><br><br>
-Angebotsnummer: ${offer.offerNumber || "-"}<br>
-Datum: ${offer.offerDate || "-"}<br>
-Gültig bis: ${offer.validUntil || "-"}
-</div>
-</div>
-
-<h1>Angebot</h1>
-
-<div class="intro">
-${offer.introText || ""}
-</div>
-
-<table>
-<thead>
-<tr>
-<th>Pos.</th>
-<th>Beschreibung</th>
-<th>Menge</th>
-<th>Einheit</th>
-<th>Einzelpreis</th>
-<th>Gesamtpreis</th>
-</tr>
-</thead>
-
-<tbody>
-${positionsHtml}
-</tbody>
-</table>
-
-<div class="closing">
-${offer.closingText || ""}
-</div>
-
-<div class="footer">
-Mit freundlichen Grüßen<br>
-${company.ownerName || company.companyName || "WorkPilot"}
-</div>
-</div>
-</body>
-</html>
-`;
-
-await page.setContent(html, {
+await page.goto(`${baseUrl}/offer-editor?id=${offerId}&pdf=1`, {
 waitUntil: "domcontentloaded",
 timeout: 0
 });
 
-const pdfBuffer = await page.pdf({
+await page.waitForSelector(".offerPage", {
+timeout: 15000
+});
+
+await page.emulateMediaType("screen");
+
+const pdfData = await page.pdf({
 format: "A4",
 printBackground: true,
 margin: {
@@ -882,7 +732,7 @@ left: "0mm"
 }
 });
 
-return pdfBuffer;
+return Buffer.from(pdfData);
 } finally {
 await browser.close();
 }
@@ -936,7 +786,7 @@ if (threadError) {
 throw threadError;
 }
 
-const pdfBuffer = await createOfferPdfBuffer(offer);
+const pdfBuffer = await createOfferPdfBuffer(offer.id);
 
 const html = `
 <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #111827;">
