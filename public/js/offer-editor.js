@@ -546,28 +546,15 @@ text.addEventListener("blur", persistDraft);
 }
 
 async function init() {
-const loaded = await loadData();
-
-if (!loaded) {
-return;
-}
-
+await loadData();
 renderDocument();
-
-const params = new URLSearchParams(window.location.search);
-
-if (params.get("pdf") === "1") {
-document.body.dataset.pdfReady = "true";
-}
 
 addPositionBtn.addEventListener("click", addPosition);
 saveOfferBtn.addEventListener("click", saveOffer);
-
 convertToInvoiceBtn.addEventListener(
 "click",
 convertToInvoice
 );
-
 printBtn.addEventListener("click", () => window.print());
 }
 
