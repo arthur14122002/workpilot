@@ -299,3 +299,42 @@ box-shadow: none !important;
 resize: none;
 }
 }
+
+body.pdfMode .sidebar,
+body.pdfMode .editorToolbar,
+body.pdfMode .pageHeader,
+body.pdfMode .editorActions,
+body.pdfMode #addPositionBtn,
+body.pdfMode #saveOfferBtn,
+body.pdfMode #convertToInvoiceBtn,
+body.pdfMode #printBtn {
+display: none !important;
+}
+
+body.pdfMode .appShell {
+display: block;
+}
+
+body.pdfMode .content {
+padding: 0;
+margin: 0;
+background: #ffffff;
+}
+
+body.pdfMode .offerEditorLayout {
+display: block;
+}
+
+body.pdfMode .offerEditorPanel {
+display: none;
+}
+
+body.pdfMode .offerPreview {
+padding: 0;
+margin: 0;
+background: #ffffff;
+}
+
+body.pdfMode .offerDocument {
+margin: 0 auto;
+}
