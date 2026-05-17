@@ -179,17 +179,48 @@ res.json({ ok: true, offers: data });
 app.get("/api/offers/:id", async (req, res) => {
 const { id } = req.params;
 
-const { data, error } = await supabase
+let { data, error } = await supabase
 .from("offers")
 .select("*")
 .eq("id", id)
-.single();
+.maybeSingle();
 
 if (error) {
-return res.status(500).json({ ok: false, error: error.message });
+return res.status(500).json({
+ok: false,
+error: error.message
+});
 }
 
-res.json({ ok: true, offer: data });
+if (!data) {
+const fallback = await supabase
+.from("offers")
+.select("*")
+.eq("offer_number", id)
+.maybeSingle();
+
+data = fallback.data;
+error = fallback.error;
+}
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+if (!data) {
+return res.status(404).json({
+ok: false,
+error: "Angebot wurde nicht gefunden."
+});
+}
+
+res.json({
+ok: true,
+offer: data
+});
 });
 
 app.post("/api/offers", async (req, res) => {
