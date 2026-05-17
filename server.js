@@ -715,8 +715,8 @@ waitUntil: "domcontentloaded",
 timeout: 0
 });
 
-await page.waitForSelector(".offerPage", {
-timeout: 15000
+await page.waitForSelector("body[data-pdf-ready='true']", {
+timeout: 30000
 });
 
 await page.emulateMediaType("screen");
