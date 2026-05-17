@@ -43,13 +43,56 @@ return fallback;
 }
 }
 
-function loadData() {
-currentDraft = getSavedJson(DRAFT_KEY, null);
+async function loadData() {
+const params = new URLSearchParams(window.location.search);
+
+const offerId = params.get("id");
+const isPdfMode = params.get("pdf") === "1";
+
 companySettings = getSavedJson(SETTINGS_KEY, {});
+
+if (isPdfMode && offerId) {
+
+document.body.classList.add("pdfMode");
+
+try {
+const response = await fetch(`/api/offers/${offerId}`);
+const result = await response.json();
+
+if (!result.ok || !result.offer) {
+throw new Error("Angebot konnte nicht geladen werden.");
+}
+
+const offerRow = result.offer;
+
+currentDraft = {
+...offerRow.data,
+id: offerRow.id,
+contactId: offerRow.contact_id,
+status: offerRow.status,
+offerNumber: offerRow.offer_number
+};
+
+} catch (error) {
+console.error(error);
+
+document.body.innerHTML = `
+<div style="padding:40px;font-family:Arial;">
+PDF-Angebot konnte nicht geladen werden.
+</div>
+`;
+
+return;
+}
+
+} else {
+
+currentDraft = getSavedJson(DRAFT_KEY, null);
 
 if (!currentDraft) {
 window.location.href = "/offer-create";
 return;
+}
 }
 
 if (!currentDraft.positions || !Array.isArray(currentDraft.positions)) {
@@ -502,8 +545,8 @@ text.addEventListener("blur", persistDraft);
 });
 }
 
-function init() {
-loadData();
+async function init() {
+await loadData();
 renderDocument();
 
 addPositionBtn.addEventListener("click", addPosition);
