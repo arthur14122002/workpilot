@@ -549,6 +549,12 @@ async function init() {
 await loadData();
 renderDocument();
 
+const params = new URLSearchParams(window.location.search);
+
+if (params.get("pdf") === "1") {
+document.body.dataset.pdfReady = "true";
+}
+
 addPositionBtn.addEventListener("click", addPosition);
 saveOfferBtn.addEventListener("click", saveOffer);
 convertToInvoiceBtn.addEventListener(
