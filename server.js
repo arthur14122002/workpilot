@@ -710,7 +710,10 @@ const baseUrl =
 process.env.PUBLIC_BASE_URL ||
 "https://workpilot-vt1v.onrender.com";
 
-await page.goto(`${baseUrl}/offer-editor?id=${offerId}&pdf=1`, {
+const pdfUrl = `${baseUrl}/offer-editor?id=${offerId}&pdf=1`;
+console.log("PDF URL:", pdfUrl);
+
+await page.goto(pdfUrl, {
 waitUntil: "domcontentloaded",
 timeout: 20000
 });
