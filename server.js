@@ -712,17 +712,14 @@ process.env.PUBLIC_BASE_URL ||
 
 await page.goto(`${baseUrl}/offer-editor?id=${offerId}&pdf=1`, {
 waitUntil: "domcontentloaded",
-timeout: 10000
+timeout: 20000
 });
 
-await page.waitForFunction(() => {
-const page = document.querySelector(".offerPage");
-const documentEl = document.querySelector("#offerDocument");
-
-return page && documentEl && documentEl.innerText.trim().length > 20;
-}, {
-timeout: 8000
+await page.waitForSelector("#offerDocument .offerPage", {
+timeout: 20000
 });
+
+await new Promise((resolve) => setTimeout(resolve, 1000));
 
 await page.emulateMediaType("screen");
 
