@@ -94,7 +94,14 @@ ${renderContactOptions(invoice.contactId)}
 </select>
 
 <button class="btn btnSecondary" data-open="${invoice.id}">Öffnen</button>
-<button class="btn btnSecondary" data-delete="${invoice.id}">Löschen</button>
+
+<button class="btn btnPrimary sendBtn" data-send="${invoice.id}">
+Senden
+</button>
+
+<button class="btn btnSecondary" data-delete="${invoice.id}">
+Löschen
+</button>
 </div>
 `;
 
@@ -205,6 +212,62 @@ showToast(error.message);
 }
 }
 
+async function sendInvoice(event) {
+const invoiceId = event.target.dataset.send;
+
+try {
+const invoices = await apiGetInvoices();
+
+const invoice = invoices.find(
+(entry) => entry.id === invoiceId
+);
+
+if (!invoice) {
+showToast("Rechnung wurde nicht gefunden.");
+return;
+}
+
+const recipient = prompt(
+"E-Mail-Adresse des Empfängers:",
+invoice.recipientEmail || ""
+);
+
+if (!recipient) return;
+
+event.target.disabled = true;
+event.target.textContent = "Wird gesendet...";
+
+const response = await fetch("/api/send-invoice-email", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+invoiceId,
+to: recipient,
+subject: `Rechnung ${invoice.invoiceNumber || ""}`,
+message:
+"Guten Tag,\n\nanbei erhalten Sie Ihre Rechnung als PDF.\n\nMit freundlichen Grüßen\nWorkPilot"
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(
+result.error || "Rechnung konnte nicht gesendet werden."
+);
+}
+
+showToast("Rechnung wurde erfolgreich gesendet.");
+} catch (error) {
+showToast(error.message);
+} finally {
+event.target.disabled = false;
+event.target.textContent = "Senden";
+}
+}
+
 function getInvoiceStatusLabel(status) {
 const labels = {
 open: "Offen",
@@ -246,6 +309,10 @@ button.addEventListener("click", openInvoice);
 
 document.querySelectorAll("[data-delete]").forEach((button) => {
 button.addEventListener("click", deleteInvoice);
+});
+
+document.querySelectorAll("[data-send]").forEach((button) => {
+button.addEventListener("click", sendInvoice);
 });
 
 document.querySelectorAll("[data-status]").forEach((select) => {

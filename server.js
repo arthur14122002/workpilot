@@ -739,6 +739,47 @@ await browser.close();
 }
 }
 
+async function createInvoicePdfBuffer(invoiceId, baseUrl) {
+const browser = await puppeteer.launch({
+headless: "new",
+args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
+
+try {
+const page = await browser.newPage();
+
+const pdfUrl = `${baseUrl}/invoice-editor?id=${invoiceId}&pdf=1`;
+
+console.log("INVOICE PDF URL:", pdfUrl);
+
+await page.goto(pdfUrl, {
+waitUntil: "domcontentloaded",
+timeout: 10000
+});
+
+await page.waitForSelector("#offerDocument .offerPage", {
+timeout: 20000
+});
+
+await page.emulateMediaType("screen");
+
+const pdfData = await page.pdf({
+format: "A4",
+printBackground: true,
+margin: {
+top: "0mm",
+right: "0mm",
+bottom: "0mm",
+left: "0mm"
+}
+});
+
+return Buffer.from(pdfData);
+} finally {
+await browser.close();
+}
+}
+
 app.post("/api/send-offer-email", async (req, res) => {
 const { offerId, to, subject, message } = req.body;
 
@@ -846,6 +887,110 @@ console.error("SEND OFFER EMAIL ERROR:", error);
 res.status(500).json({
 ok: false,
 error: "Angebot konnte nicht per E-Mail gesendet werden."
+});
+}
+});
+
+app.post("/api/send-invoice-email", async (req, res) => {
+const { invoiceId, to, subject, message } = req.body;
+
+if (!invoiceId || !to || !subject || !message) {
+return res.status(400).json({
+ok: false,
+error: "Fehlende Daten für den Rechnungsversand."
+});
+}
+
+try {
+const { data: invoiceRow, error: invoiceError } = await supabase
+.from("invoices")
+.select("*")
+.eq("id", invoiceId)
+.single();
+
+if (invoiceError) {
+throw invoiceError;
+}
+
+const invoice = {
+...invoiceRow.data,
+id: invoiceRow.id,
+contactId: invoiceRow.contact_id,
+status: invoiceRow.status,
+invoiceNumber: invoiceRow.invoice_number
+};
+
+const { data: thread, error: threadError } = await supabase
+.from("email_threads")
+.insert([
+{
+contact_id: invoice.contactId || null,
+related_type: "invoice",
+related_id: invoice.id,
+subject,
+status: "sent",
+ai_category: "Rechnung"
+}
+])
+.select()
+.single();
+
+if (threadError) {
+throw threadError;
+}
+
+const baseUrl = `${req.protocol}://${req.get("host")}`;
+const pdfBuffer = await createInvoicePdfBuffer(invoice.id, baseUrl);
+
+const html = `
+<div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #111827;">
+<p>${message.replaceAll("\n", "<br>")}</p>
+
+<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+
+<p style="font-size: 12px; color: #6b7280;">
+Gesendet über WorkPilot
+</p>
+</div>
+`;
+
+const email = await resend.emails.send({
+from: "WorkPilot <mail@workpilot-app.de>",
+to,
+subject,
+html,
+attachments: [
+{
+filename: `Rechnung-${invoice.invoiceNumber || invoice.id}.pdf`,
+content: Buffer.from(pdfBuffer).toString("base64")
+}
+]
+});
+
+await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: thread.id,
+direction: "outbound",
+sender: "mail@workpilot-app.de",
+recipient: to,
+subject,
+body: html,
+message_status: "sent"
+}
+]);
+
+res.json({
+ok: true,
+email
+});
+} catch (error) {
+console.error("SEND INVOICE EMAIL ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: "Rechnung konnte nicht per E-Mail gesendet werden."
 });
 }
 });
