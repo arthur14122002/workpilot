@@ -502,22 +502,25 @@ text.addEventListener("blur", persistDraft);
 }
 
 async function init() {
-await loadData();
-renderDocument();
-
 const params = new URLSearchParams(window.location.search);
 const isPdfMode = params.get("pdf") === "1";
 
 if (isPdfMode) {
 document.body.classList.add("pdfMode");
+}
+
+await loadData();
+renderDocument();
+
+if (isPdfMode) {
 return;
 }
 
 addPositionBtn.addEventListener("click", addPosition);
+
 saveOfferBtn.addEventListener("click", async () => {
 await saveOffer();
 });
+
 printBtn.addEventListener("click", () => window.print());
 }
-
-document.addEventListener("DOMContentLoaded", init);
