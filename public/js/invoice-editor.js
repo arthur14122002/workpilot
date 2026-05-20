@@ -423,6 +423,9 @@ localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 
 async function saveOffer() {
 persistDraft();
+
+const isExistingInvoice = Boolean(currentDraft.id);
+
 ensureInvoiceId();
 
 const saved = {
@@ -431,18 +434,16 @@ companySettings,
 savedAt: new Date().toISOString()
 };
 
-const method = currentDraft.id ? "PUT" : "POST";
-const url = currentDraft.id
-? `/api/invoices/${currentDraft.id}`
-: "/api/invoices";
-
-const response = await fetch(url, {
-method,
+const response = await fetch(
+isExistingInvoice ? `/api/invoices/${currentDraft.id}` : "/api/invoices",
+{
+method: isExistingInvoice ? "PUT" : "POST",
 headers: {
 "Content-Type": "application/json"
 },
 body: JSON.stringify(saved)
-});
+}
+);
 
 const result = await response.json();
 
@@ -452,7 +453,7 @@ return;
 }
 
 currentDraft = {
-...saved,
+...result.invoice.data,
 id: result.invoice.id,
 contactId: result.invoice.contact_id,
 status: result.invoice.status,
