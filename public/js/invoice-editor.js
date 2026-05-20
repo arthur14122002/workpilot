@@ -510,6 +510,11 @@ document.body.classList.add("pdfMode");
 }
 
 await loadData();
+
+if (!currentDraft) {
+return;
+}
+
 renderDocument();
 
 if (isPdfMode) {
