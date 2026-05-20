@@ -69,6 +69,37 @@ Später können Rechnungen automatisch aus Angeboten erstellt werden.
 </main>
 </div>
 
+<div id="invoiceMailModal" class="modalOverlay hidden">
+<div class="modalCard offerMailModalCard">
+
+<div class="modalHeader">
+<h2>Rechnung per E-Mail senden</h2>
+
+<button id="closeInvoiceMailModal" class="iconButton">
+✕
+</button>
+</div>
+
+<div class="modalBody">
+<label class="fieldLabel">Empfänger</label>
+<input id="invoiceMailRecipient" class="textInput" type="email" placeholder="kunde@example.com" />
+
+<label class="fieldLabel">Betreff</label>
+<input id="invoiceMailSubject" class="textInput" type="text" />
+
+<label class="fieldLabel">Nachricht</label>
+<textarea id="invoiceMailMessage" class="textArea"></textarea>
+</div>
+
+<div class="modalActions">
+<button id="sendInvoiceMailBtn" class="btn btnPrimary">
+E-Mail senden
+</button>
+</div>
+
+</div>
+</div>
+
 <script src="/js/app-layout.js"></script>
 <script src="/js/invoices.js"></script>
 </body>

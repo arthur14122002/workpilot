@@ -299,3 +299,22 @@ box-shadow: none !important;
 resize: none;
 }
 }
+
+body.pdfMode .sidebar,
+body.pdfMode .pageHeader,
+body.pdfMode .editorActions {
+display: none !important;
+}
+
+body.pdfMode .appShell {
+display: block !important;
+}
+
+body.pdfMode .content {
+padding: 0 !important;
+margin: 0 !important;
+}
+
+body.pdfMode #offerDocument {
+margin: 0 !important;
+}

@@ -5,6 +5,45 @@ const DRAFT_KEY = "workpilot_current_invoice_draft";
 const invoicesList = document.getElementById("invoicesList");
 const emptyInvoices = document.getElementById("emptyInvoices");
 
+const invoiceMailModal = document.getElementById("invoiceMailModal");
+const closeInvoiceMailModal = document.getElementById("closeInvoiceMailModal");
+const invoiceMailRecipient = document.getElementById("invoiceMailRecipient");
+const invoiceMailSubject = document.getElementById("invoiceMailSubject");
+const invoiceMailMessage = document.getElementById("invoiceMailMessage");
+const sendInvoiceMailBtn = document.getElementById("sendInvoiceMailBtn");
+
+let activeInvoiceForMail = null;
+
+async function openInvoiceMailModal(invoiceId) {
+const invoices = await apiGetInvoices();
+
+const invoice = invoices.find((entry) => entry.id === invoiceId);
+
+if (!invoice) {
+showToast("Rechnung wurde nicht gefunden.");
+return;
+}
+
+activeInvoiceForMail = invoice;
+
+invoiceMailRecipient.value = invoice.recipientEmail || "";
+
+invoiceMailSubject.value = `Rechnung ${invoice.invoiceNumber || ""}`;
+
+invoiceMailMessage.value =
+`Hallo ${invoice.recipientName || ""},
+
+anbei erhalten Sie unsere Rechnung.
+
+Bitte überweisen Sie den Rechnungsbetrag innerhalb des angegebenen Zahlungsziels.
+
+Mit freundlichen Grüßen
+${invoice.companyName || "WorkPilot"}
+`;
+
+invoiceMailModal.classList.remove("hidden");
+}
+
 function getSavedJson(key, fallback = []) {
 try {
 return JSON.parse(localStorage.getItem(key)) || fallback;
@@ -312,7 +351,9 @@ button.addEventListener("click", deleteInvoice);
 });
 
 document.querySelectorAll("[data-send]").forEach((button) => {
-button.addEventListener("click", sendInvoice);
+button.addEventListener("click", () => {
+openInvoiceMailModal(button.dataset.send);
+});
 });
 
 document.querySelectorAll("[data-status]").forEach((select) => {
@@ -325,3 +366,56 @@ select.addEventListener("change", assignContact);
 }
 
 document.addEventListener("DOMContentLoaded", renderInvoices);
+
+closeInvoiceMailModal.addEventListener("click", () => {
+invoiceMailModal.classList.add("hidden");
+});
+
+sendInvoiceMailBtn.addEventListener("click", async () => {
+if (!activeInvoiceForMail) {
+showToast("Keine Rechnung ausgewählt.");
+return;
+}
+
+const to = invoiceMailRecipient.value.trim();
+const subject = invoiceMailSubject.value.trim();
+const message = invoiceMailMessage.value.trim();
+
+if (!to || !subject || !message) {
+showToast("Bitte Empfänger, Betreff und Nachricht ausfüllen.");
+return;
+}
+
+sendInvoiceMailBtn.disabled = true;
+sendInvoiceMailBtn.textContent = "Wird gesendet...";
+
+try {
+const response = await fetch("/api/send-invoice-email", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+invoiceId: activeInvoiceForMail.id,
+to,
+subject,
+message
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Rechnung konnte nicht gesendet werden.");
+}
+
+showToast("Rechnung wurde per E-Mail gesendet.");
+invoiceMailModal.classList.add("hidden");
+
+} catch (error) {
+showToast(error.message);
+} finally {
+sendInvoiceMailBtn.disabled = false;
+sendInvoiceMailBtn.textContent = "E-Mail senden";
+}
+});
