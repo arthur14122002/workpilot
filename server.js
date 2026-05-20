@@ -850,6 +850,10 @@ error: "Angebot konnte nicht per E-Mail gesendet werden."
 }
 });
 
+app.post("/api/send-invoice-email", async (req, res) => {
+// invoiceId, to, subject, message
+});
+
 app.post("/api/send-email", async (req, res) => {
 const {
 to,

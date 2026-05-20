@@ -41,9 +41,37 @@ return fallback;
 }
 }
 
-function loadData() {
-currentDraft = getSavedJson(DRAFT_KEY, null);
+async function loadData() {
+const params = new URLSearchParams(window.location.search);
+const invoiceId = params.get("id");
+
 companySettings = getSavedJson(SETTINGS_KEY, {});
+
+if (invoiceId) {
+const response = await fetch(`/api/invoices/${invoiceId}`);
+const result = await response.json();
+
+if (!result.ok || !result.invoice) {
+document.body.innerHTML = "PDF-Rechnung konnte nicht geladen werden.";
+throw new Error("Rechnung konnte nicht geladen werden.");
+}
+
+const invoiceRow = result.invoice;
+
+currentDraft = {
+...invoiceRow.data,
+id: invoiceRow.id,
+contactId: invoiceRow.contact_id,
+status: invoiceRow.status,
+invoiceNumber: invoiceRow.invoice_number
+};
+
+if (currentDraft.companySettings) {
+companySettings = currentDraft.companySettings;
+}
+} else {
+currentDraft = getSavedJson(DRAFT_KEY, null);
+}
 
 if (!currentDraft) {
 window.location.href = "/invoice-create";
@@ -442,9 +470,17 @@ text.addEventListener("blur", persistDraft);
 });
 }
 
-function init() {
-loadData();
+async function init() {
+await loadData();
 renderDocument();
+
+const params = new URLSearchParams(window.location.search);
+const isPdfMode = params.get("pdf") === "1";
+
+if (isPdfMode) {
+document.body.classList.add("pdfMode");
+return;
+}
 
 addPositionBtn.addEventListener("click", addPosition);
 saveOfferBtn.addEventListener("click", saveOffer);

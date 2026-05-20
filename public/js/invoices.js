@@ -186,7 +186,7 @@ return;
 }
 
 localStorage.setItem(DRAFT_KEY, JSON.stringify(invoice));
-window.location.href = "/invoice-editor";
+window.location.href = `/invoice-editor?id=${invoiceId}`;
 } catch (error) {
 showToast(error.message);
 }
