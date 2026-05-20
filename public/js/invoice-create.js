@@ -63,7 +63,7 @@ total: ""
 }));
 }
 
-function createInvoiceDraft(event) {
+async function createInvoiceDraft(event) {
 event.preventDefault();
 
 const today = new Date();
@@ -96,11 +96,30 @@ positions: buildPositionsFromPoints(collectInvoicePoints())
 
 localStorage.setItem(INVOICE_DRAFT_KEY, JSON.stringify(draft));
 
+try {
+const response = await fetch("/api/invoices", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify(draft)
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Rechnung konnte nicht gespeichert werden.");
+}
+
 showToast("Rechnung wird vorbereitet.");
 
 setTimeout(() => {
-window.location.href = `/invoice-editor?id=${invoiceId}`;
+window.location.href = `/invoice-editor?id=${result.invoice.id}`;
 }, 500);
+
+} catch (error) {
+showToast(error.message);
+}
 }
 
 invoiceCreateForm.addEventListener("submit", createInvoiceDraft);
