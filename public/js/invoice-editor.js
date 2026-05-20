@@ -397,6 +397,14 @@ persistDraft();
 renderDocument();
 }
 
+function ensureInvoiceId() {
+if (!currentDraft.id) {
+currentDraft.id =
+crypto.randomUUID?.() ||
+`invoice-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+}
+
 function addPosition() {
 currentDraft.positions.push(createEmptyPosition());
 persistDraft();
@@ -413,10 +421,9 @@ if (closing) currentDraft.closingText = closing.textContent.trim();
 localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 }
 
-function saveOffer() {
+async function saveOffer() {
 persistDraft();
-
-const savedOffers = getSavedJson(SAVED_KEY, []);
+ensureInvoiceId();
 
 const saved = {
 ...currentDraft,
@@ -424,17 +431,35 @@ companySettings,
 savedAt: new Date().toISOString()
 };
 
-const existingIndex = savedOffers.findIndex(
-(offer) => offer.id === currentDraft.id
-);
+const method = currentDraft.id ? "PUT" : "POST";
+const url = currentDraft.id
+? `/api/invoices/${currentDraft.id}`
+: "/api/invoices";
 
-if (existingIndex !== -1) {
-savedOffers[existingIndex] = saved;
-} else {
-savedOffers.unshift(saved);
+const response = await fetch(url, {
+method,
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify(saved)
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+showToast(result.error || "Rechnung konnte nicht gespeichert werden.");
+return;
 }
 
-localStorage.setItem(SAVED_KEY, JSON.stringify(savedOffers));
+currentDraft = {
+...saved,
+id: result.invoice.id,
+contactId: result.invoice.contact_id,
+status: result.invoice.status,
+invoiceNumber: result.invoice.invoice_number
+};
+
+localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 
 showToast("Rechnung wurde gespeichert.");
 }
@@ -483,7 +508,9 @@ return;
 }
 
 addPositionBtn.addEventListener("click", addPosition);
-saveOfferBtn.addEventListener("click", saveOffer);
+saveOfferBtn.addEventListener("click", async () => {
+await saveOffer();
+});
 printBtn.addEventListener("click", () => window.print());
 }
 
