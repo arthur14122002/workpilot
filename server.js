@@ -963,10 +963,6 @@ app.get("/offer-editor", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "offer-editor.html"));
 });
 
-app.get("/offer-pdf", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "offer-pdf.html"));
-});
-
 app.get("/contact-detail", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "contact-detail.html"));
 });
