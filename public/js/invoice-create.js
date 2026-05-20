@@ -99,7 +99,7 @@ localStorage.setItem(INVOICE_DRAFT_KEY, JSON.stringify(draft));
 showToast("Rechnung wird vorbereitet.");
 
 setTimeout(() => {
-window.location.href = "/invoice-editor";
+window.location.href = `/invoice-editor?id=${invoiceId}`;
 }, 500);
 }
 
