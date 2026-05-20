@@ -6,6 +6,7 @@ const CONTACTS_KEY = "workpilot_contacts";
 let currentDraft = null;
 let companySettings = null;
 let renderTimer = null;
+let loadedFromDatabase = false;
 
 const offerDocument = document.getElementById("offerDocument");
 const addPositionBtn = document.getElementById("addPositionBtn");
@@ -65,6 +66,8 @@ contactId: invoiceRow.contact_id,
 status: invoiceRow.status,
 invoiceNumber: invoiceRow.invoice_number
 };
+
+loadedFromDatabase = true;
 
 if (currentDraft.companySettings) {
 companySettings = currentDraft.companySettings;
@@ -424,7 +427,7 @@ localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 async function saveOffer() {
 persistDraft();
 
-const isExistingInvoice = Boolean(currentDraft.id);
+const isExistingInvoice = loadedFromDatabase;
 
 ensureInvoiceId();
 
@@ -459,6 +462,8 @@ contactId: result.invoice.contact_id,
 status: result.invoice.status,
 invoiceNumber: result.invoice.invoice_number
 };
+
+loadedFromDatabase = true;
 
 localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 
