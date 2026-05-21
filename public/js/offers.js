@@ -178,10 +178,10 @@ ${renderContactOptions(offer.contactId)}
 
 <button class="btn btnSecondary" data-open="${offer.id}">Öffnen</button>
 <button
-class="btn btnSecondary sendOfferMailBtn"
+class="btn btnPrimary sendOfferMailBtn"
 data-offer-id="${offer.id}"
 >
-Per E-Mail senden
+Senden
 </button>
 <button class="btn btnSecondary" data-delete="${offer.id}">Löschen</button>
 </div>
