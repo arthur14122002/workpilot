@@ -529,3 +529,5 @@ await saveOffer();
 
 printBtn.addEventListener("click", () => window.print());
 }
+
+document.addEventListener("DOMContentLoaded", init);
