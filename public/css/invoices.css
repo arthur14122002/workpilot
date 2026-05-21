@@ -134,3 +134,89 @@ box-shadow: 0 25px 60px rgba(0,0,0,0.18);
 .hidden {
 display: none !important;
 }
+
+.modalOverlay {
+position: fixed;
+inset: 0;
+z-index: 9999;
+background: rgba(15, 23, 42, 0.35);
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 24px;
+}
+
+.modalOverlay.hidden {
+display: none !important;
+}
+
+.offerMailModalCard {
+width: min(680px, 92vw);
+}
+
+.modalCard {
+background: #fff;
+border-radius: 24px;
+padding: 24px;
+box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+}
+
+.modalHeader {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 16px;
+}
+
+.modalBody {
+display: flex;
+flex-direction: column;
+gap: 14px;
+margin-top: 18px;
+}
+
+.iconButton {
+border: none;
+background: #f3f4f6;
+border-radius: 999px;
+width: 34px;
+height: 34px;
+cursor: pointer;
+font-size: 16px;
+}
+
+.modalActions {
+display: flex;
+justify-content: flex-end;
+margin-top: 18px;
+}
+
+.fieldLabel {
+font-size: 13px;
+font-weight: 700;
+color: #444;
+}
+
+.textInput,
+.textArea {
+width: 100%;
+border: 1px solid #ddd;
+border-radius: 14px;
+padding: 12px 14px;
+font: inherit;
+outline: none;
+}
+
+.textArea {
+min-height: 180px;
+resize: vertical;
+}
+
+.textInput:focus,
+.textArea:focus {
+border-color: #fdba74;
+}
+
+.hidden {
+display: none !important;
+}
