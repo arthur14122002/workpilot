@@ -468,6 +468,10 @@ loadedFromDatabase = true;
 localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 
 showToast("Rechnung wurde gespeichert.");
+
+setTimeout(() => {
+window.location.href = "/invoices";
+}, 500);
 }
 
 function bindEvents() {

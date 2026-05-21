@@ -107,3 +107,30 @@ font-weight: 700;
 .statusSelect {
 min-width: 140px;
 }
+
+.modalOverlay {
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.45);
+
+display: flex;
+align-items: center;
+justify-content: center;
+
+z-index: 1000;
+}
+
+.modalCard {
+width: 100%;
+max-width: 640px;
+
+background: #fff;
+border-radius: 24px;
+padding: 28px;
+
+box-shadow: 0 25px 60px rgba(0,0,0,0.18);
+}
+
+.hidden {
+display: none !important;
+}
