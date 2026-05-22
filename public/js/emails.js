@@ -130,6 +130,16 @@ entry.classList.remove("selected");
 item.classList.add("selected");
 item.classList.remove("unread");
 
+if (isUnread(message)) {
+try {
+await markMessageAsRead(message.id);
+message.read_at = new Date().toISOString();
+updateFolderCounts();
+} catch (error) {
+console.error(error);
+}
+}
+
 await openMailDetail(message);
 });
 
@@ -160,6 +170,20 @@ ${stripHtml(message.body || "").slice(0, 120) || "Keine Vorschau verfügbar"}
 
 emailThreadsList.appendChild(item);
 });
+}
+
+async function markMessageAsRead(messageId) {
+const response = await fetch(`/api/email-messages/${messageId}/read`, {
+method: "PUT"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht als gelesen markiert werden.");
+}
+
+return result.message;
 }
 
 function stripHtml(value) {
