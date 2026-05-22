@@ -110,5 +110,78 @@ E-Mail auswählen
 
 <script src="/js/app-layout.js"></script>
 <script src="/js/emails.js"></script>
+
+<div id="composeMailModal" class="modalOverlay hidden">
+<div class="modalCard offerMailModalCard">
+
+<div class="modalHeader">
+<div>
+<h3>Neue E-Mail</h3>
+<p>E-Mail schreiben und versenden.</p>
+</div>
+
+<button
+id="closeComposeMailBtn"
+class="iconButton"
+>
+✕
+</button>
+</div>
+
+<div class="modalBody">
+
+<div>
+<div class="fieldLabel">Empfänger</div>
+
+<input
+id="composeRecipient"
+class="textInput"
+placeholder="kunde@example.com"
+/>
+</div>
+
+<div>
+<div class="fieldLabel">Betreff</div>
+
+<input
+id="composeSubject"
+class="textInput"
+placeholder="Betreff"
+/>
+</div>
+
+<div>
+<div class="fieldLabel">Nachricht</div>
+
+<textarea
+id="composeBody"
+class="textArea"
+placeholder="Nachricht schreiben..."
+></textarea>
+</div>
+
+<div>
+<button
+id="addAttachmentBtn"
+class="btn btnSecondary"
+>
+📎 Anhänge hinzufügen
+</button>
+</div>
+
+</div>
+
+<div class="modalActions">
+<button
+id="sendComposeMailBtn"
+class="btn btnPrimary"
+>
+Senden
+</button>
+</div>
+
+</div>
+</div>
+
 </body>
 </html>
