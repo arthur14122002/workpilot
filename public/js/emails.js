@@ -101,6 +101,18 @@ throw new Error(result.error || "E-Mail konnte nicht gelöscht werden.");
 return result.message;
 }
 
+async function deleteMessageForever(messageId) {
+const response = await fetch(`/api/email-messages/${messageId}`, {
+method: "DELETE"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht gelöscht werden.");
+}
+}
+
 async function renderEmails() {
 emailThreadsList.innerHTML = "";
 
@@ -192,9 +204,18 @@ deleteButton.addEventListener("click", async (event) => {
 event.stopPropagation();
 
 try {
+if (activeFolder === "trash") {
+
+await deleteMessageForever(message.id);
+
+showToast("E-Mail wurde endgültig gelöscht.");
+
+} else {
+
 await moveMessageToTrash(message.id);
 
 showToast("E-Mail wurde in den Papierkorb verschoben.");
+}
 
 if (activeMessageId === message.id) {
 activeMessageId = null;

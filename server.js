@@ -747,6 +747,26 @@ error: "KI-Analyse konnte nicht erstellt werden."
 }
 });
 
+app.delete("/api/email-messages/:id", async (req, res) => {
+const { id } = req.params;
+
+const { error } = await supabase
+.from("email_messages")
+.delete()
+.eq("id", id);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true
+});
+});
+
 async function createOfferPdfBuffer(offerId, baseUrl) {
 const browser = await puppeteer.launch({
 headless: "new",
