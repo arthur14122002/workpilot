@@ -269,32 +269,6 @@ showToast(error.message);
 });
 }
 
-try {
-if (activeFolder === "trash") {
-
-await deleteMessageForever(message.id);
-
-showToast("E-Mail wurde endgültig gelöscht.");
-
-} else {
-
-await moveMessageToTrash(message.id);
-
-showToast("E-Mail wurde in den Papierkorb verschoben.");
-}
-
-if (activeMessageId === message.id) {
-activeMessageId = null;
-mailDetailView.classList.add("hidden");
-emptyMailState.classList.remove("hidden");
-}
-
-await renderEmails();
-} catch (error) {
-showToast(error.message);
-}
-});
-
 emailThreadsList.appendChild(item);
 });
 }
