@@ -8,7 +8,7 @@ const currentFolderTitle = document.getElementById("currentFolderTitle");
 const currentFolderSubtitle = document.getElementById("currentFolderSubtitle");
 
 const composeMailModal = document.getElementById("composeMailModal");
-const newMailBtn = document.getElementById("composeMailBtn");
+const newMailBtn = document.getElementById("newMailBtn");
 const closeComposeMailBtn = document.getElementById("closeComposeMailBtn");
 
 const composeRecipient = document.getElementById("composeRecipient");
