@@ -163,28 +163,6 @@ message.email_threads?.subject ||
 "Ohne Betreff";
 
 item.innerHTML = `
-const deleteButton = item.querySelector(".mailRowDeleteBtn");
-
-deleteButton.addEventListener("click", async (event) => {
-event.stopPropagation();
-
-try {
-await moveMessageToTrash(message.id);
-
-showToast("E-Mail wurde in den Papierkorb verschoben.");
-
-if (activeMessageId === message.id) {
-activeMessageId = null;
-mailDetailView.classList.add("hidden");
-emptyMailState.classList.remove("hidden");
-}
-
-await renderEmails();
-} catch (error) {
-showToast(error.message);
-}
-});
-
 <div class="threadTop">
 <div class="threadSender">
 ${message.direction === "outbound" ? message.recipient || "Unbekannt" : message.sender || "Unbekannt"}
@@ -207,6 +185,28 @@ ${stripHtml(message.body || "").slice(0, 120) || "Keine Vorschau verfügbar"}
 🗑
 </button>
 `;
+
+const deleteButton = item.querySelector(".mailRowDeleteBtn");
+
+deleteButton.addEventListener("click", async (event) => {
+event.stopPropagation();
+
+try {
+await moveMessageToTrash(message.id);
+
+showToast("E-Mail wurde in den Papierkorb verschoben.");
+
+if (activeMessageId === message.id) {
+activeMessageId = null;
+mailDetailView.classList.add("hidden");
+emptyMailState.classList.remove("hidden");
+}
+
+await renderEmails();
+} catch (error) {
+showToast(error.message);
+}
+});
 
 emailThreadsList.appendChild(item);
 });
