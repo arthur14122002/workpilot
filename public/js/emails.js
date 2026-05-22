@@ -87,6 +87,20 @@ throw new Error(result.error || "E-Mails konnten nicht geladen werden.");
 return result.messages || [];
 }
 
+async function moveMessageToTrash(messageId) {
+const response = await fetch(`/api/email-messages/${messageId}/trash`, {
+method: "PUT"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht gelöscht werden.");
+}
+
+return result.message;
+}
+
 async function renderEmails() {
 emailThreadsList.innerHTML = "";
 
@@ -149,6 +163,28 @@ message.email_threads?.subject ||
 "Ohne Betreff";
 
 item.innerHTML = `
+const deleteButton = item.querySelector(".mailRowDeleteBtn");
+
+deleteButton.addEventListener("click", async (event) => {
+event.stopPropagation();
+
+try {
+await moveMessageToTrash(message.id);
+
+showToast("E-Mail wurde in den Papierkorb verschoben.");
+
+if (activeMessageId === message.id) {
+activeMessageId = null;
+mailDetailView.classList.add("hidden");
+emptyMailState.classList.remove("hidden");
+}
+
+await renderEmails();
+} catch (error) {
+showToast(error.message);
+}
+});
+
 <div class="threadTop">
 <div class="threadSender">
 ${message.direction === "outbound" ? message.recipient || "Unbekannt" : message.sender || "Unbekannt"}
@@ -166,6 +202,10 @@ ${subject}
 <div class="threadPreview">
 ${stripHtml(message.body || "").slice(0, 120) || "Keine Vorschau verfügbar"}
 </div>
+
+<button class="mailRowDeleteBtn" data-delete-mail="${message.id}" title="Löschen">
+🗑
+</button>
 `;
 
 emailThreadsList.appendChild(item);

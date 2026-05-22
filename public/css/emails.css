@@ -333,3 +333,28 @@ height: auto;
 min-height: 260px;
 }
 }
+
+.mailRowDeleteBtn {
+position: absolute;
+right: 12px;
+bottom: 12px;
+width: 32px;
+height: 32px;
+border: none;
+border-radius: 999px;
+background: #fff;
+box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+cursor: pointer;
+opacity: 0;
+pointer-events: none;
+transition: 0.16s ease;
+}
+
+.emailThreadItem:hover .mailRowDeleteBtn {
+opacity: 1;
+pointer-events: auto;
+}
+
+.mailRowDeleteBtn:hover {
+background: var(--wp-orange-soft);
+}

@@ -611,6 +611,31 @@ message: data
 });
 });
 
+app.put("/api/email-messages/:id/trash", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("email_messages")
+.update({
+deleted_at: new Date().toISOString()
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+message: data
+});
+});
+
 app.post("/api/email-reply", async (req, res) => {
 const { threadId, body, subject, recipient } = req.body;
 
