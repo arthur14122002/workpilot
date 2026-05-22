@@ -220,11 +220,6 @@ const deleteButton = item.querySelector(".mailRowDeleteBtn");
 deleteButton.addEventListener("click", async (event) => {
 event.stopPropagation();
 
-const deleteButton = item.querySelector(".mailRowDeleteBtn");
-
-deleteButton.addEventListener("click", async (event) => {
-event.stopPropagation();
-
 try {
 
 if (activeFolder === "trash") {
