@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/css/app-layout.css" />
 <link rel="stylesheet" href="/css/emails.css" />
 </head>
+
 <body>
 <div class="appShell">
 <aside class="sidebar">
@@ -37,41 +38,72 @@
 <div class="pageEyebrow">Kommunikation</div>
 <h1 class="pageTitle">E-Mails</h1>
 <p class="pageSubtitle">
-Behalte Angebote, Rechnungen, Rückfragen und spätere KI-Vorschläge im Blick.
+Dein WorkPilot-Postfach für Angebote, Rechnungen und Kundenkommunikation.
 </p>
 </header>
 
-<section class="card emailsCard">
-<div class="mailLayout">
-<div class="mailSidebar">
-<div class="mailSidebarTop">
-<h2>Postfach</h2>
-<p>Gesendete und empfangene WorkPilot-E-Mails.</p>
+<section class="mailApp">
 
-<div class="emailFilters">
-<button class="emailFilter active" data-filter="all">Alle</button>
-<button class="emailFilter" data-filter="offer">Angebote</button>
-<button class="emailFilter" data-filter="invoice">Rechnungen</button>
-<button class="emailFilter" data-filter="question">Rückfragen</button>
-<button class="emailFilter" data-filter="other">Sonstiges</button>
+<aside class="mailFolders">
+<div class="mailFoldersHeader">
+<h2>Postfach</h2>
+<button class="composeMailBtn" id="composeMailBtn">+ Neue E-Mail</button>
+</div>
+
+<button class="mailFolder active" data-folder="inbox">
+<span>Posteingang</span>
+<strong id="countInbox">0</strong>
+</button>
+
+<button class="mailFolder" data-folder="offer">
+<span>Angebote</span>
+<strong id="countOffer">0</strong>
+</button>
+
+<button class="mailFolder" data-folder="invoice">
+<span>Rechnungen</span>
+<strong id="countInvoice">0</strong>
+</button>
+
+<button class="mailFolder" data-folder="sent">
+<span>Gesendet</span>
+<strong id="countSent">0</strong>
+</button>
+
+<button class="mailFolder" data-folder="other">
+<span>Sonstiges</span>
+<strong id="countOther">0</strong>
+</button>
+
+<button class="mailFolder" data-folder="trash">
+<span>Papierkorb</span>
+<strong id="countTrash">0</strong>
+</button>
+</aside>
+
+<section class="mailListPanel">
+<div class="mailListHeader">
+<div>
+<h2 id="currentFolderTitle">Posteingang</h2>
+<p id="currentFolderSubtitle">Alle aktuellen E-Mails in WorkPilot.</p>
 </div>
 </div>
 
 <div id="emailThreadsList" class="emailThreadsList"></div>
 
-<div id="emptyEmails" class="emptyState">
-<p>Noch keine E-Mail-Verläufe vorhanden.</p>
+<div id="emptyEmails" class="emptyState hidden">
+<p>Keine E-Mails vorhanden.</p>
 </div>
-</div>
+</section>
 
-<div class="mailViewer">
+<section class="mailViewer">
 <div id="emptyMailState" class="emptyMailState">
 E-Mail auswählen
 </div>
 
 <div id="mailDetailView" class="mailDetailView hidden"></div>
-</div>
-</div>
+</section>
+
 </section>
 </main>
 </div>
