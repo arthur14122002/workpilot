@@ -636,6 +636,28 @@ message: data
 });
 });
 
+app.post("/api/email-messages/:id/restore", async (req, res) => {
+const { id } = req.params;
+
+const { error } = await supabase
+.from("email_messages")
+.update({
+deleted_at: null
+})
+.eq("id", id);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true
+});
+});
+
 app.post("/api/email-reply", async (req, res) => {
 const { threadId, body, subject, recipient } = req.body;
 

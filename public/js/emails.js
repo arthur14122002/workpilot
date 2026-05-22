@@ -101,6 +101,18 @@ throw new Error(result.error || "E-Mail konnte nicht gelöscht werden.");
 return result.message;
 }
 
+async function restoreMessage(messageId) {
+const response = await fetch(`/api/email-messages/${messageId}/restore`, {
+method: "POST"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht wiederhergestellt werden.");
+}
+}
+
 async function deleteMessageForever(messageId) {
 const response = await fetch(`/api/email-messages/${messageId}`, {
 method: "DELETE"
@@ -193,15 +205,74 @@ ${subject}
 ${stripHtml(message.body || "").slice(0, 120) || "Keine Vorschau verfügbar"}
 </div>
 
-<button class="mailRowDeleteBtn" data-delete-mail="${message.id}" title="Löschen">
-🗑
-</button>
+<div class="mailRowActions">
+
+${activeFolder === "trash" ? `
+<button class="mailRowRestoreBtn">↩</button>
+` : ""}
+
+<button class="mailRowDeleteBtn">🗑</button>
+</div>
 `;
 
 const deleteButton = item.querySelector(".mailRowDeleteBtn");
 
 deleteButton.addEventListener("click", async (event) => {
 event.stopPropagation();
+
+const deleteButton = item.querySelector(".mailRowDeleteBtn");
+
+deleteButton.addEventListener("click", async (event) => {
+event.stopPropagation();
+
+try {
+
+if (activeFolder === "trash") {
+
+await deleteMessageForever(message.id);
+
+showToast("E-Mail wurde endgültig gelöscht.");
+
+} else {
+
+await moveMessageToTrash(message.id);
+
+showToast("E-Mail wurde in den Papierkorb verschoben.");
+}
+
+if (activeMessageId === message.id) {
+activeMessageId = null;
+
+mailDetailView.classList.add("hidden");
+emptyMailState.classList.remove("hidden");
+}
+
+await renderEmails();
+
+} catch (error) {
+showToast(error.message);
+}
+});
+
+const restoreButton = item.querySelector(".mailRowRestoreBtn");
+
+if (restoreButton) {
+restoreButton.addEventListener("click", async (event) => {
+event.stopPropagation();
+
+try {
+
+await restoreMessage(message.id);
+
+showToast("E-Mail wurde wiederhergestellt.");
+
+await renderEmails();
+
+} catch (error) {
+showToast(error.message);
+}
+});
+}
 
 try {
 if (activeFolder === "trash") {

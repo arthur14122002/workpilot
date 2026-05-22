@@ -358,3 +358,35 @@ pointer-events: auto;
 .mailRowDeleteBtn:hover {
 background: var(--wp-orange-soft);
 }
+
+.mailRowActions{
+display:flex;
+align-items:center;
+gap:6px;
+}
+
+.mailRowRestoreBtn,
+.mailRowDeleteBtn{
+width:30px;
+height:30px;
+border:none;
+border-radius:999px;
+background:#f3f4f6;
+cursor:pointer;
+font-size:14px;
+opacity:0;
+transition:0.2s ease;
+}
+
+.emailThreadItem:hover .mailRowRestoreBtn,
+.emailThreadItem:hover .mailRowDeleteBtn{
+opacity:1;
+}
+
+.mailRowRestoreBtn:hover{
+background:#dcfce7;
+}
+
+.mailRowDeleteBtn:hover{
+background:#fee2e2;
+}
