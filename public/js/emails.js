@@ -7,6 +7,17 @@ const mailDetailView = document.getElementById("mailDetailView");
 const currentFolderTitle = document.getElementById("currentFolderTitle");
 const currentFolderSubtitle = document.getElementById("currentFolderSubtitle");
 
+const composeMailModal = document.getElementById("composeMailModal");
+const newMailBtn = document.getElementById("composeMailBtn");
+const closeComposeMailBtn = document.getElementById("closeComposeMailBtn");
+
+const composeRecipient = document.getElementById("composeRecipient");
+const composeSubject = document.getElementById("composeSubject");
+const composeBody = document.getElementById("composeBody");
+
+const addAttachmentBtn = document.getElementById("addAttachmentBtn");
+const sendComposeMailBtn = document.getElementById("sendComposeMailBtn");
+
 let activeFolder = "inbox";
 let emailMessagesCache = [];
 let activeMessageId = null;
@@ -111,6 +122,28 @@ const result = await response.json();
 if (!result.ok) {
 throw new Error(result.error || "E-Mail konnte nicht wiederhergestellt werden.");
 }
+}
+
+async function sendFreeEmail({ to, subject, body }) {
+const response = await fetch("/api/send-email", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+to,
+subject,
+html: body.replaceAll("\n", "<br>")
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht gesendet werden.");
+}
+
+return result.email;
 }
 
 async function deleteMessageForever(messageId) {
@@ -458,4 +491,50 @@ renderEmails();
 document.addEventListener("DOMContentLoaded", () => {
 bindFolders();
 renderEmails();
+
+newMailBtn.addEventListener("click", () => {
+composeRecipient.value = "";
+composeSubject.value = "";
+composeBody.value = "";
+
+composeMailModal.classList.remove("hidden");
+});
+
+closeComposeMailBtn.addEventListener("click", () => {
+composeMailModal.classList.add("hidden");
+});
+
+addAttachmentBtn.addEventListener("click", () => {
+showToast("Anhänge kommen im nächsten Schritt.");
+});
+
+sendComposeMailBtn.addEventListener("click", async () => {
+const to = composeRecipient.value.trim();
+const subject = composeSubject.value.trim();
+const body = composeBody.value.trim();
+
+if (!to || !subject || !body) {
+showToast("Bitte Empfänger, Betreff und Nachricht ausfüllen.");
+return;
+}
+
+sendComposeMailBtn.disabled = true;
+sendComposeMailBtn.textContent = "Wird gesendet...";
+
+try {
+await sendFreeEmail({ to, subject, body });
+
+showToast("E-Mail wurde gesendet.");
+
+composeMailModal.classList.add("hidden");
+
+await renderEmails();
+
+} catch (error) {
+showToast(error.message);
+} finally {
+sendComposeMailBtn.disabled = false;
+sendComposeMailBtn.textContent = "Senden";
+}
+});
 });
