@@ -18,6 +18,11 @@ const composeBody = document.getElementById("composeBody");
 const addAttachmentBtn = document.getElementById("addAttachmentBtn");
 const sendComposeMailBtn = document.getElementById("sendComposeMailBtn");
 
+const addAttachmentBtn = document.getElementById("addAttachmentBtn");
+const mailAttachmentInput = document.getElementById("mailAttachmentInput");
+const mailAttachmentsList = document.getElementById("mailAttachmentsList");
+
+let selectedAttachments = [];
 let activeFolder = "inbox";
 let emailMessagesCache = [];
 let activeMessageId = null;
@@ -39,6 +44,56 @@ sent: "Von WorkPilot gesendete E-Mails.",
 other: "Sonstige Kundenkommunikation.",
 trash: "Gelöschte E-Mails werden später nach 30 Tagen entfernt."
 };
+
+function formatFileSize(bytes){
+if(bytes < 1024){
+return bytes + " B";
+}
+
+if(bytes < 1024 * 1024){
+return (bytes / 1024).toFixed(1) + " KB";
+}
+
+return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function renderAttachments(){
+mailAttachmentsList.innerHTML = "";
+
+selectedAttachments.forEach((file, index) => {
+
+const item = document.createElement("div");
+item.className = "mailAttachmentItem";
+
+item.innerHTML = `
+<div>
+<div class="mailAttachmentName">
+${file.name}
+</div>
+
+<div class="mailAttachmentSize">
+${formatFileSize(file.size)}
+</div>
+</div>
+
+<button
+class="mailAttachmentRemove"
+data-index="${index}"
+>
+✕
+</button>
+`;
+
+const removeBtn = item.querySelector(".mailAttachmentRemove");
+
+removeBtn.addEventListener("click", () => {
+selectedAttachments.splice(index, 1);
+renderAttachments();
+});
+
+mailAttachmentsList.appendChild(item);
+});
+}
 
 function getMessageFolder(message) {
 const relatedType = message.email_threads?.related_type;
@@ -491,6 +546,21 @@ renderEmails();
 document.addEventListener("DOMContentLoaded", () => {
 bindFolders();
 renderEmails();
+
+addAttachmentBtn.addEventListener("click", () => {
+mailAttachmentInput.click();
+});
+
+mailAttachmentInput.addEventListener("change", (event) => {
+
+const files = Array.from(event.target.files);
+
+selectedAttachments.push(...files);
+
+renderAttachments();
+
+mailAttachmentInput.value = "";
+});
 
 const newMailBtn = document.getElementById("newMailBtn");
 const composeMailModal = document.getElementById("composeMailModal");
