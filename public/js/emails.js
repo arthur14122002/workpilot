@@ -585,37 +585,54 @@ closeComposeMailBtn.addEventListener("click", () => {
 composeMailModal.classList.add("hidden");
 });
 
-addAttachmentBtn.addEventListener("click", () => {
-showToast("Anhänge kommen im nächsten Schritt.");
-});
-
 sendComposeMailBtn.addEventListener("click", async () => {
-const to = composeRecipient.value.trim();
+
+const recipient = composeRecipient.value.trim();
 const subject = composeSubject.value.trim();
 const body = composeBody.value.trim();
 
-if (!to || !subject || !body) {
-showToast("Bitte Empfänger, Betreff und Nachricht ausfüllen.");
+if (!recipient || !subject || !body) {
+showToast("Bitte alle Felder ausfüllen.");
 return;
 }
 
-sendComposeMailBtn.disabled = true;
-sendComposeMailBtn.textContent = "Wird gesendet...";
-
 try {
-await sendFreeEmail({ to, subject, body });
 
-showToast("E-Mail wurde gesendet.");
+const formData = new FormData();
+
+formData.append("to", recipient);
+formData.append("subject", subject);
+formData.append("html", body);
+
+selectedAttachments.forEach((file) => {
+formData.append("attachments", file);
+});
+
+const response = await fetch("/api/send-email", {
+method: "POST",
+body: formData
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht gesendet werden.");
+}
+
+showToast("E-Mail wurde versendet.");
 
 composeMailModal.classList.add("hidden");
+
+composeRecipient.value = "";
+composeSubject.value = "";
+composeBody.value = "";
+
+selectedAttachments = [];
+renderAttachments();
 
 await renderEmails();
 
 } catch (error) {
 showToast(error.message);
-} finally {
-sendComposeMailBtn.disabled = false;
-sendComposeMailBtn.textContent = "Senden";
 }
-});
 });

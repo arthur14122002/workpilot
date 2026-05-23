@@ -3,6 +3,11 @@ const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 const OpenAI = require("openai");
 const puppeteer = require("puppeteer");
+const multer = require("multer");
+
+const upload = multer({
+storage: multer.memoryStorage()
+});
 
 const openai = new OpenAI({
 apiKey: process.env.OPENAI_API_KEY
@@ -1091,14 +1096,9 @@ app.post("/api/send-invoice-email", async (req, res) => {
 // invoiceId, to, subject, message
 });
 
-app.post("/api/send-email", async (req, res) => {
-const {
-to,
-subject,
-html,
-threadId,
-attachments
-} = req.body;
+app.post("/api/send-email", upload.array("attachments"), async (req, res) => {
+const { to, subject, html, threadId } = req.body;
+const uploadedFiles = req.files || [];
 
 if (!to || !subject || !html) {
 return res.status(400).json({
@@ -1108,39 +1108,92 @@ error: "Fehlende E-Mail-Daten."
 }
 
 try {
+let finalThreadId = threadId;
+
+if (!finalThreadId) {
+const { data: thread, error: threadError } = await supabase
+.from("email_threads")
+.insert([
+{
+subject,
+related_type: "general",
+status: "sent",
+ai_category: "Sonstiges"
+}
+])
+.select()
+.single();
+
+if (threadError) throw threadError;
+
+finalThreadId = thread.id;
+}
+
+const resendAttachments = uploadedFiles.map((file) => ({
+filename: file.originalname,
+content: file.buffer.toString("base64")
+}));
 
 const email = await resend.emails.send({
 from: "WorkPilot <mail@workpilot-app.de>",
 to,
 subject,
 html,
-
-attachments: attachments || []
+attachments: resendAttachments
 });
 
-if (threadId) {
-await supabase
+const { data: message, error: messageError } = await supabase
 .from("email_messages")
 .insert([
 {
-thread_id: threadId,
+thread_id: finalThreadId,
 direction: "outbound",
-sender: "workpilot@example.com",
+sender: "mail@workpilot-app.de",
 recipient: to,
 subject,
 body: html,
 message_status: "sent"
 }
+])
+.select()
+.single();
+
+if (messageError) throw messageError;
+
+for (const file of uploadedFiles) {
+const filePath = `${message.id}/${Date.now()}-${file.originalname}`;
+
+const { error: uploadError } = await supabase.storage
+.from("email-attachments")
+.upload(filePath, file.buffer, {
+contentType: file.mimetype,
+upsert: false
+});
+
+if (uploadError) throw uploadError;
+
+const { error: attachmentError } = await supabase
+.from("email_attachments")
+.insert([
+{
+message_id: message.id,
+file_name: file.originalname,
+file_size: file.size,
+file_path: filePath
+}
 ]);
+
+if (attachmentError) throw attachmentError;
 }
 
 res.json({
 ok: true,
-email
+email,
+message
 });
 
 } catch (error) {
-console.error("RESEND ERROR:", error);
+console.error("SEND EMAIL ERROR:", error);
 
 res.status(500).json({
 ok: false,
