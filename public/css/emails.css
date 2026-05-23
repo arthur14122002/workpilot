@@ -537,3 +537,28 @@ height:28px;
 cursor:pointer;
 font-weight:700;
 }
+
+.mailAttachmentsView {
+margin-top: 16px;
+padding-top: 14px;
+border-top: 1px solid var(--wp-border);
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.mailAttachmentOpenBtn {
+width: fit-content;
+border: 1px solid var(--wp-border);
+background: #fff;
+border-radius: 999px;
+padding: 9px 13px;
+cursor: pointer;
+font-weight: 650;
+}
+
+.mailAttachmentOpenBtn:hover {
+background: var(--wp-orange-soft);
+border-color: #fdba74;
+color: var(--wp-orange-dark);
+}

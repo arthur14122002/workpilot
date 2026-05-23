@@ -56,6 +56,28 @@ return (bytes / 1024).toFixed(1) + " KB";
 return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
+async function getMessageAttachments(messageId) {
+const response = await fetch(`/api/email-messages/${messageId}/attachments`);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Anhänge konnten nicht geladen werden.");
+}
+
+return result.attachments || [];
+}
+
+async function openAttachment(attachmentId) {
+const response = await fetch(`/api/email-attachments/${attachmentId}/open`);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Anhang konnte nicht geöffnet werden.");
+}
+
+window.open(result.url, "_blank");
+}
+
 function renderAttachments(){
 mailAttachmentsList.innerHTML = "";
 
@@ -390,6 +412,14 @@ message.subject ||
 relatedThread.subject ||
 "Ohne Betreff";
 
+let attachments = [];
+
+try {
+attachments = await getMessageAttachments(message.id);
+} catch (error) {
+console.error(error);
+}
+
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
 <div>
@@ -427,6 +457,22 @@ ${message.body || ""}
 </div>
 
 ${
+attachments.length
+? `
+<div class="mailAttachmentsView">
+<strong>Anhänge</strong>
+
+${attachments.map((attachment) => `
+<button class="mailAttachmentOpenBtn" data-attachment-id="${attachment.id}">
+📎 ${attachment.file_name}
+</button>
+`).join("")}
+</div>
+`
+: ""
+}
+
+${
 message.ai_suggested_reply
 ? `
 <div class="detailAiReply">
@@ -459,6 +505,16 @@ Antwort senden
 `;
 
 bindReplyActions(message, subject);
+
+document.querySelectorAll(".mailAttachmentOpenBtn").forEach((button) => {
+button.addEventListener("click", async () => {
+try {
+await openAttachment(button.dataset.attachmentId);
+} catch (error) {
+showToast(error.message);
+}
+});
+});
 }
 
 function bindReplyActions(message, subject) {
@@ -596,6 +652,9 @@ showToast("Bitte alle Felder ausfüllen.");
 return;
 }
 
+sendComposeMailBtn.disabled = true;
+sendComposeMailBtn.textContent = "Wird gesendet...";
+
 try {
 
 const formData = new FormData();
@@ -634,6 +693,11 @@ await renderEmails();
 
 } catch (error) {
 showToast(error.message);
+
+} finally {
+sendComposeMailBtn.disabled = false;
+sendComposeMailBtn.textContent = "Senden";
 }
+
 });
 });
