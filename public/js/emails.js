@@ -18,7 +18,6 @@ const composeBody = document.getElementById("composeBody");
 const addAttachmentBtn = document.getElementById("addAttachmentBtn");
 const sendComposeMailBtn = document.getElementById("sendComposeMailBtn");
 
-const addAttachmentBtn = document.getElementById("addAttachmentBtn");
 const mailAttachmentInput = document.getElementById("mailAttachmentInput");
 const mailAttachmentsList = document.getElementById("mailAttachmentsList");
 
