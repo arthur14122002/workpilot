@@ -1231,6 +1231,61 @@ messages: data || []
 });
 });
 
+app.get("/api/email-messages/:id/attachments", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("email_attachments")
+.select("*")
+.eq("message_id", id)
+.order("created_at", { ascending: true });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+attachments: data || []
+});
+});
+
+app.get("/api/email-attachments/:id/open", async (req, res) => {
+const { id } = req.params;
+
+const { data: attachment, error: attachmentError } = await supabase
+.from("email_attachments")
+.select("*")
+.eq("id", id)
+.single();
+
+if (attachmentError) {
+return res.status(500).json({
+ok: false,
+error: attachmentError.message
+});
+}
+
+const { data, error } = await supabase.storage
+.from("email-attachments")
+.createSignedUrl(attachment.file_path, 60 * 5);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+url: data.signedUrl
+});
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req, res) => {
