@@ -390,3 +390,23 @@ background:#dcfce7;
 .mailRowDeleteBtn:hover{
 background:#fee2e2;
 }
+
+.mailComposeBtn{
+width:100%;
+border:none;
+border-radius:999px;
+padding:14px 18px;
+background:linear-gradient(135deg,#f59e0b,#f97316);
+color:#fff;
+font-size:15px;
+font-weight:700;
+cursor:pointer;
+transition:0.18s ease;
+margin-top:14px;
+margin-bottom:18px;
+}
+
+.mailComposeBtn:hover{
+transform:translateY(-1px);
+box-shadow:0 10px 24px rgba(249,115,22,0.28);
+}

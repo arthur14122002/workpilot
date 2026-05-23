@@ -492,6 +492,18 @@ document.addEventListener("DOMContentLoaded", () => {
 bindFolders();
 renderEmails();
 
+const newMailBtn = document.getElementById("newMailBtn");
+const composeMailModal = document.getElementById("composeMailModal");
+const closeComposeMailBtn = document.getElementById("closeComposeMailBtn");
+
+newMailBtn.addEventListener("click", () => {
+composeMailModal.classList.remove("hidden");
+});
+
+closeComposeMailBtn.addEventListener("click", () => {
+composeMailModal.classList.add("hidden");
+});
+
 newMailBtn.addEventListener("click", () => {
 composeRecipient.value = "";
 composeSubject.value = "";
