@@ -550,3 +550,24 @@ sendComposeMailBtn.textContent = "Senden";
 }
 });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+bindFolders();
+renderEmails();
+
+const newMailBtn = document.getElementById("newMailBtn");
+const composeMailModal = document.getElementById("composeMailModal");
+const closeComposeMailBtn = document.getElementById("closeComposeMailBtn");
+
+console.log("newMailBtn:", newMailBtn);
+console.log("composeMailModal:", composeMailModal);
+
+newMailBtn.addEventListener("click", () => {
+console.log("Neue E-Mail geklickt");
+composeMailModal.classList.remove("hidden");
+});
+
+closeComposeMailBtn.addEventListener("click", () => {
+composeMailModal.classList.add("hidden");
+});
+});
