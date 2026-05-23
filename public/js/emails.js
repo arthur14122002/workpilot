@@ -636,3 +636,4 @@ await renderEmails();
 showToast(error.message);
 }
 });
+});
