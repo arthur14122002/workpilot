@@ -420,6 +420,23 @@ attachments = await getMessageAttachments(message.id);
 console.error(error);
 }
 
+let matchedContact = null;
+
+if (message.contact_id) {
+try {
+
+const response = await fetch(`/api/contacts/${message.contact_id}`);
+const result = await response.json();
+
+if (result.ok) {
+matchedContact = result.contact;
+}
+
+} catch (error) {
+console.error(error);
+}
+}
+
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
 <div>
@@ -433,6 +450,28 @@ ${folderLabels[getMessageFolder(message)] || "E-Mail"}
 Von: ${message.sender || "Unbekannt"}<br>
 An: ${message.recipient || "Unbekannt"}
 </p>
+
+${
+matchedContact
+? `
+<div class="mailLinkedContact">
+<strong>Kontakt:</strong>
+${matchedContact.name || matchedContact.email}
+
+<button
+class="mailOpenContactBtn"
+data-contact-id="${matchedContact.id}"
+>
+Kontakt öffnen
+</button>
+</div>
+`
+: `
+<div class="mailNoContact">
+Kein Kontakt zugeordnet.
+</div>
+`
+}
 </div>
 
 <div class="mailDetailDate">
@@ -505,6 +544,15 @@ Antwort senden
 `;
 
 bindReplyActions(message, subject);
+
+document.querySelectorAll(".mailOpenContactBtn").forEach((button) => {
+button.addEventListener("click", () => {
+const contactId = button.dataset.contactId;
+
+window.location.href = `/contact-detail?id=${contactId}`;
+});
+});
+
 
 document.querySelectorAll(".mailAttachmentOpenBtn").forEach((button) => {
 button.addEventListener("click", async () => {

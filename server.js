@@ -794,6 +794,28 @@ ok: true
 });
 });
 
+async function findMatchingContact(email, name = "") {
+
+if (!email) return null;
+
+const { data: contacts, error } = await supabase
+.from("contacts")
+.select("*")
+.ilike("email", email)
+.limit(1);
+
+if (error) {
+console.error(error);
+return null;
+}
+
+if (!contacts?.length) {
+return null;
+}
+
+return contacts[0];
+}
+
 async function createOfferPdfBuffer(offerId, baseUrl) {
 const browser = await puppeteer.launch({
 headless: "new",
@@ -1142,11 +1164,14 @@ html,
 attachments: resendAttachments
 });
 
+const matchedContact = await findMatchingContact(to);
+
 const { data: message, error: messageError } = await supabase
 .from("email_messages")
 .insert([
 {
 thread_id: finalThreadId,
+contact_id: matchedContact?.id || null,
 direction: "outbound",
 sender: "mail@workpilot-app.de",
 recipient: to,
@@ -1200,6 +1225,28 @@ ok: false,
 error: "E-Mail konnte nicht gesendet werden."
 });
 }
+});
+
+app.get("/api/contacts/:id", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("contacts")
+.select("*")
+.eq("id", id)
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+contact: data
+});
 });
 
 app.get("/api/email-inbox", async (req, res) => {

@@ -562,3 +562,27 @@ background: var(--wp-orange-soft);
 border-color: #fdba74;
 color: var(--wp-orange-dark);
 }
+
+.mailLinkedContact,
+.mailNoContact {
+margin-top: 12px;
+padding: 12px 14px;
+border-radius: 14px;
+background: var(--wp-orange-soft);
+color: var(--wp-orange-dark);
+font-size: 13px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 12px;
+}
+
+.mailOpenContactBtn {
+border: none;
+border-radius: 999px;
+padding: 7px 11px;
+background: #fff;
+color: var(--wp-orange-dark);
+font-weight: 700;
+cursor: pointer;
+}
