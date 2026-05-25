@@ -1,3 +1,36 @@
 .card {
 max-width: 980px;
 }
+
+.settingsSection {
+display: flex;
+flex-direction: column;
+gap: 26px;
+margin-bottom: 42px;
+}
+
+.settingsSectionTop {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.settingsSectionTop h2 {
+font-size: 22px;
+font-weight: 700;
+color: #111827;
+}
+
+.settingsSectionTop p {
+font-size: 14px;
+line-height: 1.5;
+color: #6b7280;
+max-width: 720px;
+}
+
+.fieldHint {
+font-size: 12px;
+line-height: 1.5;
+color: #9ca3af;
+margin-top: 6px;
+}

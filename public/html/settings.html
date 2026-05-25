@@ -22,7 +22,7 @@
 <a class="navLink" href="/offers">Angebote</a>
 <a class="navLink" href="/invoices">Rechnungen</a>
 <a class="navLink" href="/emails">E-Mails</a>
-<a class="navLink" href="/settings">Einstellungen</a>
+<a class="navLink active" href="/settings">Profil</a>
 </nav>
 </div>
 
@@ -33,15 +33,98 @@
 
 <main class="content">
 <header class="pageHeader">
-<div class="pageEyebrow">Firmendaten</div>
-<h1 class="pageTitle">Angebotsdaten einrichten</h1>
+<div class="pageEyebrow">Profil</div>
+
+<h1 class="pageTitle">
+Persönliche Daten & Firmendaten verwalten
+</h1>
+
 <p class="pageSubtitle">
-Diese Informationen werden später automatisch in deine Angebote übernommen.
+Verwalte deine Angaben für Kommunikation, Dashboard, Angebote und Rechnungen.
 </p>
 </header>
 
 <section class="card">
 <form id="settingsForm">
+
+<div class="settingsSection">
+<div class="settingsSectionTop">
+<h2>Persönliche Daten</h2>
+
+<p>
+Diese Daten werden später für Dashboard, Kommunikation und KI-Agenten verwendet.
+</p>
+</div>
+
+<div class="formGrid">
+
+<div class="formField">
+<label for="firstName">Vorname</label>
+
+<input
+id="firstName"
+name="firstName"
+placeholder="Max"
+/>
+</div>
+
+<div class="formField">
+<label for="lastName">Nachname</label>
+
+<input
+id="lastName"
+name="lastName"
+placeholder="Mustermann"
+/>
+</div>
+
+<div class="formField">
+<label for="gender">Anrede / Geschlecht</label>
+
+<select id="gender" name="gender">
+<option value="">Auswählen</option>
+<option value="male">Herr</option>
+<option value="female">Frau</option>
+<option value="diverse">Divers</option>
+</select>
+</div>
+
+<div class="formField">
+<label for="personalEmail">
+Persönliche Geschäfts-E-Mail
+</label>
+
+<input
+id="personalEmail"
+name="personalEmail"
+placeholder="max@firma.de"
+/>
+</div>
+
+<div class="formField">
+<label for="personalPhone">
+Persönliche Telefonnummer
+</label>
+
+<input
+id="personalPhone"
+name="personalPhone"
+placeholder="+49 123 456789"
+/>
+</div>
+
+</div>
+</div>
+
+<div class="settingsSection">
+<div class="settingsSectionTop">
+<h2>Firmendaten</h2>
+
+<p>
+Diese Informationen werden automatisch in Angebote und Rechnungen übernommen.
+</p>
+</div>
+
 <div class="formGrid">
 <div class="formField">
 <label for="companyName">Firmenname</label>
@@ -113,8 +196,17 @@ Diese Informationen werden später automatisch in deine Angebote übernommen.
 </div>
 
 <div class="formField full">
-<label for="footerNote">Hinweis / Footer-Text</label>
+
+<label for="footerNote">
+Hinweis / Footer-Text
+</label>
+
+<div class="fieldHint">
+Dieser Hinweis erscheint im unteren Bereich deiner Angebote und Rechnungen.
+</div>
+
 <textarea id="footerNote" name="footerNote" placeholder="Vielen Dank für Ihr Vertrauen."></textarea>
+</div>
 </div>
 </div>
 

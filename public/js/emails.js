@@ -468,7 +468,17 @@ Kontakt öffnen
 `
 : `
 <div class="mailNoContact">
+<div>
 Kein Kontakt zugeordnet.
+</div>
+
+<button
+class="mailCreateContactBtn"
+data-name="${message.sender || ""}"
+data-email="${message.sender || ""}"
+>
+Kontakt erstellen
+</button>
 </div>
 `
 }
@@ -546,13 +556,46 @@ Antwort senden
 bindReplyActions(message, subject);
 
 document.querySelectorAll(".mailOpenContactBtn").forEach((button) => {
+document.querySelectorAll(".mailCreateContactBtn").forEach((button) => {
+
+button.addEventListener("click", async () => {
+
+try {
+
+const response = await fetch("/api/contacts", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+name: button.dataset.name,
+email: button.dataset.email
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakt konnte nicht erstellt werden.");
+}
+
+showToast("Kontakt wurde erstellt.");
+
+await renderEmails();
+
+} catch (error) {
+showToast(error.message);
+}
+
+});
+
+});
 button.addEventListener("click", () => {
 const contactId = button.dataset.contactId;
 
 window.location.href = `/contact-detail?id=${contactId}`;
 });
 });
-
 
 document.querySelectorAll(".mailAttachmentOpenBtn").forEach((button) => {
 button.addEventListener("click", async () => {

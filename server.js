@@ -64,36 +64,6 @@ contacts: data
 });
 });
 
-app.post("/api/contacts", async (req, res) => {
-const { name, email, phone, street, city } = req.body;
-
-const { data, error } = await supabase
-.from("contacts")
-.insert([
-{
-name,
-email,
-phone,
-street,
-city
-}
-])
-.select()
-.single();
-
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
-
-res.json({
-ok: true,
-contact: data
-});
-});
-
 app.delete("/api/contacts/:id", async (req, res) => {
 const { id } = req.params;
 
@@ -225,6 +195,60 @@ error: "Angebot wurde nicht gefunden."
 res.json({
 ok: true,
 offer: data
+});
+});
+
+app.post("/api/contacts", async (req, res) => {
+
+const {
+name,
+email,
+phone
+} = req.body;
+
+const { data, error } = await supabase
+.from("contacts")
+.insert([
+{
+name,
+email,
+phone: phone || null,
+street: street || null,
+city: city || null
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+if (email) {
+
+await supabase
+.from("email_messages")
+.update({
+contact_id: data.id
+})
+.or(`sender.eq.${email},recipient.eq.${email}`);
+}
+
+await createDashboardEvent({
+type: "contact_created",
+title: "Kontakt erstellt",
+description: `${name || email} wurde als Kontakt angelegt.`,
+relatedType: "contact",
+relatedId: data.id
+});
+
+
+res.json({
+ok: true,
+contact: data
 });
 });
 
@@ -794,6 +818,48 @@ ok: true
 });
 });
 
+async function createDashboardEvent({
+type,
+title,
+description = "",
+relatedType = null,
+relatedId = null
+}) {
+
+await supabase
+.from("dashboard_events")
+.insert([
+{
+type,
+title,
+description,
+related_type: relatedType,
+related_id: relatedId
+}
+]);
+
+}
+
+app.get("/api/dashboard-events", async (req, res) => {
+const { data, error } = await supabase
+.from("dashboard_events")
+.select("*")
+.order("created_at", { ascending: false })
+.limit(50);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+events: data || []
+});
+});
+
 async function findMatchingContact(email, name = "") {
 
 if (!email) return null;
@@ -996,6 +1062,14 @@ message_status: "sent"
 }
 ]);
 
+await createDashboardEvent({
+type: "offer_email_sent",
+title: "Angebot versendet",
+description: `Angebot ${offer.offerNumber || offer.id} wurde an ${to} gesendet.`,
+relatedType: "offer",
+relatedId: offer.id
+});
+
 res.json({
 ok: true,
 email
@@ -1100,6 +1174,14 @@ message_status: "sent"
 }
 ]);
 
+await createDashboardEvent({
+type: "invoice_email_sent",
+title: "Rechnung versendet",
+description: `Rechnung ${invoice.invoiceNumber || invoice.id} wurde an ${to} gesendet.`,
+relatedType: "invoice",
+relatedId: invoice.id
+});
+
 res.json({
 ok: true,
 email
@@ -1112,10 +1194,6 @@ ok: false,
 error: "Rechnung konnte nicht per E-Mail gesendet werden."
 });
 }
-});
-
-app.post("/api/send-invoice-email", async (req, res) => {
-// invoiceId, to, subject, message
 });
 
 app.post("/api/send-email", upload.array("attachments"), async (req, res) => {
@@ -1185,6 +1263,14 @@ message_status: "sent"
 
 if (messageError) throw messageError;
 
+await createDashboardEvent({
+type: "email_sent",
+title: "E-Mail gesendet",
+description: `E-Mail an ${to}: ${subject}`,
+relatedType: "email",
+relatedId: message.id
+});
+
 for (const file of uploadedFiles) {
 const filePath = `${message.id}/${Date.now()}-${file.originalname}`;
 
@@ -1225,28 +1311,6 @@ ok: false,
 error: "E-Mail konnte nicht gesendet werden."
 });
 }
-});
-
-app.get("/api/contacts/:id", async (req, res) => {
-const { id } = req.params;
-
-const { data, error } = await supabase
-.from("contacts")
-.select("*")
-.eq("id", id)
-.single();
-
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
-
-res.json({
-ok: true,
-contact: data
-});
 });
 
 app.get("/api/email-inbox", async (req, res) => {
