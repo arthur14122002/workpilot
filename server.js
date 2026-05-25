@@ -707,7 +707,7 @@ const { data, error } = await supabase
 {
 thread_id: threadId,
 direction: "outbound",
-sender: "mail@workpilot-app.de",
+sender: ${process.env.RESEND_FROM_EMAIL},
 recipient: recipient || "kunde@example.com",
 subject: replySubject,
 body,
@@ -1035,7 +1035,7 @@ header: Buffer.from(pdfBuffer).slice(0, 5).toString()
 });
 
 const email = await resend.emails.send({
-from: "WorkPilot <mail@workpilot-app.de>",
+from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
 to,
 subject,
 html,
@@ -1054,7 +1054,7 @@ await supabase
 {
 thread_id: thread.id,
 direction: "outbound",
-sender: "mail@workpilot-app.de",
+sender: ${process.env.RESEND_FROM_EMAIL},
 recipient: to,
 subject,
 body: html,
@@ -1148,7 +1148,7 @@ Gesendet über WorkPilot
 `;
 
 const email = await resend.emails.send({
-from: "WorkPilot <mail@workpilot-app.de>",
+from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
 to,
 subject,
 html,
@@ -1166,7 +1166,7 @@ await supabase
 {
 thread_id: thread.id,
 direction: "outbound",
-sender: "mail@workpilot-app.de",
+sender: ${process.env.RESEND_FROM_EMAIL},
 recipient: to,
 subject,
 body: html,
@@ -1235,7 +1235,7 @@ content: file.buffer.toString("base64")
 }));
 
 const email = await resend.emails.send({
-from: "WorkPilot <mail@workpilot-app.de>",
+from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
 to,
 subject,
 html,
@@ -1251,7 +1251,7 @@ const { data: message, error: messageError } = await supabase
 thread_id: finalThreadId,
 contact_id: matchedContact?.id || null,
 direction: "outbound",
-sender: "mail@workpilot-app.de",
+sender: ${process.env.RESEND_FROM_EMAIL},
 recipient: to,
 subject,
 body: html,

@@ -1,4 +1,5 @@
 const STORAGE_KEY = "workpilot_company_settings";
+const DASHBOARD_PROFILE_KEY = "workpilot_dashboard_profile";
 
 const settingsForm = document.getElementById("settingsForm");
 const resetBtn = document.getElementById("resetSettingsBtn");
@@ -28,6 +29,47 @@ footerNote: document.getElementById("footerNote").value.trim()
 };
 }
 
+function getDashboardGreetingName(data) {
+const fullName = `${data.firstName || ""} ${data.lastName || ""}`.trim();
+
+if (!fullName) {
+return "";
+}
+
+if (data.gender === "male") {
+return `Herr ${data.lastName || fullName}`;
+}
+
+if (data.gender === "female") {
+return `Frau ${data.lastName || fullName}`;
+}
+
+return data.firstName || fullName;
+}
+
+function getCommunicationSettings() {
+const saved = localStorage.getItem(STORAGE_KEY);
+
+if (!saved) {
+return null;
+}
+
+try {
+const data = JSON.parse(saved);
+
+return {
+email: data.personalEmail || "",
+phone: data.personalPhone || "",
+companyEmail: data.email || "",
+companyPhone: data.phone || ""
+};
+
+} catch (error) {
+console.error(error);
+return null;
+}
+}
+
 function fillForm(data) {
 Object.keys(data).forEach((key) => {
 const field = document.getElementById(key);
@@ -52,6 +94,16 @@ event.preventDefault();
 
 const data = getFormData();
 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+localStorage.setItem(
+"workpilot_dashboard_profile",
+JSON.stringify({
+greetingName: getDashboardGreetingName(data),
+firstName: data.firstName,
+lastName: data.lastName,
+gender: data.gender
+})
+);
 
 showToast("Firmendaten wurden gespeichert.");
 }
