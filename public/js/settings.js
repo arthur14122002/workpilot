@@ -5,6 +5,12 @@ const resetBtn = document.getElementById("resetSettingsBtn");
 
 function getFormData() {
 return {
+firstName: document.getElementById("firstName").value.trim(),
+lastName: document.getElementById("lastName").value.trim(),
+gender: document.getElementById("gender").value,
+personalEmail: document.getElementById("personalEmail").value.trim(),
+personalPhone: document.getElementById("personalPhone").value.trim(),
+
 companyName: document.getElementById("companyName").value.trim(),
 ownerName: document.getElementById("ownerName").value.trim(),
 street: document.getElementById("street").value.trim(),
