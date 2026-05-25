@@ -707,7 +707,7 @@ const { data, error } = await supabase
 {
 thread_id: threadId,
 direction: "outbound",
-sender: ${process.env.RESEND_FROM_EMAIL},
+sender: process.env.RESEND_FROM_EMAIL,
 recipient: recipient || "kunde@example.com",
 subject: replySubject,
 body,
@@ -1054,7 +1054,7 @@ await supabase
 {
 thread_id: thread.id,
 direction: "outbound",
-sender: ${process.env.RESEND_FROM_EMAIL},
+sender: process.env.RESEND_FROM_EMAIL,
 recipient: to,
 subject,
 body: html,
@@ -1166,7 +1166,7 @@ await supabase
 {
 thread_id: thread.id,
 direction: "outbound",
-sender: ${process.env.RESEND_FROM_EMAIL},
+sender: process.env.RESEND_FROM_EMAIL,
 recipient: to,
 subject,
 body: html,
@@ -1251,7 +1251,7 @@ const { data: message, error: messageError } = await supabase
 thread_id: finalThreadId,
 contact_id: matchedContact?.id || null,
 direction: "outbound",
-sender: ${process.env.RESEND_FROM_EMAIL},
+sender: process.env.RESEND_FROM_EMAIL,
 recipient: to,
 subject,
 body: html,
