@@ -203,7 +203,9 @@ app.post("/api/contacts", async (req, res) => {
 const {
 name,
 email,
-phone
+phone,
+street,
+city
 } = req.body;
 
 const { data, error } = await supabase
