@@ -586,3 +586,10 @@ color: var(--wp-orange-dark);
 font-weight: 700;
 cursor: pointer;
 }
+
+.activeCommunicationInfo {
+font-size: 13px;
+line-height: 1.5;
+color: #6b7280;
+margin-top: 6px;
+}

@@ -822,22 +822,310 @@ async function createDashboardEvent({
 type,
 title,
 description = "",
+
 relatedType = null,
-relatedId = null
+relatedId = null,
+
+dueAt = null,
+
+priority = "normal",
+
+actionType = null,
+
+metadata = {}
 }) {
 
-await supabase
+const { data: event, error } = await supabase
 .from("dashboard_events")
 .insert([
 {
 type,
 title,
 description,
-related_type: relatedType,
-related_id: relatedId
-}
-]);
 
+related_type: relatedType,
+related_id: relatedId,
+
+due_at: dueAt,
+
+priority: priority,
+
+action_type: actionType,
+
+metadata
+}
+])
+.select()
+.single();
+
+if (error) {
+console.error(error);
+return null;
+}
+
+return event;
+}
+
+async function createDashboardNotification({
+eventId,
+
+title,
+
+message = "",
+
+type = "info",
+
+priority = "normal",
+
+remindAfterDays = 5,
+
+metadata = {}
+}) {
+
+const { data, error } = await supabase
+.from("dashboard_notifications")
+.insert([
+{
+event_id: eventId,
+
+title,
+message,
+
+type,
+
+priority,
+
+remind_after_days: remindAfterDays,
+
+metadata
+}
+])
+.select()
+.single();
+
+if (error) {
+console.error(error);
+return null;
+}
+
+return data;
+}
+
+async function triggerDashboardAction({
+actionTarget,
+actionPayload = {}
+}) {
+
+switch (actionTarget) {
+
+case "create_calendar_entry":
+
+console.log(
+"Kalendereintrag vorbereiten:",
+actionPayload
+);
+
+return {
+ok: true,
+type: "calendar",
+message: "Kalendereintrag wurde vorbereitet."
+};
+
+case "create_offer_draft":
+
+console.log(
+"Angebotsentwurf vorbereiten:",
+actionPayload
+);
+
+return {
+ok: true,
+type: "offer_draft",
+message: "Angebotsvorschlag wurde vorbereitet."
+};
+
+case "open_email_thread":
+
+return {
+ok: true,
+type: "navigation",
+target: `/emails?thread=${actionPayload.threadId}`
+};
+
+default:
+
+return {
+ok: false,
+error: "Unbekannte Dashboard-Aktion."
+};
+}
+}
+
+app.post("/api/dashboard-actions", async (req, res) => {
+const {
+actionTarget,
+actionPayload
+} = req.body;
+
+if (!actionTarget) {
+return res.status(400).json({
+ok: false,
+error: "Keine Dashboard-Aktion angegeben."
+});
+}
+
+try {
+const result = await triggerDashboardAction({
+actionTarget,
+actionPayload: actionPayload || {}
+});
+
+if (!result.ok) {
+return res.status(400).json(result);
+}
+
+res.json(result);
+
+} catch (error) {
+console.error("DASHBOARD ACTION ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: "Dashboard-Aktion konnte nicht ausgeführt werden."
+});
+}
+});
+
+app.get("/api/dashboard-notifications", async (req, res) => {
+
+const { data, error } = await supabase
+.from("dashboard_notifications")
+.select(`
+*,
+dashboard_events (
+id,
+type,
+title,
+description,
+related_type,
+related_id
+)
+`)
+.is("dismissed_at", null)
+.order("triggered_at", { ascending: false });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+notifications: data || []
+});
+});
+
+app.put("/api/dashboard-notifications/:id/read", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("dashboard_notifications")
+.update({
+status: "read",
+read_at: new Date().toISOString()
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+notification: data
+});
+});
+
+app.put("/api/dashboard-notifications/:id/dismiss", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("dashboard_notifications")
+.update({
+status: "dismissed",
+dismissed_at: new Date().toISOString()
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+notification: data
+});
+});
+
+async function processDashboardReminders() {
+
+const now = new Date().toISOString();
+
+const { data: notifications, error } = await supabase
+.from("dashboard_notifications")
+.select("*")
+.eq("status", "unread")
+.not("next_reminder_at", "is", null)
+.lte("next_reminder_at", now);
+
+if (error) {
+console.error(error);
+return;
+}
+
+for (const notification of notifications || []) {
+
+const nextReminderDate = new Date();
+
+nextReminderDate.setDate(
+nextReminderDate.getDate() +
+(notification.remind_after_days || 5)
+);
+
+await supabase
+.from("dashboard_notifications")
+.update({
+reminder_count: (notification.reminder_count || 0) + 1,
+
+last_reminded_at: now,
+
+next_reminder_at: nextReminderDate.toISOString(),
+
+priority:
+notification.auto_escalate &&
+(notification.reminder_count || 0) >= 2
+? "high"
+: notification.priority
+})
+.eq("id", notification.id);
+
+console.log(
+"Reminder verarbeitet:",
+notification.title
+);
+}
 }
 
 app.get("/api/dashboard-events", async (req, res) => {
@@ -1309,6 +1597,134 @@ console.error("SEND EMAIL ERROR:", error);
 res.status(500).json({
 ok: false,
 error: "E-Mail konnte nicht gesendet werden."
+});
+}
+});
+
+app.post("/api/email-inbound", async (req, res) => {
+
+const {
+from,
+to,
+subject,
+html,
+text
+} = req.body;
+
+if (!from || !to) {
+return res.status(400).json({
+ok: false,
+error: "Fehlende Inbound-Daten."
+});
+}
+
+try {
+
+const matchedContact = await findMatchingContact(from);
+
+const finalBody = html || text || "";
+
+const { data: thread, error: threadError } = await supabase
+.from("email_threads")
+.insert([
+{
+contact_id: matchedContact?.id || null,
+
+subject: subject || "Ohne Betreff",
+
+related_type: "general",
+
+status: "open",
+
+ai_category: "Unsortiert"
+}
+])
+.select()
+.single();
+
+if (threadError) {
+throw threadError;
+}
+
+const { data: message, error: messageError } = await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: thread.id,
+
+contact_id: matchedContact?.id || null,
+
+direction: "inbound",
+
+sender: from,
+recipient: to,
+
+subject: subject || "Ohne Betreff",
+
+body: finalBody,
+
+message_status: "received"
+}
+])
+.select()
+.single();
+
+if (messageError) {
+throw messageError;
+}
+
+const dashboardEvent = await createDashboardEvent({
+type: "email_received",
+
+title: "Neue E-Mail empfangen",
+
+description: `${from}: ${subject || "Ohne Betreff"}`,
+
+relatedType: "email",
+relatedId: message.id,
+
+priority: "normal",
+
+actionType: "open_email_thread",
+
+metadata: {
+threadId: thread.id
+}
+});
+
+if (dashboardEvent) {
+
+await createDashboardNotification({
+eventId: dashboardEvent.id,
+
+title: "Neue Kunden-E-Mail",
+
+message: `${from} hat eine neue Nachricht gesendet.`,
+
+type: "email",
+
+priority: "normal",
+
+remindAfterDays: 5,
+
+metadata: {
+threadId: thread.id
+}
+});
+}
+
+res.json({
+ok: true,
+message
+});
+
+} catch (error) {
+
+console.error("INBOUND EMAIL ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: "Inbound-E-Mail konnte nicht verarbeitet werden."
 });
 }
 });

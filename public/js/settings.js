@@ -58,10 +58,16 @@ try {
 const data = JSON.parse(saved);
 
 return {
-email: data.personalEmail || "",
-phone: data.personalPhone || "",
+personalName: data.personalName || "",
+gender: data.gender || "",
+
+communicationEmail: data.personalEmail || "",
+communicationPhone: data.personalPhone || "",
+
 companyEmail: data.email || "",
-companyPhone: data.phone || ""
+companyPhone: data.phone || "",
+
+companyName: data.companyName || ""
 };
 
 } catch (error) {
@@ -119,3 +125,5 @@ settingsForm.addEventListener("submit", saveSettings);
 resetBtn.addEventListener("click", resetSettings);
 
 document.addEventListener("DOMContentLoaded", loadSettings);
+
+window.getCommunicationSettings = getCommunicationSettings;

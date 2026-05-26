@@ -6,6 +6,7 @@ const mailDetailView = document.getElementById("mailDetailView");
 
 const currentFolderTitle = document.getElementById("currentFolderTitle");
 const currentFolderSubtitle = document.getElementById("currentFolderSubtitle");
+const activeCommunicationInfo = document.getElementById("activeCommunicationInfo");
 
 const composeMailModal = document.getElementById("composeMailModal");
 const newMailBtn = document.getElementById("newMailBtn");
@@ -43,6 +44,27 @@ sent: "Von WorkPilot gesendete E-Mails.",
 other: "Sonstige Kundenkommunikation.",
 trash: "Gelöschte E-Mails werden später nach 30 Tagen entfernt."
 };
+
+function renderCommunicationInfo() {
+
+const profileSettings = JSON.parse(
+localStorage.getItem("workpilot_company_settings") || "{}"
+);
+
+const communicationEmail =
+profileSettings.personalEmail || "";
+
+if (!communicationEmail) {
+
+activeCommunicationInfo.textContent =
+"Keine Kommunikations-E-Mail verbunden.";
+
+return;
+}
+
+activeCommunicationInfo.textContent =
+`Aktive Kommunikations-E-Mail: ${communicationEmail}`;
+}
 
 function formatFileSize(bytes){
 if(bytes < 1024){
@@ -693,6 +715,8 @@ document.addEventListener("DOMContentLoaded", () => {
 bindFolders();
 renderEmails();
 
+renderCommunicationInfo();
+
 addAttachmentBtn.addEventListener("click", () => {
 mailAttachmentInput.click();
 });
@@ -737,6 +761,17 @@ sendComposeMailBtn.addEventListener("click", async () => {
 const recipient = composeRecipient.value.trim();
 const subject = composeSubject.value.trim();
 const body = composeBody.value.trim();
+
+const profileSettings = JSON.parse(
+localStorage.getItem("workpilot_company_settings") || "{}"
+);
+
+const communicationEmail = profileSettings.personalEmail || "";
+
+if (!communicationEmail) {
+showToast("Bitte hinterlege zuerst deine persönliche Geschäfts-E-Mail im Profil.");
+return;
+}
 
 if (!recipient || !subject || !body) {
 showToast("Bitte alle Felder ausfüllen.");
