@@ -283,6 +283,7 @@ emptyEmails.classList.add("hidden");
 visibleMessages.forEach((message) => {
 const item = document.createElement("div");
 
+item.dataset.messageId = message.id;
 item.className = `emailThreadItem ${isUnread(message) ? "unread" : ""}`;
 
 if (message.id === activeMessageId) {
@@ -402,6 +403,39 @@ showToast(error.message);
 
 emailThreadsList.appendChild(item);
 });
+}
+
+function openEmailFromUrl() {
+const params = new URLSearchParams(window.location.search);
+const threadId = params.get("thread");
+
+if (!threadId) return;
+
+const message = emailMessagesCache.find((entry) => {
+return entry.thread_id === threadId;
+});
+
+if (!message) return;
+
+activeMessageId = message.id;
+
+document.querySelectorAll(".emailThreadItem").forEach((item) => {
+item.classList.remove("selected");
+});
+
+const matchingItem = document.querySelector(
+`[data-message-id="${message.id}"]`
+);
+
+if (matchingItem) {
+matchingItem.classList.add("selected");
+matchingItem.scrollIntoView({
+behavior: "smooth",
+block: "center"
+});
+}
+
+openMailDetail(message);
 }
 
 async function markMessageAsRead(messageId) {
@@ -713,7 +747,10 @@ renderEmails();
 
 document.addEventListener("DOMContentLoaded", () => {
 bindFolders();
-renderEmails();
+
+renderEmails().then(() => {
+openEmailFromUrl();
+});
 
 renderCommunicationInfo();
 
