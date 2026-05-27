@@ -19,6 +19,8 @@ const noteType = document.getElementById("noteType");
 const noteText = document.getElementById("noteText");
 const notesList = document.getElementById("notesList");
 const emptyNotes = document.getElementById("emptyNotes");
+const contactEmailsList = document.getElementById("contactEmailsList");
+const emptyContactEmails = document.getElementById("emptyContactEmails");
 
 let notesCache = [];
 
@@ -179,6 +181,20 @@ throw new Error(result.error || "Kontakt konnte nicht geladen werden.");
 return result.contact;
 }
 
+async function apiGetEmails(contactId) {
+
+const response = await fetch(`/api/email-inbox`);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mails konnten nicht geladen werden.");
+}
+
+return (result.messages || []).filter(
+(message) => message.contact_id === contactId
+);
+}
+
 function getOffersForContact(contactId) {
 const offers = getSavedJson(OFFERS_KEY, []);
 return offers.filter((offer) => offer.contactId === contactId);
@@ -265,6 +281,61 @@ contactInvoicesList.appendChild(item);
 bindInvoiceActions();
 }
 
+async function renderEmails(contactId) {
+
+let emails = [];
+
+try {
+emails = await apiGetEmails(contactId);
+} catch (error) {
+showToast(error.message);
+return;
+}
+
+contactEmailsList.innerHTML = "";
+
+if (!emails.length) {
+emptyContactEmails.style.display = "block";
+return;
+}
+
+emptyContactEmails.style.display = "none";
+
+emails.forEach((mail) => {
+
+const item = document.createElement("div");
+item.className = "offerItem";
+
+item.innerHTML = `
+<div class="offerInfo">
+
+<div class="offerTitle">
+${mail.subject || "Ohne Betreff"}
+</div>
+
+<div class="offerMeta">
+${mail.sender || "-"} ·
+${new Date(mail.created_at).toLocaleString("de-DE")}
+</div>
+
+</div>
+
+<div class="offerActions">
+<button
+class="btn btnSecondary"
+data-open-email="${mail.thread_id}"
+>
+Öffnen
+</button>
+</div>
+`;
+
+contactEmailsList.appendChild(item);
+});
+
+bindEmailActions();
+}
+
 function openInvoice(event) {
 const invoiceId = event.target.dataset.openInvoice;
 const invoices = getSavedJson(INVOICES_KEY, []);
@@ -282,6 +353,21 @@ window.location.href = "/invoice-editor";
 function bindInvoiceActions() {
 document.querySelectorAll("[data-open-invoice]").forEach((button) => {
 button.addEventListener("click", openInvoice);
+});
+}
+
+function openEmail(event) {
+
+const threadId = event.target.dataset.openEmail;
+
+window.location.href = `/emails?thread=${threadId}`;
+}
+
+function bindEmailActions() {
+
+document.querySelectorAll("[data-open-email]").forEach((button) => {
+
+button.addEventListener("click", openEmail);
 });
 }
 
@@ -320,6 +406,7 @@ const contact = await apiGetContact(contactId);
 renderContact(contact);
 renderOffers(contactId);
 renderInvoices(contactId);
+renderEmails (contactId);
 renderNotes(contactId);
 
 noteForm.addEventListener("submit", createNote);
