@@ -1172,6 +1172,114 @@ return null;
 return contacts[0];
 }
 
+async function analyzeInboundEmail(message, thread) {
+try {
+const response = await openai.responses.create({
+model: "gpt-4.1-mini",
+input: [
+{
+role: "system",
+content: `
+Du bist der interne E-Mail-Agent von WorkPilot für Handwerksbetriebe.
+
+Analysiere eingehende Kunden-E-Mails.
+
+Antworte ausschließlich als JSON:
+{
+"category": "offer | invoice | question | other",
+"intent": "offer_request | invoice_question | appointment | complaint | general_question | other",
+"summary": "kurze interne Zusammenfassung",
+"suggestedReply": "professioneller deutscher Antwortvorschlag",
+"dashboardTitle": "kurzer Dashboard-Titel",
+"dashboardMessage": "kurzer Dashboard-Hinweis",
+"actionLabel": "Button-Text oder null",
+"actionTarget": "create_offer_draft | open_email_thread | null",
+"priority": "low | normal | high"
+}
+
+Regeln:
+- Führe keine Aktion automatisch aus.
+- Bei Angebotsanfragen category = "offer".
+- Bei Rechnungsfragen category = "invoice".
+- Bei einfachen Rückfragen category = "question".
+- Wenn unsicher, category = "other".
+- Halte alles kurz und sachlich.
+`
+},
+{
+role: "user",
+content: `
+Von: ${message.sender}
+An: ${message.recipient}
+Betreff: ${message.subject}
+
+Nachricht:
+${message.body}
+`
+}
+]
+});
+
+const analysis = JSON.parse(response.output_text);
+
+await supabase
+.from("email_messages")
+.update({
+ai_detected_intent: analysis.intent || null,
+ai_summary: analysis.summary || null,
+ai_suggested_reply: analysis.suggestedReply || null
+})
+.eq("id", message.id);
+
+await supabase
+.from("email_threads")
+.update({
+related_type: analysis.category || "other",
+ai_category: analysis.category || "other",
+ai_summary: analysis.summary || null
+})
+.eq("id", thread.id);
+
+const dashboardEvent = await createDashboardEvent({
+type: "email_ai_analysis",
+title: analysis.dashboardTitle || "E-Mail analysiert",
+description: analysis.dashboardMessage || analysis.summary || "",
+relatedType: "email",
+relatedId: message.id,
+priority: analysis.priority || "normal",
+actionType: analysis.actionTarget || "open_email_thread",
+metadata: {
+threadId: thread.id,
+messageId: message.id,
+category: analysis.category || "other",
+intent: analysis.intent || "other"
+}
+});
+
+if (dashboardEvent) {
+await createDashboardNotification({
+eventId: dashboardEvent.id,
+title: analysis.dashboardTitle || "Neue E-Mail erkannt",
+message: analysis.dashboardMessage || "Eine neue E-Mail wurde analysiert.",
+type: "email",
+priority: analysis.priority || "normal",
+metadata: {
+threadId: thread.id,
+messageId: message.id,
+actionLabel: analysis.actionLabel || "E-Mail öffnen",
+actionTarget: analysis.actionTarget || "open_email_thread"
+}
+});
+}
+
+return analysis;
+
+} catch (error) {
+console.error("EMAIL AGENT ERROR:", error);
+return null;
+}
+}
+
 async function createOfferPdfBuffer(offerId, baseUrl) {
 const browser = await puppeteer.launch({
 headless: "new",
@@ -1674,6 +1782,8 @@ message_status: "received"
 if (messageError) {
 throw messageError;
 }
+
+await analyzeInboundEmail(message, thread);
 
 const dashboardEvent = await createDashboardEvent({
 type: "email_received",
