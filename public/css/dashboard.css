@@ -136,3 +136,16 @@ grid-template-columns: 1fr;
 flex-direction: column;
 }
 }
+
+.dashboardBottomGrid {
+display: grid;
+grid-template-columns: 1.1fr 0.9fr;
+gap: 22px;
+align-items: start;
+}
+
+@media (max-width: 950px) {
+.dashboardBottomGrid {
+grid-template-columns: 1fr;
+}
+}
