@@ -621,6 +621,16 @@ placeholder="Antwort schreiben..."
 ></textarea>
 
 <div class="mailReplyActions">
+${
+message.email_threads?.related_type === "offer"
+? `
+<button id="createOfferFromEmailBtn" class="btn btnSecondary">
+Angebotsvorschlag erstellen
+</button>
+`
+: ""
+}
+
 <button id="useAiSuggestionBtn" class="btn btnSecondary">
 KI-Vorschlag übernehmen
 </button>
@@ -691,6 +701,43 @@ function bindReplyActions(message, subject) {
 const replyTextarea = document.getElementById("mailReplyTextarea");
 const useAiSuggestionBtn = document.getElementById("useAiSuggestionBtn");
 const sendMailReplyBtn = document.getElementById("sendMailReplyBtn");
+
+const createOfferFromEmailBtn = document.getElementById("createOfferFromEmailBtn");
+
+if (createOfferFromEmailBtn) {
+createOfferFromEmailBtn.addEventListener("click", async () => {
+try {
+const response = await fetch("/api/dashboard-actions", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+actionTarget: "create_offer_draft",
+actionPayload: {
+messageId: message.id,
+threadId: message.thread_id
+}
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Angebotsvorschlag konnte nicht erstellt werden.");
+}
+
+if (result.target) {
+window.location.href = result.target;
+return;
+}
+
+showToast(result.message || "Angebotsvorschlag wurde erstellt.");
+} catch (error) {
+showToast(error.message);
+}
+});
+}
 
 useAiSuggestionBtn.addEventListener("click", () => {
 if (!message.ai_suggested_reply) {
