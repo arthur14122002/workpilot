@@ -51,9 +51,11 @@ const isPdfMode = params.get("pdf") === "1";
 
 companySettings = getSavedJson(SETTINGS_KEY, {});
 
-if (isPdfMode && offerId) {
+if (isPdfMode offerId) {
 
+if (isPdfMode) {
 document.body.classList.add("pdfMode");
+}
 
 try {
 const response = await fetch(`/api/offers/${offerId}`);
