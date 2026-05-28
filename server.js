@@ -1971,6 +1971,10 @@ app.get("/emails", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "emails.html"));
 });
 
+app.get("/dashboard", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "dashboard.html"));
+});
+
 app.use((req, res) => {
 console.log("404 ROUTE:", req.method, req.url);
 res.status(404).json({

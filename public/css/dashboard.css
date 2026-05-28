@@ -1,0 +1,138 @@
+.dashboardGrid {
+display: flex;
+flex-direction: column;
+gap: 22px;
+max-width: 1180px;
+}
+
+.dashboardStats {
+display: grid;
+grid-template-columns: repeat(5, 1fr);
+gap: 14px;
+}
+
+.statCard {
+background: #fff;
+border: 1px solid var(--wp-border);
+border-radius: 18px;
+padding: 18px;
+box-shadow: var(--wp-shadow);
+}
+
+.statCard span {
+display: block;
+font-size: 13px;
+color: var(--wp-muted);
+margin-bottom: 10px;
+}
+
+.statCard strong {
+font-size: 24px;
+letter-spacing: -0.04em;
+}
+
+.dashboardCard {
+max-width: 1180px;
+}
+
+.dashboardSectionHeader {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+gap: 18px;
+margin-bottom: 20px;
+}
+
+.dashboardSectionHeader h2 {
+margin: 0;
+font-size: 21px;
+letter-spacing: -0.03em;
+}
+
+.dashboardSectionHeader p {
+margin: 8px 0 0;
+font-size: 14px;
+line-height: 1.5;
+color: var(--wp-muted);
+}
+
+.notificationsList {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+
+.notificationItem {
+border: 1px solid var(--wp-border);
+border-radius: 16px;
+background: #fff;
+padding: 16px;
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+gap: 18px;
+}
+
+.notificationItem.unread {
+border-color: #fdba74;
+background: var(--wp-orange-soft);
+}
+
+.notificationInfo {
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+
+.notificationTitle {
+font-size: 15px;
+font-weight: 750;
+}
+
+.notificationMessage {
+font-size: 14px;
+line-height: 1.5;
+color: var(--wp-muted);
+}
+
+.notificationMeta {
+font-size: 12px;
+color: var(--wp-muted);
+}
+
+.notificationActions {
+display: flex;
+gap: 10px;
+align-items: center;
+}
+
+.calendarPlaceholder {
+border: 1px dashed var(--wp-border);
+border-radius: 16px;
+padding: 28px;
+color: var(--wp-muted);
+background: #fff;
+}
+
+.emptyState {
+text-align: center;
+padding: 34px;
+color: var(--wp-muted);
+}
+
+@media (max-width: 1050px) {
+.dashboardStats {
+grid-template-columns: repeat(2, 1fr);
+}
+}
+
+@media (max-width: 650px) {
+.dashboardStats {
+grid-template-columns: 1fr;
+}
+
+.notificationItem,
+.dashboardSectionHeader {
+flex-direction: column;
+}
+}

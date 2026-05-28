@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>WorkPilot – Dashboard</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/dashboard.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink active" href="/dashboard">Dashboard</a>
+<a class="navLink" href="/">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink" href="/emails">E-Mails</a>
+<a class="navLink" href="/settings">Profil</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Dashboard</div>
+
+<h1 class="pageTitle" id="dashboardGreeting">
+Willkommen zurück
+</h1>
+
+<p class="pageSubtitle">
+Deine Übersicht für Kunden, E-Mails, Aufgaben und wichtige Hinweise.
+</p>
+</header>
+
+<section class="dashboardGrid">
+
+<div class="dashboardStats">
+<div class="statCard">
+<span>Kontakte</span>
+<strong id="statContacts">0</strong>
+</div>
+
+<div class="statCard">
+<span>Offene Angebote</span>
+<strong id="statOpenOffers">0</strong>
+</div>
+
+<div class="statCard">
+<span>Offene Rechnungen</span>
+<strong id="statOpenInvoices">0</strong>
+</div>
+
+<div class="statCard">
+<span>Offener Umsatz</span>
+<strong id="statOpenRevenue">0,00 €</strong>
+</div>
+
+<div class="statCard">
+<span>Bezahlter Umsatz</span>
+<strong id="statPaidRevenue">0,00 €</strong>
+</div>
+</div>
+
+<section class="card dashboardCard">
+<div class="dashboardSectionHeader">
+<div>
+<h2>Benachrichtigungen</h2>
+<p>Neue Hinweise aus E-Mails, Kontakten und später Telefonaten.</p>
+</div>
+
+<button class="btn btnSecondary" id="refreshDashboardBtn">
+Aktualisieren
+</button>
+</div>
+
+<div id="notificationsList" class="notificationsList"></div>
+
+<div id="emptyNotifications" class="emptyState">
+<p>Keine neuen Benachrichtigungen.</p>
+</div>
+</section>
+
+<section class="card dashboardCard">
+<div class="dashboardSectionHeader">
+<div>
+<h2>Kalender & Erinnerungen</h2>
+<p>Später erscheinen hier Termine, Follow-ups und Zahlungsziele.</p>
+</div>
+</div>
+
+<div class="calendarPlaceholder">
+Kalender V1 wird im nächsten Schritt vorbereitet.
+</div>
+</section>
+
+</section>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>
