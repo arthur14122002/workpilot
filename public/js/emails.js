@@ -405,7 +405,7 @@ emailThreadsList.appendChild(item);
 });
 }
 
-function openEmailFromUrl() {
+async function openEmailFromUrl() {
 const params = new URLSearchParams(window.location.search);
 const threadId = params.get("thread");
 
@@ -417,25 +417,52 @@ return entry.thread_id === threadId;
 
 if (!message) return;
 
-activeMessageId = message.id;
+const targetFolder = getMessageFolder(message);
 
-document.querySelectorAll(".emailThreadItem").forEach((item) => {
-item.classList.remove("selected");
+activeFolder = targetFolder;
+
+document.querySelectorAll(".mailFolder").forEach((button) => {
+button.classList.toggle(
+"active",
+button.dataset.folder === targetFolder
+);
 });
 
+activeMessageId = message.id;
+
+await renderEmails();
+
+const updatedMessage = emailMessagesCache.find((entry) => {
+return entry.id === message.id;
+});
+
+if (!updatedMessage) return;
+
 const matchingItem = document.querySelector(
-`[data-message-id="${message.id}"]`
+`[data-message-id="${updatedMessage.id}"]`
 );
 
 if (matchingItem) {
 matchingItem.classList.add("selected");
+matchingItem.classList.remove("unread");
+
 matchingItem.scrollIntoView({
 behavior: "smooth",
 block: "center"
 });
 }
 
-openMailDetail(message);
+if (isUnread(updatedMessage)) {
+try {
+await markMessageAsRead(updatedMessage.id);
+updatedMessage.read_at = new Date().toISOString();
+updateFolderCounts();
+} catch (error) {
+console.error(error);
+}
+}
+
+await openMailDetail(updatedMessage);
 }
 
 async function markMessageAsRead(messageId) {
@@ -748,8 +775,8 @@ renderEmails();
 document.addEventListener("DOMContentLoaded", () => {
 bindFolders();
 
-renderEmails().then(() => {
-openEmailFromUrl();
+renderEmails().then(async () => {
+await openEmailFromUrl();
 });
 
 renderCommunicationInfo();
