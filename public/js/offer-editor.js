@@ -51,7 +51,7 @@ const isPdfMode = params.get("pdf") === "1";
 
 companySettings = getSavedJson(SETTINGS_KEY, {});
 
-if (isPdfMode offerId) {
+if (offerId) {
 
 if (isPdfMode) {
 document.body.classList.add("pdfMode");
