@@ -933,18 +933,108 @@ type: "calendar",
 message: "Kalendereintrag wurde vorbereitet."
 };
 
-case "create_offer_draft":
+case "create_offer_draft": {
 
-console.log(
-"Angebotsentwurf vorbereiten:",
-actionPayload
-);
+const {
+messageId,
+threadId
+} = actionPayload;
+
+if (!messageId) {
+return {
+ok: false,
+error: "Keine E-Mail für den Angebotsvorschlag gefunden."
+};
+}
+
+const { data: message, error: messageError } = await supabase
+.from("email_messages")
+.select(`
+*,
+contacts (
+id,
+name,
+email,
+phone,
+street,
+city
+)
+`)
+.eq("id", messageId)
+.single();
+
+if (messageError) {
+throw messageError;
+}
+
+const contact = message.contacts || null;
+
+const offerDraft = {
+id: `offer_${Date.now()}`,
+
+contactId: contact?.id || message.contact_id || null,
+
+offerNumber: `AN-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`,
+
+status: "draft",
+
+recipientName: contact?.name || message.sender || "",
+recipientStreet: contact?.street || "",
+recipientCity: contact?.city || "",
+
+offerDate: new Date().toISOString().slice(0, 10),
+validUntil: "",
+
+introText:
+"vielen Dank für Ihre Anfrage. Gerne erstellen wir Ihnen folgendes Angebot:",
+
+positions: [
+{
+id: `pos_${Date.now()}`,
+description: message.subject || "Leistung gemäß Kundenanfrage",
+quantity: "1",
+unit: "Pauschal",
+unitPrice: "0,00",
+total: "0,00"
+}
+],
+
+closingText:
+"Bei Fragen stehen wir Ihnen jederzeit gerne zur Verfügung.",
+
+source: {
+type: "email",
+messageId,
+threadId: threadId || message.thread_id
+}
+};
+
+const { data: offer, error: offerError } = await supabase
+.from("offers")
+.insert([
+{
+id: offerDraft.id,
+contact_id: offerDraft.contactId,
+offer_number: offerDraft.offerNumber,
+status: "draft",
+data: offerDraft
+}
+])
+.select()
+.single();
+
+if (offerError) {
+throw offerError;
+}
 
 return {
 ok: true,
 type: "offer_draft",
-message: "Angebotsvorschlag wurde vorbereitet."
+message: "Angebotsvorschlag wurde erstellt.",
+target: `/offer-editor?id=${offer.id}`,
+offer
 };
+}
 
 case "open_email_thread":
 

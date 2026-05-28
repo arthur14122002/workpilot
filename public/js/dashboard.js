@@ -207,9 +207,45 @@ if (!notification) return;
 
 await markNotificationAsRead(notification.id);
 
-const threadId =
-notification.metadata?.threadId ||
-notification.dashboard_events?.metadata?.threadId;
+const actionTarget =
+notification.metadata?.actionTarget ||
+notification.dashboard_events?.action_type;
+
+const actionPayload = {
+...(notification.metadata || {}),
+...(notification.dashboard_events?.metadata || {})
+};
+
+if (actionTarget && actionTarget !== "open_email_thread") {
+const response = await fetch("/api/dashboard-actions", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+actionTarget,
+actionPayload
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+showToast(result.error || "Aktion konnte nicht ausgeführt werden.");
+return;
+}
+
+if (result.target) {
+window.location.href = result.target;
+return;
+}
+
+showToast(result.message || "Aktion wurde ausgeführt.");
+await renderDashboard();
+return;
+}
+
+const threadId = actionPayload.threadId;
 
 if (threadId) {
 window.location.href = `/emails?thread=${threadId}`;
