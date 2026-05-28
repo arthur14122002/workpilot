@@ -979,7 +979,7 @@ contactId: contact?.id || message.contact_id || null,
 
 offerNumber: `AN-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`,
 
-status: "draft",
+status: "open",
 
 recipientName: contact?.name || message.sender || "",
 recipientStreet: contact?.street || "",
@@ -1019,7 +1019,7 @@ const { data: offer, error: offerError } = await supabase
 id: offerDraft.id,
 contact_id: offerDraft.contactId,
 offer_number: offerDraft.offerNumber,
-status: "draft",
+status: "open",
 data: offerDraft
 }
 ])
