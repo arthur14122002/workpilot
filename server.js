@@ -4,6 +4,7 @@ const { createClient } = require("@supabase/supabase-js");
 const OpenAI = require("openai");
 const puppeteer = require("puppeteer");
 const multer = require("multer");
+const crypto = require("crypto");
 
 const upload = multer({
 storage: multer.memoryStorage()
@@ -969,8 +970,10 @@ throw messageError;
 
 const contact = message.contacts || null;
 
+const offerId = crypto.randomUUID();
+
 const offerDraft = {
-id: `offer_${Date.now()}`,
+id: offerId,
 
 contactId: contact?.id || message.contact_id || null,
 
