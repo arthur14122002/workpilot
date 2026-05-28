@@ -23,12 +23,11 @@ const mailAttachmentInput = document.getElementById("mailAttachmentInput");
 const mailAttachmentsList = document.getElementById("mailAttachmentsList");
 
 let selectedAttachments = [];
-let activeFolder = "inbox";
+let activeFolder = "offer";
 let emailMessagesCache = [];
 let activeMessageId = null;
 
 const folderLabels = {
-inbox: "Posteingang",
 offer: "Angebote",
 invoice: "Rechnungen",
 sent: "Gesendet",
@@ -37,7 +36,6 @@ trash: "Papierkorb"
 };
 
 const folderSubtitles = {
-inbox: "Alle aktuellen E-Mails in WorkPilot.",
 offer: "E-Mails, die zu Angeboten gehören.",
 invoice: "E-Mails, die zu Rechnungen gehören.",
 sent: "Von WorkPilot gesendete E-Mails.",
@@ -146,7 +144,7 @@ if (message.direction === "outbound") return "sent";
 if (relatedType === "offer") return "offer";
 if (relatedType === "invoice") return "invoice";
 
-return "inbox";
+return "other";
 }
 
 function isUnread(message) {
@@ -161,7 +159,6 @@ return getMessageFolder(message) === activeFolder;
 
 function updateFolderCounts() {
 const counts = {
-inbox: 0,
 offer: 0,
 invoice: 0,
 sent: 0,
@@ -177,7 +174,6 @@ counts[folder] += 1;
 }
 });
 
-document.getElementById("countInbox").textContent = counts.inbox;
 document.getElementById("countOffer").textContent = counts.offer;
 document.getElementById("countInvoice").textContent = counts.invoice;
 document.getElementById("countSent").textContent = counts.sent;

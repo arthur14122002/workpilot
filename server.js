@@ -1804,27 +1804,6 @@ threadId: thread.id
 }
 });
 
-if (dashboardEvent) {
-
-await createDashboardNotification({
-eventId: dashboardEvent.id,
-
-title: "Neue Kunden-E-Mail",
-
-message: `${from} hat eine neue Nachricht gesendet.`,
-
-type: "email",
-
-priority: "normal",
-
-remindAfterDays: 5,
-
-metadata: {
-threadId: thread.id
-}
-});
-}
-
 res.json({
 ok: true,
 message
