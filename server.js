@@ -260,15 +260,19 @@ const offer = req.body;
 
 const { data, error } = await supabase
 .from("offers")
-.insert([
+.upsert(
 {
 id: offer.id,
 contact_id: offer.contactId || null,
 offer_number: offer.offerNumber || null,
 status: offer.status || "open",
-data: offer
+data: offer,
+updated_at: new Date().toISOString()
+},
+{
+onConflict: "id"
 }
-])
+)
 .select()
 .single();
 
