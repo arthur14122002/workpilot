@@ -11,11 +11,38 @@ link.classList.add("active");
 });
 }
 
+async function updateEmailCounter() {
 const emailCounter = document.getElementById("emailCounter");
 
-if (emailCounter) {
+if (!emailCounter) return;
+
+try {
+const response = await fetch("/api/email-inbox");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail-Zähler konnte nicht geladen werden.");
+}
+
+const unreadCount = (result.messages || []).filter((message) => {
+return (
+message.direction === "inbound" &&
+!message.read_at &&
+!message.deleted_at
+);
+}).length;
+
+if (unreadCount > 0) {
 emailCounter.style.display = "flex";
-emailCounter.textContent = "3";
+emailCounter.textContent = unreadCount;
+} else {
+emailCounter.style.display = "none";
+emailCounter.textContent = "0";
+}
+
+} catch (error) {
+console.error(error);
+}
 }
 
 function ensureToastContainer() {
@@ -55,4 +82,5 @@ toast.remove();
 document.addEventListener("DOMContentLoaded", () => {
 setActiveNav();
 ensureToastContainer();
+updateEmailCounter();
 });
