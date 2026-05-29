@@ -2003,7 +2003,7 @@ url: data.signedUrl
 
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/", (req, res) => {
+app.get("/contacts", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "index.html"));
 });
 
@@ -2047,7 +2047,7 @@ app.get("/emails", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "emails.html"));
 });
 
-app.get("/dashboard", (req, res) => {
+app.get("/", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "dashboard.html"));
 });
 
