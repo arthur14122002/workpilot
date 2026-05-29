@@ -279,3 +279,23 @@ transition: 0.25s ease;
 opacity: 1;
 transform: translateX(0);
 }
+
+.navLink {
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+
+.navCounter {
+background: #f28c28;
+color: white;
+font-size: 12px;
+font-weight: 600;
+min-width: 20px;
+height: 20px;
+padding: 0 6px;
+border-radius: 999px;
+display: flex;
+align-items: center;
+justify-content: center;
+}

@@ -11,6 +11,13 @@ link.classList.add("active");
 });
 }
 
+const emailCounter = document.getElementById("emailCounter");
+
+if (emailCounter) {
+emailCounter.style.display = "flex";
+emailCounter.textContent = "3";
+}
+
 function ensureToastContainer() {
 let container = document.querySelector(".toastContainer");
 
