@@ -1247,6 +1247,115 @@ events: data || []
 });
 });
 
+app.get("/api/calendar-events", async (req, res) => {
+const { data, error } = await supabase
+.from("calendar_events")
+.select("*")
+.order("event_date", { ascending: true })
+.order("event_time", { ascending: true });
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+events: data || []
+});
+});
+
+app.post("/api/calendar-events", async (req, res) => {
+const event = req.body;
+
+const { data, error } = await supabase
+.from("calendar_events")
+.insert([
+{
+title: event.title,
+description: event.description || "",
+event_date: event.eventDate,
+event_time: event.eventTime || null,
+reminder_at: event.reminderAt || null,
+color: event.color || "orange",
+related_type: event.relatedType || null,
+related_id: event.relatedId || null,
+source: event.source || "manual",
+metadata: event.metadata || {}
+}
+])
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+event: data
+});
+});
+
+app.put("/api/calendar-events/:id", async (req, res) => {
+const { id } = req.params;
+const event = req.body;
+
+const { data, error } = await supabase
+.from("calendar_events")
+.update({
+title: event.title,
+description: event.description || "",
+event_date: event.eventDate,
+event_time: event.eventTime || null,
+reminder_at: event.reminderAt || null,
+color: event.color || "orange",
+status: event.status || "open",
+metadata: event.metadata || {},
+updated_at: new Date().toISOString()
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+event: data
+});
+});
+
+app.delete("/api/calendar-events/:id", async (req, res) => {
+const { id } = req.params;
+
+const { error } = await supabase
+.from("calendar_events")
+.delete()
+.eq("id", id);
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true
+});
+});
+
 async function findMatchingContact(email, name = "") {
 
 if (!email) return null;

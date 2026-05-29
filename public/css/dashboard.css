@@ -149,3 +149,27 @@ align-items: start;
 grid-template-columns: 1fr;
 }
 }
+
+.calendarEventsList {
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.calendarEventItem {
+border: 1px solid var(--wp-border);
+border-radius: 12px;
+padding: 12px 14px;
+background: #fff;
+}
+
+.calendarEventDate {
+font-size: 12px;
+color: var(--wp-muted);
+margin-bottom: 4px;
+}
+
+.calendarEventTitle {
+font-size: 14px;
+font-weight: 600;
+}

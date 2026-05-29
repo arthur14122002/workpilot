@@ -143,6 +143,70 @@ statOpenRevenue.textContent = euro(openRevenue);
 statPaidRevenue.textContent = euro(paidRevenue);
 }
 
+async function apiGetCalendarEvents() {
+const response = await fetch("/api/calendar-events");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(
+result.error || "Kalendereinträge konnten nicht geladen werden."
+);
+}
+
+return result.events || [];
+}
+
+async function renderCalendarEvents() {
+
+const list =
+document.getElementById("calendarEventsList");
+
+if (!list) return;
+
+try {
+
+const events =
+await apiGetCalendarEvents();
+
+list.innerHTML = "";
+
+if (!events.length) {
+
+list.innerHTML = `
+<div class="emptyState">
+Noch keine Termine vorhanden.
+</div>
+`;
+
+return;
+}
+
+events.forEach((event) => {
+
+const item = document.createElement("div");
+
+item.className = "calendarEventItem";
+
+item.innerHTML = `
+<div class="calendarEventDate">
+${event.event_date}
+</div>
+
+<div class="calendarEventTitle">
+${event.title}
+</div>
+`;
+
+list.appendChild(item);
+
+});
+
+} catch (error) {
+
+console.error(error);
+}
+}
+
 function calculateInvoiceGross(invoice) {
 const positions = Array.isArray(invoice.positions) ? invoice.positions : [];
 
@@ -235,6 +299,7 @@ try {
 renderGreeting();
 await renderStats();
 await renderNotifications();
+await renderCalendarEvents();
 } catch (error) {
 showToast(error.message);
 }
