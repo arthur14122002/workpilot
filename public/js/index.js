@@ -83,36 +83,6 @@ const vat = net * (vatRate / 100);
 return net + vat;
 }
 
-function renderKpis() {
-const contacts = getSavedJson(CONTACTS_KEY, []);
-const offers = getSavedJson(OFFERS_KEY, []);
-const invoices = getSavedJson(INVOICES_KEY, []);
-
-const openOffers = offers.filter(
-(offer) => offer.status === "open" || !offer.status
-);
-
-const openInvoices = invoices.filter(
-(invoice) => invoice.status === "open" || !invoice.status
-);
-
-const openRevenue = openInvoices.reduce((sum, invoice) => {
-return sum + calculateInvoiceGross(invoice);
-}, 0);
-
-document.getElementById("contactsKpi").textContent =
-contacts.length;
-
-document.getElementById("openOffersKpi").textContent =
-openOffers.length;
-
-document.getElementById("openInvoicesKpi").textContent =
-openInvoices.length;
-
-document.getElementById("openRevenueKpi").textContent =
-euro(openRevenue);
-}
-
 function generateId(prefix = "id") {
 return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -337,11 +307,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 try {
 contactsCache = await apiGetContacts();
 renderContacts();
-renderKpis();
 } catch (error) {
 showToast(error.message);
 renderContacts();
-renderKpis();
 }
 });
 
