@@ -11,6 +11,10 @@ const emptyNotifications = document.getElementById("emptyNotifications");
 const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
 const createCalendarEventBtn = document.getElementById("createCalendarEventBtn");
 
+let currentCalendarDate = new Date();
+
+renderMonthCalendar(events);
+
 function euro(value) {
 const number = Number(value) || 0;
 
