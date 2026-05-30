@@ -2121,6 +2121,39 @@ __dirname,
 );
 });
 
+app.get("/calendar-edit", (req, res) => {
+res.sendFile(
+path.join(
+__dirname,
+"public",
+"html",
+"calendar-edit.html"
+)
+);
+});
+
+app.get("/api/calendar-events/:id", async (req, res) => {
+const { id } = req.params;
+
+const { data, error } = await supabase
+.from("calendar_events")
+.select("*")
+.eq("id", id)
+.single();
+
+if (error) {
+return res.status(404).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+event: data
+});
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/contacts", (req, res) => {

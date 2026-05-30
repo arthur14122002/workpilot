@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>WorkPilot – Termin erstellen</title>
+
+<link rel="stylesheet" href="/css/app-layout.css" />
+<link rel="stylesheet" href="/css/calendar-create.css" />
+</head>
+<body>
+<div class="appShell">
+<aside class="sidebar">
+<div>
+<div class="logoWrap">
+<div class="logoBox">WP</div>
+<div class="logoText">WorkPilot</div>
+</div>
+
+<nav class="navGroup">
+<a class="navLink" href="/">Dashboard</a>
+<a class="navLink" href="/contacts">Kontakte</a>
+<a class="navLink" href="/offers">Angebote</a>
+<a class="navLink" href="/invoices">Rechnungen</a>
+<a class="navLink" href="/emails">
+E-Mails
+<span id="emailCounter" class="navCounter" style="display:none;">0</span>
+</a>
+<a class="navLink" href="/settings">Profil</a>
+</nav>
+</div>
+
+<div class="sidebarBottom">
+<a class="navLink" href="/login">Anmelden</a>
+</div>
+</aside>
+
+<main class="content">
+<header class="pageHeader">
+<div class="pageEyebrow">Kalender</div>
+<h1 class="pageTitle">Termin erstellen</h1>
+<p class="pageSubtitle">
+Lege Termine, Erinnerungen, Rückrufe oder Follow-ups für deinen Arbeitsalltag an.
+</p>
+</header>
+
+<section class="card calendarCreateCard">
+<form id="calendarEventForm">
+<div class="formGrid">
+
+<div class="formField full">
+<label for="title">Titel *</label>
+<input id="title" name="title" placeholder="z. B. Rückruf Herr Müller" required />
+</div>
+
+<div class="formField">
+<label for="eventDate">Datum *</label>
+<input id="eventDate" name="eventDate" type="date" required />
+</div>
+
+<div class="formField">
+<label for="eventTime">Uhrzeit</label>
+<input id="eventTime" name="eventTime" type="time" />
+</div>
+
+<div class="formField full">
+<label for="description">Beschreibung</label>
+<textarea id="description" name="description" placeholder="Notizen zum Termin..."></textarea>
+</div>
+
+</div>
+
+<div class="buttonRow">
+<a class="btn btnSecondary" href="/">Abbrechen</a>
+<button class="btn btnPrimary" type="submit">Termin speichern</button>
+</div>
+</form>
+</section>
+</main>
+</div>
+
+<script src="/js/app-layout.js"></script>
+<script src="/js/calendar-create.js"></script>
+</body>
+</html>

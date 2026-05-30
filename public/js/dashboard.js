@@ -185,7 +185,6 @@ return;
 events.forEach((event) => {
 
 const item = document.createElement("div");
-
 item.className = "calendarEventItem";
 
 item.innerHTML = `
@@ -198,7 +197,14 @@ ${event.title}
 </div>
 `;
 
-list.appendChild(item);
+item.style.cursor = "pointer";
+
+item.addEventListener("click", () => {
+window.location.href =
+`/calendar-edit?id=${event.id}`;
+});
+
+calendarEventsList.appendChild(item);
 
 });
 
