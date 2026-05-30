@@ -16,8 +16,98 @@ const calendarMonthGrid = document.getElementById("calendarMonthGrid");
 const prevMonthBtn = document.getElementById("prevMonthBtn");
 const nextMonthBtn = document.getElementById("nextMonthBtn");
 
+const calendarDayModal = document.getElementById("calendarDayModal");
+const calendarDayModalTitle = document.getElementById("calendarDayModalTitle");
+const calendarDayModalSubtitle = document.getElementById("calendarDayModalSubtitle");
+const calendarDayModalList = document.getElementById("calendarDayModalList");
+const closeCalendarDayModal = document.getElementById("closeCalendarDayModal");
+const addEventForSelectedDayBtn = document.getElementById("addEventForSelectedDayBtn");
+
+let selectedCalendarDateKey = null;
 let currentCalendarDate = new Date();
 let calendarEventsCache = [];
+
+function openCalendarDayModal(dateKey) {
+selectedCalendarDateKey = dateKey;
+
+const events = getEventsForDate(calendarEventsCache, dateKey);
+
+const date = new Date(`${dateKey}T00:00:00`);
+
+calendarDayModalTitle.textContent =
+date.toLocaleDateString("de-DE", {
+weekday: "long",
+day: "2-digit",
+month: "2-digit",
+year: "numeric"
+});
+
+calendarDayModalSubtitle.textContent =
+events.length
+? `${events.length} Termin(e) an diesem Tag`
+: "Keine Termine an diesem Tag";
+
+calendarDayModalList.innerHTML = "";
+
+if (!events.length) {
+calendarDayModalList.innerHTML = `
+<div class="emptyState">
+Noch keine Termine an diesem Tag.
+</div>
+`;
+} else {
+events.forEach((event) => {
+const item = document.createElement("div");
+item.className = "calendarDayModalItem";
+
+item.innerHTML = `
+<div>
+<div class="calendarDayModalItemTitle">${event.title}</div>
+<div class="calendarDayModalItemMeta">
+${event.event_time ? event.event_time.slice(0, 5) + " Uhr" : "Keine Uhrzeit"}
+</div>
+</div>
+
+<div class="calendarDayModalActions">
+<button class="calendarIconBtn" data-edit-event="${event.id}">✏️</button>
+<button class="calendarIconBtn" data-delete-event="${event.id}">🗑</button>
+</div>
+`;
+
+calendarDayModalList.appendChild(item);
+});
+}
+
+calendarDayModal.classList.remove("hidden");
+
+document.querySelectorAll("[data-edit-event]").forEach((button) => {
+button.addEventListener("click", () => {
+window.location.href = `/calendar-edit?id=${button.dataset.editEvent}`;
+});
+});
+
+document.querySelectorAll("[data-delete-event]").forEach((button) => {
+button.addEventListener("click", async () => {
+try {
+const response = await fetch(`/api/calendar-events/${button.dataset.deleteEvent}`, {
+method: "DELETE"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Termin konnte nicht gelöscht werden.");
+}
+
+showToast("Termin wurde gelöscht.");
+await renderDashboard();
+openCalendarDayModal(selectedCalendarDateKey);
+} catch (error) {
+showToast(error.message);
+}
+});
+});
+}
 
 function euro(value) {
 const number = Number(value) || 0;
@@ -235,7 +325,7 @@ day.appendChild(moreEl);
 }
 
 day.addEventListener("click", () => {
-window.location.href = `/calendar-create?date=${dateKey}`;
+openCalendarDayModal(dateKey);
 });
 
 calendarMonthGrid.appendChild(day);
@@ -368,6 +458,19 @@ if (nextMonthBtn) {
 nextMonthBtn.addEventListener("click", async () => {
 currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
 renderMonthCalendar(calendarEventsCache);
+});
+}
+
+if (closeCalendarDayModal) {
+closeCalendarDayModal.addEventListener("click", () => {
+calendarDayModal.classList.add("hidden");
+});
+}
+
+if (addEventForSelectedDayBtn) {
+addEventForSelectedDayBtn.addEventListener("click", () => {
+if (!selectedCalendarDateKey) return;
+window.location.href = `/calendar-create?date=${selectedCalendarDateKey}`;
 });
 }
 

@@ -260,3 +260,84 @@ font-size: 11px;
 color: var(--wp-muted);
 margin-top: 4px;
 }
+
+.calendarDayModal {
+margin-top: 16px;
+border: 1px solid var(--wp-border);
+border-radius: 18px;
+background: #fff;
+padding: 18px;
+}
+
+.calendarDayModal.hidden {
+display: none;
+}
+
+.calendarDayModalHeader {
+display: flex;
+justify-content: space-between;
+gap: 16px;
+margin-bottom: 14px;
+}
+
+.calendarDayModalHeader h3 {
+margin: 0;
+font-size: 18px;
+}
+
+.calendarDayModalHeader p {
+margin: 6px 0 0;
+font-size: 13px;
+color: var(--wp-muted);
+}
+
+.calendarModalClose {
+border: none;
+background: transparent;
+font-size: 26px;
+cursor: pointer;
+line-height: 1;
+}
+
+.calendarDayModalList {
+display: flex;
+flex-direction: column;
+gap: 10px;
+margin-bottom: 14px;
+}
+
+.calendarDayModalItem {
+border: 1px solid var(--wp-border);
+border-radius: 14px;
+padding: 12px 14px;
+background: #fffaf5;
+display: flex;
+justify-content: space-between;
+gap: 12px;
+align-items: center;
+}
+
+.calendarDayModalItemTitle {
+font-weight: 700;
+font-size: 14px;
+}
+
+.calendarDayModalItemMeta {
+font-size: 12px;
+color: var(--wp-muted);
+margin-top: 4px;
+}
+
+.calendarDayModalActions {
+display: flex;
+gap: 8px;
+}
+
+.calendarIconBtn {
+border: 1px solid var(--wp-border);
+background: #fff;
+border-radius: 10px;
+height: 34px;
+min-width: 34px;
+cursor: pointer;
+}
