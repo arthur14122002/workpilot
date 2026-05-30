@@ -9,6 +9,7 @@ const statPaidRevenue = document.getElementById("statPaidRevenue");
 const notificationsList = document.getElementById("notificationsList");
 const emptyNotifications = document.getElementById("emptyNotifications");
 const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
+const createCalendarEventBtn = document.getElementById("createCalendarEventBtn");
 
 function euro(value) {
 const number = Number(value) || 0;
@@ -306,5 +307,11 @@ showToast(error.message);
 }
 
 refreshDashboardBtn.addEventListener("click", renderDashboard);
+
+if (createCalendarEventBtn) {
+createCalendarEventBtn.addEventListener("click", () => {
+window.location.href = "/calendar-create";
+});
+}
 
 document.addEventListener("DOMContentLoaded", renderDashboard);
