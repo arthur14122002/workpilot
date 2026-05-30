@@ -23,6 +23,8 @@ const calendarDayModalList = document.getElementById("calendarDayModalList");
 const closeCalendarDayModal = document.getElementById("closeCalendarDayModal");
 const addEventForSelectedDayBtn = document.getElementById("addEventForSelectedDayBtn");
 
+const calendarDayModalOverlay = document.getElementById("calendarDayModalOverlay");
+
 let selectedCalendarDateKey = null;
 let currentCalendarDate = new Date();
 let calendarEventsCache = [];
@@ -78,7 +80,9 @@ calendarDayModalList.appendChild(item);
 });
 }
 
-calendarDayModal.classList.remove("hidden");
+calendarDayModalOverlay.classList.remove(
+"hidden"
+);
 
 document.querySelectorAll("[data-edit-event]").forEach((button) => {
 button.addEventListener("click", () => {
@@ -463,7 +467,26 @@ renderMonthCalendar(calendarEventsCache);
 
 if (closeCalendarDayModal) {
 closeCalendarDayModal.addEventListener("click", () => {
-calendarDayModal.classList.add("hidden");
+calendarDayModalOverlay.classList.add(
+"hidden"
+);
+calendarDayModalOverlay.addEventListener(
+"click",
+(event) => {
+
+if (
+event.target === calendarDayModalOverlay
+) {
+
+calendarDayModalOverlay.classList.add(
+"hidden"
+);
+
+}
+
+}
+);
+
 });
 }
 

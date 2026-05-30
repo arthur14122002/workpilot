@@ -262,11 +262,17 @@ margin-top: 4px;
 }
 
 .calendarDayModal {
-margin-top: 16px;
-border: 1px solid var(--wp-border);
-border-radius: 18px;
+width: 100%;
+max-width: 650px;
+
 background: #fff;
-padding: 18px;
+
+border-radius: 22px;
+
+padding: 24px;
+
+box-shadow:
+0 20px 60px rgba(0,0,0,0.18);
 }
 
 .calendarDayModal.hidden {
@@ -340,4 +346,23 @@ border-radius: 10px;
 height: 34px;
 min-width: 34px;
 cursor: pointer;
+}
+
+.calendarDayModalOverlay {
+position: fixed;
+inset: 0;
+
+background: rgba(0,0,0,0.35);
+
+display: flex;
+align-items: center;
+justify-content: center;
+
+padding: 20px;
+
+z-index: 9999;
+}
+
+.calendarDayModalOverlay.hidden {
+display: none;
 }
