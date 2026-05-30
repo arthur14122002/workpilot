@@ -11,9 +11,13 @@ const emptyNotifications = document.getElementById("emptyNotifications");
 const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
 const createCalendarEventBtn = document.getElementById("createCalendarEventBtn");
 
-let currentCalendarDate = new Date();
+const calendarMonthTitle = document.getElementById("calendarMonthTitle");
+const calendarMonthGrid = document.getElementById("calendarMonthGrid");
+const prevMonthBtn = document.getElementById("prevMonthBtn");
+const nextMonthBtn = document.getElementById("nextMonthBtn");
 
-renderMonthCalendar(events);
+let currentCalendarDate = new Date();
+let calendarEventsCache = [];
 
 function euro(value) {
 const number = Number(value) || 0;
@@ -161,59 +165,88 @@ result.error || "Kalendereinträge konnten nicht geladen werden."
 return result.events || [];
 }
 
-async function renderCalendarEvents() {
-
-const list =
-document.getElementById("calendarEventsList");
-
-if (!list) return;
-
-try {
-
-const events =
-await apiGetCalendarEvents();
-
-list.innerHTML = "";
-
-if (!events.length) {
-
-list.innerHTML = `
-<div class="emptyState">
-Noch keine Termine vorhanden.
-</div>
-`;
-
-return;
+function formatDateKey(date) {
+return date.toISOString().slice(0, 10);
 }
 
-events.forEach((event) => {
+function getEventsForDate(events, dateKey) {
+return events.filter((event) => {
+return event.event_date === dateKey;
+});
+}
 
-const item = document.createElement("div");
-item.className = "calendarEventItem";
+function renderMonthCalendar(events) {
+if (!calendarMonthTitle || !calendarMonthGrid) return;
 
-item.innerHTML = `
-<div class="calendarEventDate">
-${event.event_date}
-</div>
+const year = currentCalendarDate.getFullYear();
+const month = currentCalendarDate.getMonth();
 
-<div class="calendarEventTitle">
-${event.title}
-</div>
+const monthLabel = currentCalendarDate.toLocaleDateString("de-DE", {
+month: "long",
+year: "numeric"
+});
+
+calendarMonthTitle.textContent =
+monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+calendarMonthGrid.innerHTML = "";
+
+const firstDayOfMonth = new Date(year, month, 1);
+const lastDayOfMonth = new Date(year, month + 1, 0);
+
+const startOffset = (firstDayOfMonth.getDay() + 6) % 7;
+const daysInMonth = lastDayOfMonth.getDate();
+
+const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+for (let index = 0; index < totalCells; index++) {
+const dayNumber = index - startOffset + 1;
+
+const day = document.createElement("div");
+day.className = "calendarDay";
+
+if (dayNumber < 1 || dayNumber > daysInMonth) {
+day.classList.add("isMuted");
+day.innerHTML = "";
+calendarMonthGrid.appendChild(day);
+continue;
+}
+
+const date = new Date(year, month, dayNumber);
+const dateKey = formatDateKey(date);
+const dayEvents = getEventsForDate(events, dateKey);
+
+day.innerHTML = `
+<div class="calendarDayNumber">${dayNumber}</div>
 `;
 
-item.style.cursor = "pointer";
-
-item.addEventListener("click", () => {
-window.location.href =
-`/calendar-edit?id=${event.id}`;
+dayEvents.slice(0, 1).forEach((event) => {
+const eventEl = document.createElement("div");
+eventEl.className = "calendarDayEvent";
+eventEl.textContent = event.title;
+day.appendChild(eventEl);
 });
 
-calendarEventsList.appendChild(item);
+if (dayEvents.length > 1) {
+const moreEl = document.createElement("div");
+moreEl.className = "calendarMore";
+moreEl.textContent = `+${dayEvents.length - 1} weitere`;
+day.appendChild(moreEl);
+}
 
+day.addEventListener("click", () => {
+window.location.href = `/calendar-create?date=${dateKey}`;
 });
 
+calendarMonthGrid.appendChild(day);
+}
+}
+
+async function renderCalendarEvents() {
+try {
+calendarEventsCache = await apiGetCalendarEvents();
+renderMonthCalendar(calendarEventsCache);
 } catch (error) {
-
 console.error(error);
 }
 }
@@ -321,6 +354,20 @@ refreshDashboardBtn.addEventListener("click", renderDashboard);
 if (createCalendarEventBtn) {
 createCalendarEventBtn.addEventListener("click", () => {
 window.location.href = "/calendar-create";
+});
+}
+
+if (prevMonthBtn) {
+prevMonthBtn.addEventListener("click", async () => {
+currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+renderMonthCalendar(calendarEventsCache);
+});
+}
+
+if (nextMonthBtn) {
+nextMonthBtn.addEventListener("click", async () => {
+currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+renderMonthCalendar(calendarEventsCache);
 });
 }
 
