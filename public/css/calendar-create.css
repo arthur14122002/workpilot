@@ -1,0 +1,8 @@
+.calendarCreateCard {
+max-width: 860px;
+}
+
+#description {
+min-height: 130px;
+resize: vertical;
+}
