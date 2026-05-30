@@ -173,3 +173,90 @@ margin-bottom: 4px;
 font-size: 14px;
 font-weight: 600;
 }
+
+.calendarWidget {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+
+.calendarTop {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 12px;
+}
+
+.calendarMonthTitle {
+font-size: 17px;
+font-weight: 750;
+letter-spacing: -0.03em;
+}
+
+.calendarNavBtn {
+width: 34px;
+height: 34px;
+border-radius: 999px;
+border: 1px solid var(--wp-border);
+background: #fff;
+cursor: pointer;
+font-size: 22px;
+line-height: 1;
+}
+
+.calendarWeekdays,
+.calendarMonthGrid {
+display: grid;
+grid-template-columns: repeat(7, 1fr);
+gap: 8px;
+}
+
+.calendarWeekdays div {
+font-size: 12px;
+font-weight: 700;
+color: var(--wp-muted);
+text-align: center;
+}
+
+.calendarDay {
+min-height: 76px;
+border: 1px solid var(--wp-border);
+border-radius: 14px;
+background: #fff;
+padding: 9px;
+cursor: pointer;
+transition: 0.16s ease;
+overflow: hidden;
+}
+
+.calendarDay:hover {
+border-color: #fdba74;
+background: var(--wp-orange-soft);
+}
+
+.calendarDay.isMuted {
+opacity: 0.35;
+}
+
+.calendarDayNumber {
+font-size: 13px;
+font-weight: 700;
+margin-bottom: 6px;
+}
+
+.calendarDayEvent {
+font-size: 11px;
+line-height: 1.25;
+background: var(--wp-orange-soft);
+border-radius: 8px;
+padding: 4px 6px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.calendarMore {
+font-size: 11px;
+color: var(--wp-muted);
+margin-top: 4px;
+}

@@ -88,9 +88,6 @@ showToast(error.message);
 }
 
 async function deleteCalendarEvent() {
-const confirmDelete = confirm("Termin wirklich löschen?");
-
-if (!confirmDelete) return;
 
 try {
 const response = await fetch(`/api/calendar-events/${eventId}`, {
