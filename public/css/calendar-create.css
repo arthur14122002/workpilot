@@ -6,3 +6,42 @@ max-width: 860px;
 min-height: 130px;
 resize: vertical;
 }
+
+.calendarColorPicker {
+display: flex;
+gap: 10px;
+margin-top: 8px;
+}
+
+.calendarColorOption {
+width: 28px;
+height: 28px;
+border-radius: 999px;
+border: 2px solid transparent;
+background: #f28c28;
+cursor: pointer;
+}
+
+.calendarColorOption.active {
+border-color: #111827;
+}
+
+.calendarColorOption.blue {
+background: #3b82f6;
+}
+
+.calendarColorOption.green {
+background: #22c55e;
+}
+
+.calendarColorOption.purple {
+background: #8b5cf6;
+}
+
+.calendarColorOption.red {
+background: #ef4444;
+}
+
+.calendarColorOption.yellow {
+background: #facc15;
+}

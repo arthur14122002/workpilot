@@ -1,5 +1,19 @@
 const calendarEventForm = document.getElementById("calendarEventForm");
 
+let selectedCalendarColor = "orange";
+
+document.querySelectorAll(".calendarColorOption").forEach((button) => {
+button.addEventListener("click", () => {
+selectedCalendarColor = button.dataset.color;
+
+document.querySelectorAll(".calendarColorOption").forEach((entry) => {
+entry.classList.remove("active");
+});
+
+button.classList.add("active");
+});
+});
+
 function getDefaultReminderAt(eventDate, eventTime) {
 if (!eventDate) return null;
 
@@ -34,7 +48,7 @@ eventDate,
 eventTime,
 description,
 reminderAt: getDefaultReminderAt(eventDate, eventTime),
-color: "orange",
+color: selectedCalendarColor,
 source: "manual"
 })
 });
