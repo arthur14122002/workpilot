@@ -38,6 +38,13 @@ let selectedCalendarDateKey = null;
 let currentCalendarDate = new Date();
 let calendarEventsCache = [];
 
+const dashboardParams = new URLSearchParams(window.location.search);
+const calendarMonthParam = dashboardParams.get("month");
+
+if (calendarMonthParam) {
+currentCalendarDate = new Date(`${calendarMonthParam}T00:00:00`);
+}
+
 function openCalendarDayModal(dateKey) {
 selectedCalendarDateKey = dateKey;
 
