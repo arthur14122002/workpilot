@@ -4,6 +4,25 @@ const deleteCalendarEventBtn = document.getElementById("deleteCalendarEventBtn")
 const params = new URLSearchParams(window.location.search);
 const eventId = params.get("id");
 
+let selectedCalendarColor = "orange";
+
+function setActiveCalendarColor(color) {
+selectedCalendarColor = color || "orange";
+
+document.querySelectorAll(".calendarColorOption").forEach((button) => {
+button.classList.toggle(
+"active",
+button.dataset.color === selectedCalendarColor
+);
+});
+}
+
+document.querySelectorAll(".calendarColorOption").forEach((button) => {
+button.addEventListener("click", () => {
+setActiveCalendarColor(button.dataset.color);
+});
+});
+
 function getDefaultReminderAt(eventDate, eventTime) {
 if (!eventDate) return null;
 
@@ -37,6 +56,8 @@ document.getElementById("eventTime").value = event.event_time
 : "";
 document.getElementById("description").value = event.description || "";
 
+setActiveCalendarColor(event.color || "orange");
+
 } catch (error) {
 showToast(error.message);
 window.location.href = "/";
@@ -68,7 +89,7 @@ eventDate,
 eventTime,
 description,
 reminderAt: getDefaultReminderAt(eventDate, eventTime),
-color: "orange",
+color: selectedCalendarColor,
 status: "open"
 })
 });
