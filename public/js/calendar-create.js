@@ -69,3 +69,12 @@ showToast(error.message);
 }
 
 calendarEventForm.addEventListener("submit", createCalendarEvent);
+
+document.addEventListener("DOMContentLoaded", () => {
+const params = new URLSearchParams(window.location.search);
+const date = params.get("date");
+
+if (date) {
+document.getElementById("eventDate").value = date;
+}
+});
