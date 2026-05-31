@@ -61,7 +61,7 @@ throw new Error(result.error || "Termin konnte nicht gespeichert werden.");
 
 showToast("Termin wurde gespeichert.");
 
-window.location.href = "/";
+window.location.href = `/?month=${eventDate}`;
 
 } catch (error) {
 showToast(error.message);
