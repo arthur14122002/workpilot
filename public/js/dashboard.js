@@ -25,6 +25,15 @@ const addEventForSelectedDayBtn = document.getElementById("addEventForSelectedDa
 
 const calendarDayModalOverlay = document.getElementById("calendarDayModalOverlay");
 
+const calendarColors = {
+orange: "#f28c28",
+blue: "#3b82f6",
+green: "#22c55e",
+purple: "#8b5cf6",
+red: "#ef4444",
+yellow: "#facc15"
+};
+
 let selectedCalendarDateKey = null;
 let currentCalendarDate = new Date();
 let calendarEventsCache = [];
@@ -316,8 +325,18 @@ day.innerHTML = `
 
 dayEvents.slice(0, 1).forEach((event) => {
 const eventEl = document.createElement("div");
+
+const color =
+calendarColors[event.color] ||
+calendarColors.orange;
+
 eventEl.className = "calendarDayEvent";
+
+eventEl.style.background = `${color}20`;
+eventEl.style.borderLeft = `4px solid ${color}`;
+
 eventEl.textContent = event.title;
+
 day.appendChild(eventEl);
 });
 

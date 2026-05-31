@@ -366,3 +366,17 @@ z-index: 9999;
 .calendarDayModalOverlay.hidden {
 display: none;
 }
+
+.calendarEventPreview {
+font-size: 11px;
+
+padding: 2px 4px;
+
+border-radius: 6px;
+
+overflow: hidden;
+white-space: nowrap;
+text-overflow: ellipsis;
+
+margin-top: 2px;
+}
