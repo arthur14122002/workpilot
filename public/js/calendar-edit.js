@@ -56,6 +56,17 @@ document.getElementById("eventTime").value = event.event_time
 : "";
 document.getElementById("description").value = event.description || "";
 
+localStorage.setItem(
+"workpilot_calendar_month",
+`${event.event_date.slice(0, 7)}-01`
+);
+
+const cancelLink = document.querySelector(".buttonRow .btnSecondary");
+
+if (cancelLink) {
+cancelLink.href = window.getCalendarReturnUrl();
+}
+
 setActiveCalendarColor(event.color || "orange");
 
 } catch (error) {
@@ -101,6 +112,7 @@ throw new Error(result.error || "Termin konnte nicht aktualisiert werden.");
 }
 
 showToast("Termin wurde aktualisiert.");
+localStorage.setItem("workpilot_calendar_month", `${eventDate.slice(0, 7)}-01`);
 window.location.href = window.getCalendarReturnUrl();
 
 } catch (error) {
@@ -122,6 +134,12 @@ throw new Error(result.error || "Termin konnte nicht gelöscht werden.");
 }
 
 showToast("Termin wurde gelöscht.");
+const eventDate = document.getElementById("eventDate").value;
+
+if (eventDate) {
+localStorage.setItem("workpilot_calendar_month", `${eventDate.slice(0, 7)}-01`);
+}
+
 window.location.href = window.getCalendarReturnUrl();
 
 } catch (error) {

@@ -61,7 +61,8 @@ throw new Error(result.error || "Termin konnte nicht gespeichert werden.");
 
 showToast("Termin wurde gespeichert.");
 
-window.location.href = `/?month=${eventDate}`;
+localStorage.setItem("workpilot_calendar_month", `${eventDate.slice(0, 7)}-01`);
+window.location.href = window.getCalendarReturnUrl();
 
 } catch (error) {
 showToast(error.message);
@@ -76,5 +77,12 @@ const date = params.get("date");
 
 if (date) {
 document.getElementById("eventDate").value = date;
+localStorage.setItem("workpilot_calendar_month", `${date.slice(0, 7)}-01`);
+}
+
+const cancelLink = document.querySelector(".buttonRow .btnSecondary");
+
+if (cancelLink) {
+cancelLink.href = window.getCalendarReturnUrl();
 }
 });

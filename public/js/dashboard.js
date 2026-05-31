@@ -35,15 +35,24 @@ yellow: "#facc15"
 };
 
 let selectedCalendarDateKey = null;
-let currentCalendarDate = new Date();
 let calendarEventsCache = [];
 
-const dashboardParams = new URLSearchParams(window.location.search);
-const calendarMonthParam = dashboardParams.get("month");
+function parseCalendarDate(value) {
+if (!value) return null;
 
-if (calendarMonthParam) {
-currentCalendarDate = new Date(`${calendarMonthParam}T00:00:00`);
+const [year, month, day] = value.split("-").map(Number);
+
+if (!year || !month) return null;
+
+return new Date(year, month - 1, day || 1);
 }
+
+const dashboardParams = new URLSearchParams(window.location.search);
+
+let currentCalendarDate =
+parseCalendarDate(dashboardParams.get("month")) ||
+parseCalendarDate(localStorage.getItem("workpilot_calendar_month")) ||
+new Date();
 
 function openCalendarDayModal(dateKey) {
 selectedCalendarDateKey = dateKey;
@@ -487,41 +496,40 @@ window.location.href = "/calendar-create";
 }
 
 if (prevMonthBtn) {
-prevMonthBtn.addEventListener("click", async () => {
-currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+prevMonthBtn.addEventListener("click", () => {
+currentCalendarDate = new Date(
+currentCalendarDate.getFullYear(),
+currentCalendarDate.getMonth() - 1,
+1
+);
+
 renderMonthCalendar(calendarEventsCache);
 });
 }
 
 if (nextMonthBtn) {
-nextMonthBtn.addEventListener("click", async () => {
-currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+nextMonthBtn.addEventListener("click", () => {
+currentCalendarDate = new Date(
+currentCalendarDate.getFullYear(),
+currentCalendarDate.getMonth() + 1,
+1
+);
+
 renderMonthCalendar(calendarEventsCache);
 });
 }
 
 if (closeCalendarDayModal) {
 closeCalendarDayModal.addEventListener("click", () => {
-calendarDayModalOverlay.classList.add(
-"hidden"
-);
-calendarDayModalOverlay.addEventListener(
-"click",
-(event) => {
-
-if (
-event.target === calendarDayModalOverlay
-) {
-
-calendarDayModalOverlay.classList.add(
-"hidden"
-);
-
+calendarDayModalOverlay.classList.add("hidden");
+});
 }
 
+if (calendarDayModalOverlay) {
+calendarDayModalOverlay.addEventListener("click", (event) => {
+if (event.target === calendarDayModalOverlay) {
+calendarDayModalOverlay.classList.add("hidden");
 }
-);
-
 });
 }
 
