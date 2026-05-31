@@ -45,6 +45,18 @@ console.error(error);
 }
 }
 
+function getCalendarReturnUrl(fallback = "/") {
+const savedMonth = localStorage.getItem("workpilot_calendar_month");
+
+if (savedMonth) {
+return `/?month=${savedMonth}`;
+}
+
+return fallback;
+}
+
+window.getCalendarReturnUrl = getCalendarReturnUrl;
+
 function ensureToastContainer() {
 let container = document.querySelector(".toastContainer");
 

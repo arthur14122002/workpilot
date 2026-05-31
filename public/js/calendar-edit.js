@@ -35,7 +35,7 @@ return reminderDate.toISOString();
 async function loadCalendarEvent() {
 if (!eventId) {
 showToast("Termin wurde nicht gefunden.");
-window.location.href = "/";
+window.location.href = window.getCalendarReturnUrl();
 return;
 }
 
@@ -60,7 +60,7 @@ setActiveCalendarColor(event.color || "orange");
 
 } catch (error) {
 showToast(error.message);
-window.location.href = "/";
+window.location.href = window.getCalendarReturnUrl();
 }
 }
 
@@ -101,7 +101,7 @@ throw new Error(result.error || "Termin konnte nicht aktualisiert werden.");
 }
 
 showToast("Termin wurde aktualisiert.");
-window.location.href = "/";
+window.location.href = window.getCalendarReturnUrl();
 
 } catch (error) {
 showToast(error.message);
@@ -122,7 +122,7 @@ throw new Error(result.error || "Termin konnte nicht gelöscht werden.");
 }
 
 showToast("Termin wurde gelöscht.");
-window.location.href = "/";
+window.location.href = window.getCalendarReturnUrl();
 
 } catch (error) {
 showToast(error.message);

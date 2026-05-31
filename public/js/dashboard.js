@@ -295,6 +295,11 @@ if (!calendarMonthTitle || !calendarMonthGrid) return;
 const year = currentCalendarDate.getFullYear();
 const month = currentCalendarDate.getMonth();
 
+localStorage.setItem(
+"workpilot_calendar_month",
+`${year}-${String(month + 1).padStart(2, "0")}-01`
+);
+
 const monthLabel = currentCalendarDate.toLocaleDateString("de-DE", {
 month: "long",
 year: "numeric"
