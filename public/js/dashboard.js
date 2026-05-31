@@ -87,6 +87,13 @@ events.forEach((event) => {
 const item = document.createElement("div");
 item.className = "calendarDayModalItem";
 
+const color =
+calendarColors[event.color] ||
+calendarColors.orange;
+
+item.style.borderLeft = `5px solid ${color}`;
+item.style.background = `${color}12`;
+
 item.innerHTML = `
 <div>
 <div class="calendarDayModalItemTitle">${event.title}</div>
