@@ -1399,8 +1399,14 @@ Antworte ausschließlich als JSON:
 "dashboardTitle": "kurzer Dashboard-Titel",
 "dashboardMessage": "kurzer Dashboard-Hinweis",
 "actionLabel": "Button-Text oder null",
-"actionTarget": "create_offer_draft | open_email_thread | null",
-"priority": "low | normal | high"
+"actionTarget": "create_offer_draft | create_calendar_event | open_email_thread | null",
+"priority": "low | normal | high",
+"calendarSuggestion": {
+"title": "kurzer Termintitel oder null",
+"date": "YYYY-MM-DD oder null",
+"time": "HH:MM oder null",
+"description": "kurze Beschreibung oder null"
+}
 }
 
 Regeln:
@@ -1410,6 +1416,12 @@ Regeln:
 - Bei einfachen Rückfragen category = "question".
 - Wenn unsicher, category = "other".
 - Halte alles kurz und sachlich.
+- Wenn ein konkreter Termin, ein Datum oder eine Uhrzeit erkennbar ist, setze intent = "appointment".
+- Wenn ein Termin erkennbar ist, setze actionTarget = "create_calendar_event".
+- Wenn ein Termin erkennbar ist, setze actionLabel = "Termin erstellen".
+- calendarSuggestion.date muss im Format YYYY-MM-DD sein.
+- calendarSuggestion.time muss im Format HH:MM sein oder null.
+- Wenn kein Datum sicher erkennbar ist, calendarSuggestion.date = null.
 `
 },
 {
@@ -1458,7 +1470,8 @@ metadata: {
 threadId: thread.id,
 messageId: message.id,
 category: analysis.category || "other",
-intent: analysis.intent || "other"
+intent: analysis.intent || "other",
+calendarSuggestion: analysis.calendarSuggestion || null
 }
 });
 
@@ -1472,8 +1485,11 @@ priority: analysis.priority || "normal",
 metadata: {
 threadId: thread.id,
 messageId: message.id,
+
 actionLabel: analysis.actionLabel || "E-Mail öffnen",
-actionTarget: analysis.actionTarget || "open_email_thread"
+actionTarget: analysis.actionTarget || "open_email_thread",
+
+calendarSuggestion: analysis.calendarSuggestion || null
 }
 });
 }

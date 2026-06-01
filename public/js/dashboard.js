@@ -464,6 +464,37 @@ const threadId =
 notification.metadata?.threadId ||
 notification.dashboard_events?.metadata?.threadId;
 
+const actionTarget =
+notification.metadata?.actionTarget ||
+notification.dashboard_events?.action_type;
+
+const calendarSuggestion =
+notification.metadata?.calendarSuggestion ||
+notification.dashboard_events?.metadata?.calendarSuggestion;
+
+if (actionTarget === "create_calendar_event" && calendarSuggestion) {
+const params = new URLSearchParams();
+
+if (calendarSuggestion.date) {
+params.set("date", calendarSuggestion.date);
+}
+
+if (calendarSuggestion.time) {
+params.set("time", calendarSuggestion.time);
+}
+
+if (calendarSuggestion.title) {
+params.set("title", calendarSuggestion.title);
+}
+
+if (calendarSuggestion.description) {
+params.set("description", calendarSuggestion.description);
+}
+
+window.location.href = `/calendar-create?${params.toString()}`;
+return;
+}
+
 if (threadId) {
 window.location.href = `/emails?thread=${threadId}`;
 return;
