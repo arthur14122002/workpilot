@@ -642,15 +642,17 @@ Antwort senden
 </div>
 `;
 
-bindReplyActions(message, subject);
-
 document.querySelectorAll(".mailOpenContactBtn").forEach((button) => {
+button.addEventListener("click", () => {
+const contactId = button.dataset.contactId;
+
+window.location.href = `/contact-detail?id=${contactId}`;
+});
+});
+
 document.querySelectorAll(".mailCreateContactBtn").forEach((button) => {
-
 button.addEventListener("click", async () => {
-
 try {
-
 const response = await fetch("/api/contacts", {
 method: "POST",
 headers: {
@@ -675,14 +677,6 @@ await renderEmails();
 } catch (error) {
 showToast(error.message);
 }
-
-});
-
-});
-button.addEventListener("click", () => {
-const contactId = button.dataset.contactId;
-
-window.location.href = `/contact-detail?id=${contactId}`;
 });
 });
 
