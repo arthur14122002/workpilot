@@ -1422,6 +1422,9 @@ Regeln:
 - calendarSuggestion.date muss im Format YYYY-MM-DD sein.
 - calendarSuggestion.time muss im Format HH:MM sein oder null.
 - Wenn kein Datum sicher erkennbar ist, calendarSuggestion.date = null.
+- calendarSuggestion.title soll ein kurzer sinnvoller Titel sein, z. B. "Vor-Ort-Termin Patrick Müller" oder "Besichtigung Terrasse".
+- calendarSuggestion.description soll Adresse, Kontext und Kundenwunsch kurz enthalten.
+- Uhrzeiten wie "gegen 14 Uhr" müssen als "14:00" erkannt werden.
 `
 },
 {
