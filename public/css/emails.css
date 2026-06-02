@@ -593,3 +593,21 @@ line-height: 1.5;
 color: #6b7280;
 margin-top: 6px;
 }
+
+.mailCreateContactBtn {
+border: none;
+border-radius: 999px;
+padding: 7px 11px;
+background: #fff;
+color: var(--wp-orange-dark);
+font-weight: 700;
+cursor: pointer;
+}
+
+.aiReplyHeader {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 12px;
+margin-bottom: 12px;
+}

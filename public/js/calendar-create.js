@@ -72,6 +72,23 @@ showToast(error.message);
 calendarEventForm.addEventListener("submit", createCalendarEvent);
 
 document.addEventListener("DOMContentLoaded", () => {
+
+const title = params.get("title");
+const time = params.get("time");
+const description = params.get("description");
+
+if (title) {
+document.getElementById("title").value = title;
+}
+
+if (time) {
+document.getElementById("eventTime").value = time;
+}
+
+if (description) {
+document.getElementById("description").value = description;
+}
+
 const params = new URLSearchParams(window.location.search);
 const date = params.get("date");
 

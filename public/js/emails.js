@@ -604,8 +604,17 @@ ${
 message.ai_suggested_reply
 ? `
 <div class="detailAiReply">
-<strong>KI-Antwortvorschlag:</strong><br><br>
+<div class="aiReplyHeader">
+<strong>KI-Antwortvorschlag:</strong>
+
+<button id="useAiSuggestionBtn" class="btn btnSecondary">
+Vorschlag übernehmen
+</button>
+</div>
+
+<div>
 ${message.ai_suggested_reply}
+</div>
 </div>
 `
 : ""
@@ -631,9 +640,16 @@ Angebotsvorschlag erstellen
 : ""
 }
 
-<button id="useAiSuggestionBtn" class="btn btnSecondary">
-KI-Vorschlag übernehmen
+${
+message.ai_detected_intent === "appointment" ||
+message.email_threads?.ai_summary?.toLowerCase().includes("termin")
+? `
+<button id="createCalendarFromEmailBtn" class="btn btnSecondary">
+Termin erstellen
 </button>
+`
+: ""
+}
 
 <button id="sendMailReplyBtn" class="btn btnPrimary">
 Antwort senden
@@ -697,6 +713,7 @@ const useAiSuggestionBtn = document.getElementById("useAiSuggestionBtn");
 const sendMailReplyBtn = document.getElementById("sendMailReplyBtn");
 
 const createOfferFromEmailBtn = document.getElementById("createOfferFromEmailBtn");
+const createCalendarFromEmailBtn = document.getElementById("createCalendarFromEmailBtn");
 
 if (createOfferFromEmailBtn) {
 createOfferFromEmailBtn.addEventListener("click", async () => {
@@ -731,6 +748,29 @@ showToast(result.message || "Angebotsvorschlag wurde erstellt.");
 showToast(error.message);
 }
 });
+}
+
+if (createCalendarFromEmailBtn) {
+
+createCalendarFromEmailBtn.addEventListener("click", () => {
+
+const params = new URLSearchParams();
+
+params.set(
+"title",
+`Rücksprache ${message.sender || "Kunde"}`
+);
+
+params.set(
+"description",
+`E-Mail: ${subject}\n\n${message.body || ""}`
+);
+
+window.location.href =
+`/calendar-create?${params.toString()}`;
+
+});
+
 }
 
 useAiSuggestionBtn.addEventListener("click", () => {
