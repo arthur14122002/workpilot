@@ -390,6 +390,16 @@ const moveButton = item.querySelector(".mailRowMoveBtn");
 
 if (moveButton) {
 moveButton.addEventListener("click", (event) => {
+
+console.log("MOVE CLICK");
+
+event.stopPropagation();
+
+moveTargetMessageId = message.id;
+selectedMoveFolder = null;
+
+openMoveMailModal(message);
+});
 event.stopPropagation();
 
 moveTargetMessageId = message.id;
