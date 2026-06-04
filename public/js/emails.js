@@ -489,6 +489,45 @@ overlay.innerHTML = `
 `;
 
 document.body.appendChild(overlay);
+}
+
+function openMoveMailModal(message) {
+const existing = document.getElementById("moveMailModalOverlay");
+
+if (existing) {
+existing.remove();
+}
+
+const overlay = document.createElement("div");
+overlay.id = "moveMailModalOverlay";
+overlay.className = "moveMailModalOverlay";
+
+overlay.innerHTML = `
+<div class="moveMailModal">
+<div class="moveMailModalHeader">
+<div>
+<h3>E-Mail verschieben</h3>
+<p>Wähle den Zielordner für diese E-Mail.</p>
+</div>
+
+<button class="moveMailModalClose" type="button">×</button>
+</div>
+
+<div class="moveFolderOptions">
+<button data-folder="offer">Angebote</button>
+<button data-folder="invoice">Rechnungen</button>
+<button data-folder="appointment">Termine</button>
+<button data-folder="other">Sonstiges</button>
+</div>
+
+<div class="moveMailModalActions">
+<button class="btn btnSecondary" id="cancelMoveMailBtn">Abbrechen</button>
+<button class="btn btnPrimary" id="confirmMoveMailBtn" disabled>Verschieben</button>
+</div>
+</div>
+`;
+
+document.body.appendChild(overlay);
 
 overlay.querySelector(".moveMailModalClose").addEventListener("click", () => {
 overlay.remove();
