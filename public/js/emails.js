@@ -140,6 +140,7 @@ mailAttachmentsList.appendChild(item);
 
 function getMessageFolder(message) {
 const relatedType = message.email_threads?.related_type;
+const aiCategory = message.email_threads?.ai_category;
 const intent = message.ai_detected_intent;
 
 if (message.deleted_at) return "trash";
@@ -148,13 +149,28 @@ if (message.direction === "outbound") return "sent";
 if (
 relatedType === "appointment" ||
 relatedType === "schedule" ||
+aiCategory === "appointment" ||
+aiCategory === "schedule" ||
 intent === "appointment"
 ) {
 return "appointment";
 }
 
-if (relatedType === "offer") return "offer";
-if (relatedType === "invoice") return "invoice";
+if (
+relatedType === "offer" ||
+aiCategory === "offer" ||
+intent === "offer_request"
+) {
+return "offer";
+}
+
+if (
+relatedType === "invoice" ||
+aiCategory === "invoice" ||
+intent === "invoice_question"
+) {
+return "invoice";
+}
 
 return "other";
 }
