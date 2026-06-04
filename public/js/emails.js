@@ -530,6 +530,22 @@ console.error(error);
 }
 }
 
+const folder = getMessageFolder(message);
+
+const showOfferButton =
+folder === "offer" ||
+message.ai_detected_intent === "offer";
+
+const showCalendarButton =
+folder === "appointment" ||
+message.ai_detected_intent === "appointment";
+
+const showNoteButton =
+message.direction === "inbound";
+
+const showReplyBox =
+message.direction === "inbound";
+
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
 <div>
@@ -645,28 +661,37 @@ placeholder="Antwort schreiben..."
 
 <div class="mailReplyActions">
 ${
-message.email_threads?.related_type === "offer"
+showOfferButton
 ? `
 <button id="createOfferFromEmailBtn" class="btn btnSecondary">
-Angebotsvorschlag erstellen
+📄 Angebot
 </button>
 `
 : ""
 }
 
 ${
-message.ai_detected_intent === "appointment" ||
-message.email_threads?.ai_summary?.toLowerCase().includes("termin")
+showCalendarButton
 ? `
 <button id="createCalendarFromEmailBtn" class="btn btnSecondary">
-Termin erstellen
+📅 Termin
+</button>
+`
+: ""
+}
+
+${
+showNoteButton
+? `
+<button id="createNoteFromEmailBtn" class="btn btnSecondary">
+📝 Notiz
 </button>
 `
 : ""
 }
 
 <button id="sendMailReplyBtn" class="btn btnPrimary">
-Antwort senden
+Senden
 </button>
 </div>
 </div>
