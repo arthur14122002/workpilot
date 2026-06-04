@@ -406,7 +406,7 @@ moveTargetMessageId = message.id;
 selectedMoveFolder = null;
 
 openMoveMailModal(message);
-};
+});
 }
 
 try {
