@@ -55,7 +55,9 @@ parseCalendarDate(localStorage.getItem("workpilot_calendar_month")) ||
 new Date();
 
 function openCalendarDayModal(dateKey) {
-addEventForSelectedDayBtn.classList.remove("hidden");
+if (addEventForSelectedDayBtn) {
+addEventForSelectedDayBtn.style.display = "";
+}
 selectedCalendarDateKey = dateKey;
 
 const events = getEventsForDate(calendarEventsCache, dateKey);
@@ -155,7 +157,9 @@ showToast(error.message);
 }
 
 function openCalendarEventDetail(event) {
-addEventForSelectedDayBtn.classList.add("hidden");
+if (addEventForSelectedDayBtn) {
+addEventForSelectedDayBtn.style.display = "none";
+}
 calendarDayModalTitle.textContent = event.title || "Termin";
 
 calendarDayModalSubtitle.textContent =
