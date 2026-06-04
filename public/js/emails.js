@@ -658,6 +658,8 @@ Antwort senden
 </div>
 `;
 
+bindReplyActions(message, subject);
+
 document.querySelectorAll(".mailOpenContactBtn").forEach((button) => {
 button.addEventListener("click", () => {
 const contactId = button.dataset.contactId;
