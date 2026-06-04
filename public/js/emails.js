@@ -548,13 +548,28 @@ console.error(error);
 
 const folder = getMessageFolder(message);
 
+const messageText = `
+${message.subject || ""}
+${message.body || ""}
+${message.ai_summary || ""}
+${message.email_threads?.ai_summary || ""}
+`.toLowerCase();
+
 const showOfferButton =
 folder === "offer" ||
-message.ai_detected_intent === "offer";
+message.email_threads?.related_type === "offer" ||
+message.email_threads?.ai_category === "offer" ||
+message.ai_detected_intent === "offer_request" ||
+messageText.includes("angebot") ||
+messageText.includes("kostenvoranschlag");
 
 const showCalendarButton =
 folder === "appointment" ||
-message.ai_detected_intent === "appointment";
+message.email_threads?.related_type === "appointment" ||
+message.email_threads?.ai_category === "appointment" ||
+message.ai_detected_intent === "appointment" ||
+message.calendar_suggestion?.date ||
+message.calendar_suggestion?.time;
 
 const showNoteButton =
 message.direction === "inbound";
