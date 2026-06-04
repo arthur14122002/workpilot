@@ -840,6 +840,7 @@ window.location.href = `/calendar-create?${params.toString()}`;
 });
 }
 
+if (useAiSuggestionBtn) {
 useAiSuggestionBtn.addEventListener("click", () => {
 if (!message.ai_suggested_reply) {
 showToast("Kein KI-Vorschlag vorhanden.");
@@ -848,6 +849,7 @@ return;
 
 replyTextarea.value = message.ai_suggested_reply;
 });
+}
 
 sendMailReplyBtn.addEventListener("click", async () => {
 const text = replyTextarea.value.trim();
