@@ -30,16 +30,18 @@ let activeMessageId = null;
 const folderLabels = {
 offer: "Angebote",
 invoice: "Rechnungen",
-sent: "Gesendet",
+appointment: "Termine",
 other: "Sonstiges",
+sent: "Gesendet",
 trash: "Papierkorb"
 };
 
 const folderSubtitles = {
 offer: "E-Mails, die zu Angeboten gehören.",
 invoice: "E-Mails, die zu Rechnungen gehören.",
-sent: "Von WorkPilot gesendete E-Mails.",
+appointment: "E-Mails mit erkannten Terminen und Rücksprachen.",
 other: "Sonstige Kundenkommunikation.",
+sent: "Von WorkPilot gesendete E-Mails.",
 trash: "Gelöschte E-Mails werden später nach 30 Tagen entfernt."
 };
 
@@ -138,9 +140,19 @@ mailAttachmentsList.appendChild(item);
 
 function getMessageFolder(message) {
 const relatedType = message.email_threads?.related_type;
+const intent = message.ai_detected_intent;
 
 if (message.deleted_at) return "trash";
 if (message.direction === "outbound") return "sent";
+
+if (
+relatedType === "appointment" ||
+relatedType === "schedule" ||
+intent === "appointment"
+) {
+return "appointment";
+}
+
 if (relatedType === "offer") return "offer";
 if (relatedType === "invoice") return "invoice";
 
@@ -161,8 +173,9 @@ function updateFolderCounts() {
 const counts = {
 offer: 0,
 invoice: 0,
-sent: 0,
+appointment: 0,
 other: 0,
+sent: 0,
 trash: 0
 };
 
@@ -176,8 +189,9 @@ counts[folder] += 1;
 
 document.getElementById("countOffer").textContent = counts.offer;
 document.getElementById("countInvoice").textContent = counts.invoice;
-document.getElementById("countSent").textContent = counts.sent;
+document.getElementById("countAppointment").textContent = counts.appointment;
 document.getElementById("countOther").textContent = counts.other;
+document.getElementById("countSent").textContent = counts.sent;
 document.getElementById("countTrash").textContent = counts.trash;
 }
 
