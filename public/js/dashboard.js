@@ -55,6 +55,7 @@ parseCalendarDate(localStorage.getItem("workpilot_calendar_month")) ||
 new Date();
 
 function openCalendarDayModal(dateKey) {
+addEventForSelectedDayBtn.classList.remove("hidden");
 selectedCalendarDateKey = dateKey;
 
 const events = getEventsForDate(calendarEventsCache, dateKey);
@@ -154,6 +155,7 @@ showToast(error.message);
 }
 
 function openCalendarEventDetail(event) {
+addEventForSelectedDayBtn.classList.add("hidden");
 calendarDayModalTitle.textContent = event.title || "Termin";
 
 calendarDayModalSubtitle.textContent =
@@ -163,7 +165,7 @@ event.event_time
 
 calendarDayModalList.innerHTML = `
 <div class="calendarEventDetailText">
-${event.description || "Keine Beschreibung vorhanden."}
+${(event.description || "Keine Beschreibung vorhanden.").replaceAll("\n", "<br>")}
 </div>
 
 <div class="calendarEventDetailActions">
