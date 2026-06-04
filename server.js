@@ -1392,7 +1392,7 @@ Analysiere eingehende Kunden-E-Mails.
 
 Antworte ausschließlich als JSON:
 {
-"category": "offer | invoice | question | other",
+"category": "offer | invoice | appointment | question | other",
 "intent": "offer_request | invoice_question | appointment | complaint | general_question | other",
 "summary": "kurze interne Zusammenfassung",
 "suggestedReply": "professioneller deutscher Antwortvorschlag",
@@ -1413,7 +1413,7 @@ Regeln:
 - Führe keine Aktion automatisch aus.
 - Bei Angebotsanfragen category = "offer".
 - Bei Rechnungsfragen category = "invoice".
-- Bei einfachen Rückfragen category = "question".
+- Bei einfachen Rückfragen ohne Angebot, Rechnung oder Termin setze category = "question".
 - Wenn unsicher, category = "other".
 - Halte alles kurz und sachlich.
 - Wenn ein konkreter Termin, ein Datum oder eine Uhrzeit erkennbar ist, setze intent = "appointment".
@@ -1425,6 +1425,11 @@ Regeln:
 - calendarSuggestion.title soll ein kurzer sinnvoller Titel sein, z. B. "Vor-Ort-Termin Patrick Müller" oder "Besichtigung Terrasse".
 - calendarSuggestion.description soll Adresse, Kontext und Kundenwunsch kurz enthalten.
 - Uhrzeiten wie "gegen 14 Uhr" müssen als "14:00" erkannt werden.
+- suggestedReply ist Pflicht. Liefere immer einen professionellen deutschen Antwortvorschlag. suggestedReply darf niemals null oder leer sein.
+- Wenn im Betreff oder Text "Rechnung", "RE-", "Rechnungsnummer", "Zahlung", "Überweisung", "Mahnung" oder "Position" im Zusammenhang mit einer Rechnung vorkommt, setze category = "invoice" und intent = "invoice_question".
+- Wenn ein konkretes Datum, eine Uhrzeit, "Termin", "Vor-Ort", "Besichtigung", "Rückruf", "Telefonat" oder "vorbeikommen" vorkommt, setze category = "appointment" und intent = "appointment".
+- Wenn Angebot und Termin gleichzeitig vorkommen, entscheide category nach dem Hauptanliegen der Mail. Setze aber trotzdem intent = "appointment", wenn ein konkreter Termin erkennbar ist.
+- Wenn ein Angebot/Kostenvoranschlag/Preis/Leistungsänderung klar vorkommt, setze category = "offer".
 calendarSuggestion.description soll lesbar mit Zeilenumbrüchen formatiert sein.
 
 Wenn eine Adresse vorhanden ist, schreibe sie separat.
