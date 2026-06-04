@@ -382,24 +382,13 @@ ${activeFolder === "trash" ? `
 `;
 
 const deleteButton = item.querySelector(".mailRowDeleteBtn");
-
-
-
 const moveButton = item.querySelector(".mailRowMoveBtn");
 
 if (moveButton) {
 moveButton.addEventListener("click", (event) => {
+event.stopPropagation();
 
 console.log("MOVE CLICK");
-
-event.stopPropagation();
-
-moveTargetMessageId = message.id;
-selectedMoveFolder = null;
-
-openMoveMailModal(message);
-});
-event.stopPropagation();
 
 moveTargetMessageId = message.id;
 selectedMoveFolder = null;
@@ -414,23 +403,11 @@ event.stopPropagation();
 try {
 
 if (activeFolder === "trash") {
-
 await deleteMessageForever(message.id);
-
 showToast("E-Mail wurde endgültig gelöscht.");
-
 } else {
-
 await moveMessageToTrash(message.id);
-
 showToast("E-Mail wurde in den Papierkorb verschoben.");
-}
-
-if (activeMessageId === message.id) {
-activeMessageId = null;
-
-mailDetailView.classList.add("hidden");
-emptyMailState.classList.remove("hidden");
 }
 
 await renderEmails();
