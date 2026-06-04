@@ -87,6 +87,10 @@ events.forEach((event) => {
 const item = document.createElement("div");
 item.className = "calendarDayModalItem";
 
+item.addEventListener("click", () => {
+openCalendarEventDetail(event);
+});
+
 const color =
 calendarColors[event.color] ||
 calendarColors.orange;
@@ -117,13 +121,17 @@ calendarDayModalOverlay.classList.remove(
 );
 
 document.querySelectorAll("[data-edit-event]").forEach((button) => {
-button.addEventListener("click", () => {
+button.addEventListener("click", (event) => {
+event.stopPropagation();
+
 window.location.href = `/calendar-edit?id=${button.dataset.editEvent}`;
 });
 });
 
 document.querySelectorAll("[data-delete-event]").forEach((button) => {
-button.addEventListener("click", async () => {
+button.addEventListener("click", async (event) => {
+event.stopPropagation();
+
 try {
 const response = await fetch(`/api/calendar-events/${button.dataset.deleteEvent}`, {
 method: "DELETE"
@@ -142,6 +150,63 @@ openCalendarDayModal(selectedCalendarDateKey);
 showToast(error.message);
 }
 });
+});
+}
+
+function openCalendarEventDetail(event) {
+calendarDayModalTitle.textContent = event.title || "Termin";
+
+calendarDayModalSubtitle.textContent =
+event.event_time
+? `${event.event_date} · ${event.event_time.slice(0, 5)} Uhr`
+: event.event_date;
+
+calendarDayModalList.innerHTML = `
+<div class="calendarEventDetailText">
+${event.description || "Keine Beschreibung vorhanden."}
+</div>
+
+<div class="calendarEventDetailActions">
+<button class="btn btnSecondary" id="backToCalendarDayBtn">
+Zurück
+</button>
+
+<button class="btn btnSecondary" id="editCalendarEventDetailBtn">
+Bearbeiten
+</button>
+
+<button class="btn btnSecondary" id="deleteCalendarEventDetailBtn">
+Löschen
+</button>
+</div>
+`;
+
+document.getElementById("backToCalendarDayBtn").addEventListener("click", () => {
+openCalendarDayModal(selectedCalendarDateKey);
+});
+
+document.getElementById("editCalendarEventDetailBtn").addEventListener("click", () => {
+window.location.href = `/calendar-edit?id=${event.id}`;
+});
+
+document.getElementById("deleteCalendarEventDetailBtn").addEventListener("click", async () => {
+try {
+const response = await fetch(`/api/calendar-events/${event.id}`, {
+method: "DELETE"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Termin konnte nicht gelöscht werden.");
+}
+
+showToast("Termin wurde gelöscht.");
+await renderDashboard();
+openCalendarDayModal(selectedCalendarDateKey);
+} catch (error) {
+showToast(error.message);
+}
 });
 }
 

@@ -1439,6 +1439,7 @@ Musterstraße 12
 
 Kopiere niemals die komplette E-Mail.
 Beschreibung kurz halten (maximal 1-3 Sätze).
+Lass eine Zeile Abstand zwischen Beschreibung und Adresse.
 
 Datum und Uhrzeit nicht wiederholen, wenn calendarSuggestion.date oder calendarSuggestion.time bereits gesetzt sind.
 `
