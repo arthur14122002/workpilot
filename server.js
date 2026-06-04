@@ -515,6 +515,46 @@ ok: true
 });
 });
 
+app.put("/api/email-threads/:id/folder", async (req, res) => {
+const { id } = req.params;
+const { folder } = req.body;
+
+const allowedFolders = [
+"offer",
+"invoice",
+"appointment",
+"other"
+];
+
+if (!allowedFolders.includes(folder)) {
+return res.status(400).json({
+ok: false,
+error: "Ungültiger Zielordner."
+});
+}
+
+const { data, error } = await supabase
+.from("email_threads")
+.update({
+manual_folder: folder
+})
+.eq("id", id)
+.select()
+.single();
+
+if (error) {
+return res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+
+res.json({
+ok: true,
+thread: data
+});
+});
+
 app.get("/api/email-threads", async (req, res) => {
 const { data, error } = await supabase
 .from("email_threads")

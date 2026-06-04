@@ -26,6 +26,8 @@ let selectedAttachments = [];
 let activeFolder = "offer";
 let emailMessagesCache = [];
 let activeMessageId = null;
+let moveTargetMessageId = null;
+let selectedMoveFolder = null;
 
 const folderLabels = {
 offer: "Angebote",
@@ -140,11 +142,13 @@ mailAttachmentsList.appendChild(item);
 
 function getMessageFolder(message) {
 const relatedType = message.email_threads?.related_type;
+const manualFolder = message.email_threads?.manual_folder;
 const aiCategory = message.email_threads?.ai_category;
 const intent = message.ai_detected_intent;
 
 if (message.deleted_at) return "trash";
 if (message.direction === "outbound") return "sent";
+if (manualFolder) return manualFolder;
 
 if (
 relatedType === "appointment" ||
@@ -365,6 +369,10 @@ ${stripHtml(message.body || "").slice(0, 120) || "Keine Vorschau verfügbar"}
 
 <div class="mailRowActions">
 
+${!["sent", "trash"].includes(activeFolder) ? `
+<button class="mailRowMoveBtn" data-move-message="${message.id}">↪</button>
+` : ""}
+
 ${activeFolder === "trash" ? `
 <button class="mailRowRestoreBtn">↩</button>
 ` : ""}
@@ -377,6 +385,19 @@ const deleteButton = item.querySelector(".mailRowDeleteBtn");
 
 deleteButton.addEventListener("click", async (event) => {
 event.stopPropagation();
+
+const moveButton = item.querySelector(".mailRowMoveBtn");
+
+if (moveButton) {
+moveButton.addEventListener("click", (event) => {
+event.stopPropagation();
+
+moveTargetMessageId = message.id;
+selectedMoveFolder = null;
+
+openMoveMailModal(message);
+});
+}
 
 try {
 
@@ -428,6 +449,104 @@ showToast(error.message);
 }
 
 emailThreadsList.appendChild(item);
+});
+}
+
+function openMoveMailModal(message) {
+const existing = document.getElementById("moveMailModalOverlay");
+
+if (existing) {
+existing.remove();
+}
+
+const overlay = document.createElement("div");
+overlay.id = "moveMailModalOverlay";
+overlay.className = "moveMailModalOverlay";
+
+overlay.innerHTML = `
+<div class="moveMailModal">
+<div class="moveMailModalHeader">
+<div>
+<h3>E-Mail verschieben</h3>
+<p>Wähle den Zielordner für diese E-Mail.</p>
+</div>
+
+<button class="moveMailModalClose" type="button">×</button>
+</div>
+
+<div class="moveFolderOptions">
+<button data-folder="offer">Angebote</button>
+<button data-folder="invoice">Rechnungen</button>
+<button data-folder="appointment">Termine</button>
+<button data-folder="other">Sonstiges</button>
+</div>
+
+<div class="moveMailModalActions">
+<button class="btn btnSecondary" id="cancelMoveMailBtn">Abbrechen</button>
+<button class="btn btnPrimary" id="confirmMoveMailBtn" disabled>Verschieben</button>
+</div>
+</div>
+`;
+
+document.body.appendChild(overlay);
+
+overlay.querySelector(".moveMailModalClose").addEventListener("click", () => {
+overlay.remove();
+});
+
+overlay.querySelector("#cancelMoveMailBtn").addEventListener("click", () => {
+overlay.remove();
+});
+
+overlay.querySelectorAll("[data-folder]").forEach((button) => {
+button.addEventListener("click", () => {
+selectedMoveFolder = button.dataset.folder;
+
+overlay.querySelectorAll("[data-folder]").forEach((entry) => {
+entry.classList.remove("active");
+});
+
+button.classList.add("active");
+
+overlay.querySelector("#confirmMoveMailBtn").disabled = false;
+});
+});
+
+overlay.querySelector("#confirmMoveMailBtn").addEventListener("click", async () => {
+if (!moveTargetMessageId || !selectedMoveFolder) return;
+
+try {
+const targetMessage =
+emailMessagesCache.find((entry) => entry.id === moveTargetMessageId);
+
+if (!targetMessage) {
+throw new Error("E-Mail konnte nicht gefunden werden.");
+}
+
+const response = await fetch(`/api/email-threads/${targetMessage.thread_id}/folder`, {
+method: "PUT",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+folder: selectedMoveFolder
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht verschoben werden.");
+}
+
+showToast("E-Mail wurde verschoben.");
+overlay.remove();
+
+await renderEmails();
+
+} catch (error) {
+showToast(error.message);
+}
 });
 }
 
