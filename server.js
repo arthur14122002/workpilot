@@ -1425,6 +1425,22 @@ Regeln:
 - calendarSuggestion.title soll ein kurzer sinnvoller Titel sein, z. B. "Vor-Ort-Termin Patrick Müller" oder "Besichtigung Terrasse".
 - calendarSuggestion.description soll Adresse, Kontext und Kundenwunsch kurz enthalten.
 - Uhrzeiten wie "gegen 14 Uhr" müssen als "14:00" erkannt werden.
+calendarSuggestion.description soll lesbar mit Zeilenumbrüchen formatiert sein.
+
+Wenn eine Adresse vorhanden ist, schreibe sie separat.
+
+Beispiel:
+
+"Kunde wünscht Vor-Ort-Besichtigung wegen Garagendach-Sanierung.
+
+Adresse:
+Musterstraße 12
+55116 Mainz"
+
+Kopiere niemals die komplette E-Mail.
+Beschreibung kurz halten (maximal 1-3 Sätze).
+
+Datum und Uhrzeit nicht wiederholen, wenn calendarSuggestion.date oder calendarSuggestion.time bereits gesetzt sind.
 `
 },
 {
