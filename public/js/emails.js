@@ -383,8 +383,7 @@ ${activeFolder === "trash" ? `
 
 const deleteButton = item.querySelector(".mailRowDeleteBtn");
 
-deleteButton.addEventListener("click", async (event) => {
-event.stopPropagation();
+
 
 const moveButton = item.querySelector(".mailRowMoveBtn");
 
@@ -408,6 +407,9 @@ selectedMoveFolder = null;
 openMoveMailModal(message);
 });
 }
+
+deleteButton.addEventListener("click", async (event) => {
+event.stopPropagation();
 
 try {
 
