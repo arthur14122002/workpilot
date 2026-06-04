@@ -1379,8 +1379,10 @@ return contacts[0];
 }
 
 async function analyzeInboundEmail(message, thread) {
+let response;
+
 try {
-const response = await openai.responses.create({
+response = await openai.responses.create({
 model: "gpt-4.1-mini",
 input: [
 {
@@ -1465,6 +1467,9 @@ ${message.body}
 
 const analysis = JSON.parse(response.output_text);
 
+console.log("EMAIL AI RAW:", response.output_text);
+console.log("EMAIL AI PARSED:", analysis);
+
 await supabase
 .from("email_messages")
 .update({
@@ -1524,6 +1529,7 @@ return analysis;
 
 } catch (error) {
 console.error("EMAIL AGENT ERROR:", error);
+console.error("EMAIL AI RAW FAILED:", response?.output_text);
 return null;
 }
 }
