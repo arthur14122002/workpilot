@@ -72,10 +72,17 @@ showToast(error.message);
 calendarEventForm.addEventListener("submit", createCalendarEvent);
 
 document.addEventListener("DOMContentLoaded", () => {
+const params = new URLSearchParams(window.location.search);
 
+const date = params.get("date");
 const title = params.get("title");
 const time = params.get("time");
 const description = params.get("description");
+
+if (date) {
+document.getElementById("eventDate").value = date;
+localStorage.setItem("workpilot_calendar_month", `${date.slice(0, 7)}-01`);
+}
 
 if (title) {
 document.getElementById("title").value = title;
@@ -87,14 +94,6 @@ document.getElementById("eventTime").value = time;
 
 if (description) {
 document.getElementById("description").value = description;
-}
-
-const params = new URLSearchParams(window.location.search);
-const date = params.get("date");
-
-if (date) {
-document.getElementById("eventDate").value = date;
-localStorage.setItem("workpilot_calendar_month", `${date.slice(0, 7)}-01`);
 }
 
 const cancelLink = document.querySelector(".buttonRow .btnSecondary");
