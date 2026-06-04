@@ -1448,7 +1448,8 @@ await supabase
 .update({
 ai_detected_intent: analysis.intent || null,
 ai_summary: analysis.summary || null,
-ai_suggested_reply: analysis.suggestedReply || null
+ai_suggested_reply: analysis.suggestedReply || null,
+calendar_suggestion: analysis.calendarSuggestion || null
 })
 .eq("id", message.id);
 

@@ -709,6 +709,28 @@ showToast(error.message);
 });
 }
 
+function getCalendarSuggestionFromMessage(message, subject) {
+const suggestion = message.calendar_suggestion || {};
+
+return {
+title:
+suggestion.title ||
+`Rücksprache ${message.sender || "Kunde"}`,
+
+date:
+suggestion.date ||
+"",
+
+time:
+suggestion.time ||
+"",
+
+description:
+suggestion.description ||
+`E-Mail: ${subject}`
+};
+}
+
 function bindReplyActions(message, subject) {
 const replyTextarea = document.getElementById("mailReplyTextarea");
 const useAiSuggestionBtn = document.getElementById("useAiSuggestionBtn");
@@ -753,26 +775,30 @@ showToast(error.message);
 }
 
 if (createCalendarFromEmailBtn) {
-
 createCalendarFromEmailBtn.addEventListener("click", () => {
+const calendarSuggestion =
+getCalendarSuggestionFromMessage(message, subject);
 
 const params = new URLSearchParams();
 
-params.set(
-"title",
-`Rücksprache ${message.sender || "Kunde"}`
-);
+if (calendarSuggestion.title) {
+params.set("title", calendarSuggestion.title);
+}
 
-params.set(
-"description",
-`E-Mail: ${subject}\n\n${message.body || ""}`
-);
+if (calendarSuggestion.date) {
+params.set("date", calendarSuggestion.date);
+}
 
-window.location.href =
-`/calendar-create?${params.toString()}`;
+if (calendarSuggestion.time) {
+params.set("time", calendarSuggestion.time);
+}
 
+if (calendarSuggestion.description) {
+params.set("description", calendarSuggestion.description);
+}
+
+window.location.href = `/calendar-create?${params.toString()}`;
 });
-
 }
 
 useAiSuggestionBtn.addEventListener("click", () => {
