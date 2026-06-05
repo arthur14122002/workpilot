@@ -45,6 +45,8 @@ console.error(error);
 }
 }
 
+window.updateEmailCounter = updateEmailCounter;
+
 function getCalendarReturnUrl(fallback = "/") {
 const savedMonth = localStorage.getItem("workpilot_calendar_month");
 

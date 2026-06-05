@@ -343,6 +343,10 @@ console.error(error);
 }
 }
 
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
+
 await openMailDetail(message);
 });
 
@@ -415,6 +419,10 @@ showToast("E-Mail wurde in den Papierkorb verschoben.");
 
 await renderEmails();
 
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
+
 } catch (error) {
 showToast(error.message);
 }
@@ -433,6 +441,10 @@ await restoreMessage(message.id);
 showToast("E-Mail wurde wiederhergestellt.");
 
 await renderEmails();
+
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
 
 } catch (error) {
 showToast(error.message);
@@ -575,6 +587,10 @@ overlay.remove();
 
 await renderEmails();
 
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
+
 } catch (error) {
 showToast(error.message);
 }
@@ -608,6 +624,10 @@ activeMessageId = message.id;
 
 await renderEmails();
 
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
+
 const updatedMessage = emailMessagesCache.find((entry) => {
 return entry.id === message.id;
 });
@@ -636,6 +656,10 @@ updateFolderCounts();
 } catch (error) {
 console.error(error);
 }
+}
+
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
 }
 
 await openMailDetail(updatedMessage);
@@ -923,6 +947,10 @@ showToast("Kontakt wurde erstellt.");
 
 await renderEmails();
 
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
+
 } catch (error) {
 showToast(error.message);
 }
@@ -1065,6 +1093,11 @@ message.sender
 
 showToast("Antwort wurde gespeichert.");
 await renderEmails();
+
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
+
 } catch (error) {
 showToast(error.message);
 }
@@ -1222,6 +1255,10 @@ selectedAttachments = [];
 renderAttachments();
 
 await renderEmails();
+
+if (window.updateEmailCounter) {
+await window.updateEmailCounter();
+}
 
 } catch (error) {
 showToast(error.message);
