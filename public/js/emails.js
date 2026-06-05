@@ -1105,6 +1105,11 @@ showToast(error.message);
 }
 
 async function sendReply(threadId, body, subject, recipient) {
+const profileSettings = JSON.parse(
+localStorage.getItem("workpilot_company_settings") || "{}"
+);
+
+const communicationEmail = profileSettings.personalEmail || "";
 const response = await fetch("/api/email-reply", {
 method: "POST",
 headers: {
@@ -1115,6 +1120,7 @@ threadId,
 body,
 subject,
 recipient
+fromDisplayEmail: communicationEmail
 })
 });
 
@@ -1227,6 +1233,7 @@ const formData = new FormData();
 formData.append("to", recipient);
 formData.append("subject", subject);
 formData.append("html", body);
+formData.append("fromDisplayEmail", communicationEmail);
 
 selectedAttachments.forEach((file) => {
 formData.append("attachments", file);

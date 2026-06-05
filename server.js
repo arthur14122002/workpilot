@@ -735,7 +735,7 @@ ok: true
 });
 
 app.post("/api/email-reply", async (req, res) => {
-const { threadId, body, subject, recipient } = req.body;
+const { threadId, body, subject, recipient, fromDisplayEmail } = req.body;
 
 if (!threadId || !body) {
 return res.status(400).json({
@@ -743,6 +743,10 @@ ok: false,
 error: "Thread oder Antworttext fehlt."
 });
 }
+
+const senderEmail =
+fromDisplayEmail ||
+process.env.RESEND_FROM_EMAIL;
 
 const replySubject = subject?.startsWith("RE:")
 ? subject
@@ -754,7 +758,7 @@ const { data, error } = await supabase
 {
 thread_id: threadId,
 direction: "outbound",
-sender: process.env.RESEND_FROM_EMAIL,
+sender: senderEmail,
 recipient: recipient || "kunde@example.com",
 subject: replySubject,
 body,
@@ -1918,7 +1922,7 @@ error: "Rechnung konnte nicht per E-Mail gesendet werden."
 });
 
 app.post("/api/send-email", upload.array("attachments"), async (req, res) => {
-const { to, subject, html, threadId } = req.body;
+const { to, subject, html, threadId, fromDisplayEmail } = req.body;
 const uploadedFiles = req.files || [];
 
 if (!to || !subject || !html) {
@@ -1927,6 +1931,10 @@ ok: false,
 error: "Fehlende E-Mail-Daten."
 });
 }
+
+const senderEmail =
+fromDisplayEmail ||
+process.env.RESEND_FROM_EMAIL;
 
 try {
 let finalThreadId = threadId;
@@ -1972,7 +1980,7 @@ const { data: message, error: messageError } = await supabase
 thread_id: finalThreadId,
 contact_id: matchedContact?.id || null,
 direction: "outbound",
-sender: process.env.RESEND_FROM_EMAIL,
+sender: senderEmail,
 recipient: to,
 subject,
 body: html,
