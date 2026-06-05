@@ -812,7 +812,7 @@ ${attachments.map((attachment) => `
 }
 
 ${
-message.ai_suggested_reply
+showReplyBox && message.ai_suggested_reply
 ? `
 <div class="detailAiReply">
 <div class="aiReplyHeader">
@@ -833,6 +833,9 @@ ${message.ai_suggested_reply}
 </div>
 </div>
 
+${
+showReplyBox
+? `
 <div class="mailReplyBox">
 <textarea
 id="mailReplyTextarea"
@@ -876,6 +879,9 @@ Senden
 </button>
 </div>
 </div>
+`
+: ""
+}
 `;
 
 bindReplyActions(message, subject);
