@@ -970,6 +970,10 @@ const sendMailReplyBtn = document.getElementById("sendMailReplyBtn");
 const createOfferFromEmailBtn = document.getElementById("createOfferFromEmailBtn");
 const createCalendarFromEmailBtn = document.getElementById("createCalendarFromEmailBtn");
 
+if (message.direction !== "inbound") {
+return;
+}
+
 if (createOfferFromEmailBtn) {
 createOfferFromEmailBtn.addEventListener("click", async () => {
 try {
