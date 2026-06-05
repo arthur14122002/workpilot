@@ -727,6 +727,11 @@ message.direction === "inbound";
 const showReplyBox =
 message.direction === "inbound";
 
+const contactEmail =
+message.direction === "outbound"
+? message.recipient
+: message.sender;
+
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
 <div>
@@ -764,8 +769,8 @@ Kein Kontakt zugeordnet.
 
 <button
 class="mailCreateContactBtn"
-data-name="${message.sender || ""}"
-data-email="${message.sender || ""}"
+data-name="${contactEmail || ""}"
+data-email="${contactEmail || ""}"
 >
 Kontakt erstellen
 </button>
