@@ -1119,7 +1119,7 @@ body: JSON.stringify({
 threadId,
 body,
 subject,
-recipient
+recipient,
 fromDisplayEmail: communicationEmail
 })
 });
