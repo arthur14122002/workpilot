@@ -334,7 +334,7 @@ min-height: 260px;
 }
 }
 
-.mailRowDeleteBtn
+.mailRowDeleteBtn,
 .mailRowMoveBtn {
 position: absolute;
 right: 12px;
@@ -351,13 +351,13 @@ pointer-events: none;
 transition: 0.16s ease;
 }
 
-.emailThreadItem:hover .mailRowDeleteBtn
+.emailThreadItem:hover .mailRowDeleteBtn,
 .emailThreadItem:hover .mailRowMoveBtn {
 opacity: 1;
 pointer-events: auto;
 }
 
-.mailRowDeleteBtn:hover
+.mailRowDeleteBtn:hover,
 .mailRowMoveBtn:hover {
 background: var(--wp-orange-soft);
 }
@@ -369,7 +369,7 @@ gap:6px;
 }
 
 .mailRowRestoreBtn,
-.mailRowDeleteBtn
+.mailRowDeleteBtn,
 .mailRowMoveBtn {
 width:30px;
 height:30px;
@@ -383,7 +383,7 @@ transition:0.2s ease;
 }
 
 .emailThreadItem:hover .mailRowRestoreBtn,
-.emailThreadItem:hover .mailRowDeleteBtn
+.emailThreadItem:hover .mailRowDeleteBtn,
 .emailThreadItem:hover .mailRowMoveBtn{
 opacity:1;
 }
@@ -392,7 +392,7 @@ opacity:1;
 background:#dcfce7;
 }
 
-.mailRowDeleteBtn:hover
+.mailRowDeleteBtn:hover,
 .mailRowMoveBtn:hover{
 background:#fee2e2;
 }
