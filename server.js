@@ -2154,7 +2154,8 @@ subject,
 related_type,
 related_id,
 status,
-ai_category
+ai_category,
+manual_folder
 )
 `)
 .order("created_at", { ascending: false });

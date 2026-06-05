@@ -148,7 +148,10 @@ const intent = message.ai_detected_intent;
 
 if (message.deleted_at) return "trash";
 if (message.direction === "outbound") return "sent";
-if (manualFolder) return manualFolder;
+
+if (manualFolder) {
+return manualFolder;
+}
 
 if (
 relatedType === "appointment" ||
