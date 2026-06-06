@@ -1,0 +1,42 @@
+.contactCreateCard {
+max-width: 900px;
+}
+
+.contactForm {
+display: flex;
+flex-direction: column;
+gap: 24px;
+}
+
+.formGrid {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 18px;
+}
+
+.formField {
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.formField label {
+font-weight: 700;
+font-size: 14px;
+color: var(--text-main);
+}
+
+.formField input {
+height: 48px;
+border: 1px solid var(--border-soft);
+border-radius: 14px;
+padding: 0 14px;
+font-size: 15px;
+background: #fff;
+}
+
+.buttonRow {
+display: flex;
+justify-content: flex-end;
+gap: 12px;
+}

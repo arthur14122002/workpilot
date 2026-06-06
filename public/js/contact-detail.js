@@ -404,6 +404,13 @@ try {
 const contact = await apiGetContact(contactId);
 
 renderContact(contact);
+
+const editContactBtn = document.getElementById("editContactBtn");
+
+if (editContactBtn) {
+editContactBtn.href = `/contact-create?id=${contactId}`;
+}
+
 renderOffers(contactId);
 renderInvoices(contactId);
 renderEmails (contactId);

@@ -51,48 +51,10 @@ Verwalte Kunden und ordne später Angebote, Rechnungen und Notizen zu.
 <p>Wähle einen Buchstaben oder lege einen neuen Kontakt an.</p>
 </div>
 
-<button class="btn btnPrimary" id="toggleContactFormBtn">
+<a class="btn btnPrimary" href="/contact-create">
 + Kontakt
-</button>
+</a>
 </div>
-
-<form id="contactForm" class="contactForm hidden">
-<div class="formGrid">
-<div class="formField">
-<label for="contactName">Name / Firma</label>
-<input id="contactName" placeholder="Muster GmbH" required />
-</div>
-
-<div class="formField">
-<label for="contactEmail">E-Mail</label>
-<input id="contactEmail" placeholder="kunde@email.de" />
-</div>
-
-<div class="formField">
-<label for="contactPhone">Telefon</label>
-<input id="contactPhone" placeholder="+49 123 456789" />
-</div>
-
-<div class="formField">
-<label for="contactStreet">Straße</label>
-<input id="contactStreet" placeholder="Musterstraße 123" />
-</div>
-
-<div class="formField">
-<label for="contactCity">PLZ / Ort</label>
-<input id="contactCity" placeholder="12345 Berlin" />
-</div>
-</div>
-
-<div class="buttonRow">
-<button type="button" class="btn btnSecondary" id="cancelContactBtn">
-Abbrechen
-</button>
-<button class="btn btnPrimary" type="submit">
-Kontakt speichern
-</button>
-</div>
-</form>
 
 <div id="letterNav" class="letterNav"></div>
 

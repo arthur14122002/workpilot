@@ -2286,6 +2286,10 @@ app.get("/contacts", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "index.html"));
 });
 
+app.get("/contact-create", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "contact-create.html"));
+});
+
 app.get("/login", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "login.html"));
 });

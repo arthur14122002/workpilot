@@ -2,12 +2,9 @@ const CONTACTS_KEY = "workpilot_contacts";
 const OFFERS_KEY = "workpilot_saved_offers";
 const INVOICES_KEY = "workpilot_saved_invoices";
 
-const contactForm = document.getElementById("contactForm");
 const contactsList = document.getElementById("contactsList");
 const emptyContacts = document.getElementById("emptyContacts");
 const letterNav = document.getElementById("letterNav");
-const toggleContactFormBtn = document.getElementById("toggleContactFormBtn");
-const cancelContactBtn = document.getElementById("cancelContactBtn");
 
 let activeLetter = "ALLE";
 let contactsCache = [];
@@ -97,18 +94,6 @@ return fallback;
 
 function saveJson(key, value) {
 localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getContactFormData() {
-return {
-id: generateId("contact"),
-name: document.getElementById("contactName").value.trim(),
-email: document.getElementById("contactEmail").value.trim(),
-phone: document.getElementById("contactPhone").value.trim(),
-street: document.getElementById("contactStreet").value.trim(),
-city: document.getElementById("contactCity").value.trim(),
-createdAt: new Date().toISOString()
-};
 }
 
 function getContactLetter(contact) {
@@ -238,34 +223,6 @@ const contactId = event.target.dataset.open;
 window.location.href = `/contact-detail?id=${contactId}`;
 }
 
-async function createContact(event) {
-event.preventDefault();
-
-const contact = getContactFormData();
-
-if (!contact.name) {
-showToast("Bitte einen Namen eingeben.");
-return;
-}
-
-try {
-await apiCreateContact(contact);
-
-contactForm.reset();
-contactForm.classList.add("hidden");
-
-activeLetter = getContactLetter(contact);
-
-showToast("Kontakt wurde gespeichert.");
-
-contactsCache = await apiGetContacts();
-renderContacts();
-renderKpis();
-} catch (error) {
-showToast(error.message);
-}
-}
-
 async function deleteContact(event) {
 const contactId = event.target.dataset.delete;
 
@@ -291,17 +248,6 @@ document.querySelectorAll("[data-delete]").forEach((button) => {
 button.addEventListener("click", deleteContact);
 });
 }
-
-toggleContactFormBtn.addEventListener("click", () => {
-contactForm.classList.toggle("hidden");
-});
-
-cancelContactBtn.addEventListener("click", () => {
-contactForm.reset();
-contactForm.classList.add("hidden");
-});
-
-contactForm.addEventListener("submit", createContact);
 
 document.addEventListener("DOMContentLoaded", async () => {
 try {
