@@ -599,13 +599,23 @@ showToast(error.message);
 
 async function openEmailFromUrl() {
 const params = new URLSearchParams(window.location.search);
+
+const messageId = params.get("message");
 const threadId = params.get("thread");
 
-if (!threadId) return;
+if (!messageId && !threadId) return;
 
-const message = emailMessagesCache.find((entry) => {
+let message = null;
+
+if (messageId) {
+message = emailMessagesCache.find((entry) => {
+return entry.id === messageId;
+});
+} else {
+message = emailMessagesCache.find((entry) => {
 return entry.thread_id === threadId;
 });
+}
 
 if (!message) return;
 

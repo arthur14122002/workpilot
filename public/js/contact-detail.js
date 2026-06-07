@@ -333,7 +333,7 @@ ${preview || "Keine Vorschau vorhanden."}
 
 <button
 class="emailChatOpenBtn"
-data-open-email="${mail.thread_id}"
+data-open-email="${mail.id}"
 title="E-Mail öffnen"
 >
 👁
@@ -368,10 +368,9 @@ button.addEventListener("click", openInvoice);
 }
 
 function openEmail(event) {
+const messageId = event.currentTarget.dataset.openEmail;
 
-const threadId = event.target.dataset.openEmail;
-
-window.location.href = `/emails?thread=${threadId}`;
+window.location.href = `/emails?message=${messageId}`;
 }
 
 function bindEmailActions() {
