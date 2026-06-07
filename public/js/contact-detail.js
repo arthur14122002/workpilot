@@ -301,26 +301,35 @@ return;
 
 emptyContactEmails.style.display = "none";
 
-emails.forEach((mail) => {
-
+emails
+.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+.forEach((mail) => {
 const item = document.createElement("div");
-item.className = "offerItem";
+
+item.className =
+mail.direction === "outbound"
+? "emailTimelineItem emailTimelineItemOutbound"
+: "emailTimelineItem emailTimelineItemInbound";
 
 item.innerHTML = `
-<div class="offerInfo">
+<div class="emailTimelineBubble">
+<div class="emailTimelineTop">
+<strong>${mail.direction === "outbound" ? "Gesendet" : "Eingegangen"}</strong>
+<span>${new Date(mail.created_at).toLocaleString("de-DE")}</span>
+</div>
 
-<div class="offerTitle">
+<div class="emailTimelineSubject">
 ${mail.subject || "Ohne Betreff"}
 </div>
 
-<div class="offerMeta">
-${mail.sender || "-"} ·
-${new Date(mail.created_at).toLocaleString("de-DE")}
+<div class="emailTimelineMeta">
+${mail.direction === "outbound" ? `An: ${mail.recipient || "-"}` : `Von: ${mail.sender || "-"}`}
 </div>
 
+<div class="emailTimelineBody">
+${mail.body || ""}
 </div>
 
-<div class="offerActions">
 <button
 class="btn btnSecondary"
 data-open-email="${mail.thread_id}"
@@ -409,6 +418,12 @@ const editContactBtn = document.getElementById("editContactBtn");
 
 if (editContactBtn) {
 editContactBtn.href = `/contact-create?id=${contactId}`;
+}
+
+const createNoteBtn = document.getElementById("createNoteBtn");
+
+if (createNoteBtn) {
+createNoteBtn.href = `/note-create?contactId=${contactId}`;
 }
 
 renderOffers(contactId);

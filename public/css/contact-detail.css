@@ -171,3 +171,62 @@ line-height: 1.6;
 color: var(--wp-text);
 white-space: pre-wrap;
 }
+
+#contactEmailsList {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+
+.emailTimelineItem {
+display: flex;
+width: 100%;
+}
+
+.emailTimelineItemInbound {
+justify-content: flex-start;
+}
+
+.emailTimelineItemOutbound {
+justify-content: flex-end;
+}
+
+.emailTimelineBubble {
+width: min(72%, 620px);
+border: 1px solid var(--border-soft);
+border-radius: 18px;
+padding: 16px;
+background: #fff;
+}
+
+.emailTimelineItemOutbound .emailTimelineBubble {
+background: var(--wp-orange-soft);
+}
+
+.emailTimelineTop {
+display: flex;
+justify-content: space-between;
+gap: 12px;
+font-size: 13px;
+color: var(--text-muted);
+margin-bottom: 8px;
+}
+
+.emailTimelineSubject {
+font-weight: 800;
+margin-bottom: 6px;
+color: var(--text-main);
+}
+
+.emailTimelineMeta {
+font-size: 13px;
+color: var(--text-muted);
+margin-bottom: 10px;
+}
+
+.emailTimelineBody {
+font-size: 14px;
+line-height: 1.5;
+white-space: pre-wrap;
+margin-bottom: 12px;
+}
