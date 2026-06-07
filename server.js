@@ -765,6 +765,7 @@ error: "Thread oder Antworttext fehlt."
 });
 }
 
+try {
 const senderEmail =
 fromDisplayEmail ||
 process.env.RESEND_FROM_EMAIL;
@@ -772,6 +773,24 @@ process.env.RESEND_FROM_EMAIL;
 const replySubject = subject?.startsWith("RE:")
 ? subject
 : `RE: ${subject || "Ohne Betreff"}`;
+
+const { data: originalMessage } = await supabase
+.from("email_messages")
+.select("contact_id")
+.eq("thread_id", threadId)
+.not("contact_id", "is", null)
+.order("created_at", { ascending: true })
+.limit(1)
+.maybeSingle();
+
+const matchedContact = recipient
+? await findMatchingContact(recipient)
+: null;
+
+const finalContactId =
+originalMessage?.contact_id ||
+matchedContact?.id ||
+null;
 
 const { data, error } = await supabase
 .from("email_messages")
@@ -790,17 +809,21 @@ message_status: "sent"
 .select()
 .single();
 
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
+if (error) throw error;
 
 res.json({
 ok: true,
 message: data
 });
+
+} catch (error) {
+console.error("EMAIL REPLY ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: error.message || "Antwort konnte nicht gespeichert werden."
+});
+}
 });
 
 app.post("/api/ai/analyze-email", async (req, res) => {
