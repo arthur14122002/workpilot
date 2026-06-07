@@ -634,7 +634,7 @@ const { data, error } = await supabase
 {
 
 thread_id: message.threadId,
-contact_id: finalContactId,
+contact_id: matchedContact?.id || null,
 direction: message.direction || "outbound",
 sender: message.sender || null,
 recipient: message.recipient || null,
@@ -778,6 +778,7 @@ const { data, error } = await supabase
 .insert([
 {
 thread_id: threadId,
+contact_id: finalContactId,
 direction: "outbound",
 sender: senderEmail,
 recipient: recipient || "kunde@example.com",
