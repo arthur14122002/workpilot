@@ -609,11 +609,17 @@ thread: data
 app.post("/api/email-messages", async (req, res) => {
 const message = req.body;
 
+const matchedContact = recipient
+? await findMatchingContact(recipient)
+: null;
+
 const { data, error } = await supabase
 .from("email_messages")
 .insert([
 {
+
 thread_id: message.threadId,
+contact_id: matchedContact?.id || null,
 direction: message.direction || "outbound",
 sender: message.sender || null,
 recipient: message.recipient || null,
