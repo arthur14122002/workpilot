@@ -104,11 +104,7 @@ E-Mails
 </section>
 
 <section class="card contactDetailCard">
-<div class="sectionHeader">
-<div>
-<h2>Notizen & Verlauf</h2>
 
-<section class="card contactDetailCard">
 <div class="sectionHeader">
 <div>
 <h2>E-Mail-Verlauf</h2>
@@ -125,13 +121,22 @@ Postfach öffnen
 <div id="emptyContactEmails" class="emptyState">
 <p>Noch keine E-Mails vorhanden.</p>
 </div>
+
 </section>
 
-<p>Speichere Kundeninfos, Telefonnotizen und spätere KI-Zusammenfassungen.</p>
+<section class="card contactDetailCard">
+
+<div class="sectionHeader">
+<div>
+<h2>Notizen</h2>
+<p>
+Speichere Kundeninfos, Telefonnotizen und spätere KI-Zusammenfassungen.
+</p>
 </div>
 </div>
 
 <form id="noteForm" class="noteForm">
+
 <select id="noteType">
 <option value="note">Notiz</option>
 <option value="call">Telefonnotiz</option>
@@ -139,11 +144,17 @@ Postfach öffnen
 <option value="ai">KI-Zusammenfassung</option>
 </select>
 
-<textarea id="noteText" placeholder="z. B. Kunde möchte Rückruf wegen Terminabsprache..."></textarea>
+<textarea
+id="noteText"
+placeholder="z. B. Kunde möchte Rückruf wegen Terminabsprache..."
+></textarea>
 
 <div class="buttonRow">
-<button class="btn btnPrimary" type="submit">Notiz speichern</button>
+<button class="btn btnPrimary" type="submit">
+Notiz speichern
+</button>
 </div>
+
 </form>
 
 <div id="notesList" class="notesList"></div>
@@ -151,6 +162,7 @@ Postfach öffnen
 <div id="emptyNotes" class="emptyState">
 <p>Noch keine Notizen vorhanden.</p>
 </div>
+
 </section>
 
 </main>
