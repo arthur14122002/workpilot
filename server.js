@@ -609,9 +609,24 @@ thread: data
 app.post("/api/email-messages", async (req, res) => {
 const message = req.body;
 
+const { data: originalMessage } = await supabase
+.from("email_messages")
+.select("contact_id")
+.eq("thread_id", threadId)
+.eq("direction", "inbound")
+.not("contact_id", "is", null)
+.order("created_at", { ascending: true })
+.limit(1)
+.maybeSingle();
+
 const matchedContact = recipient
 ? await findMatchingContact(recipient)
 : null;
+
+const finalContactId =
+originalMessage?.contact_id ||
+matchedContact?.id ||
+null;
 
 const { data, error } = await supabase
 .from("email_messages")
@@ -619,7 +634,7 @@ const { data, error } = await supabase
 {
 
 thread_id: message.threadId,
-contact_id: matchedContact?.id || null,
+contact_id: finalContactId,
 direction: message.direction || "outbound",
 sender: message.sender || null,
 recipient: message.recipient || null,
