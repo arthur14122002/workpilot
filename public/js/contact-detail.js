@@ -282,7 +282,6 @@ bindInvoiceActions();
 }
 
 async function renderEmails(contactId) {
-
 let emails = [];
 
 try {
@@ -306,35 +305,38 @@ emails
 .forEach((mail) => {
 const item = document.createElement("div");
 
-item.className =
-mail.direction === "outbound"
-? "emailTimelineItem emailTimelineItemOutbound"
-: "emailTimelineItem emailTimelineItemInbound";
+const isOutbound = mail.direction === "outbound";
+const preview = (mail.body || "")
+.replace(/<[^>]*>/g, "")
+.replace(/\s+/g, " ")
+.trim()
+.slice(0, 120);
+
+item.className = isOutbound
+? "emailChatRow emailChatRowOutbound"
+: "emailChatRow emailChatRowInbound";
 
 item.innerHTML = `
-<div class="emailTimelineBubble">
-<div class="emailTimelineTop">
-<strong>${mail.direction === "outbound" ? "Gesendet" : "Eingegangen"}</strong>
-<span>${new Date(mail.created_at).toLocaleString("de-DE")}</span>
+<div class="emailChatCard">
+<div class="emailChatTop">
+<strong>${mail.subject || "Ohne Betreff"}</strong>
+<span>${new Date(mail.created_at).toLocaleDateString("de-DE")}</span>
 </div>
 
-<div class="emailTimelineSubject">
-${mail.subject || "Ohne Betreff"}
+<div class="emailChatMeta">
+${isOutbound ? `An: ${mail.recipient || "-"}` : `Von: ${mail.sender || "-"}`}
 </div>
 
-<div class="emailTimelineMeta">
-${mail.direction === "outbound" ? `An: ${mail.recipient || "-"}` : `Von: ${mail.sender || "-"}`}
-</div>
-
-<div class="emailTimelineBody">
-${mail.body || ""}
+<div class="emailChatPreview">
+${preview || "Keine Vorschau vorhanden."}
 </div>
 
 <button
-class="btn btnSecondary"
+class="emailChatOpenBtn"
 data-open-email="${mail.thread_id}"
+title="E-Mail öffnen"
 >
-Öffnen
+👁
 </button>
 </div>
 `;
