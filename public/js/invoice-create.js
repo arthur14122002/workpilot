@@ -4,6 +4,22 @@ const invoiceCreateForm = document.getElementById("invoiceCreateForm");
 const invoicePoints = document.getElementById("invoicePoints");
 const addInvoicePointBtn = document.getElementById("addInvoicePointBtn");
 
+function getContactIdFromUrl() {
+const params = new URLSearchParams(window.location.search);
+return params.get("contactId");
+}
+
+async function apiGetContact(contactId) {
+const response = await fetch(`/api/contacts/${contactId}`);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakt konnte nicht geladen werden.");
+}
+
+return result.contact;
+}
+
 function formatDate(date) {
 return date.toLocaleDateString("de-DE", {
 day: "2-digit",
@@ -122,6 +138,31 @@ showToast(error.message);
 }
 }
 
+async function preloadContact() {
+const contactId = getContactIdFromUrl();
+
+if (!contactId) return;
+
+try {
+const contact = await apiGetContact(contactId);
+
+document.getElementById("recipientName").value =
+contact.name || "";
+
+document.getElementById("recipientStreet").value =
+contact.street || "";
+
+document.getElementById("recipientCity").value =
+contact.city || "";
+
+document.getElementById("recipientEmail").value =
+contact.email || "";
+
+} catch (error) {
+console.error(error);
+}
+}
+
 invoiceCreateForm.addEventListener("submit", createInvoiceDraft);
 
 createInvoicePoint();
@@ -129,3 +170,5 @@ createInvoicePoint();
 addInvoicePointBtn.addEventListener("click", () => {
 createInvoicePoint();
 });
+
+document.addEventListener("DOMContentLoaded", preloadContact);

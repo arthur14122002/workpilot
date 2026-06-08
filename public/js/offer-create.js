@@ -9,6 +9,22 @@ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const offerCreateForm = document.getElementById("offerCreateForm");
 const createNotice = document.getElementById("createNotice");
 
+function getContactIdFromUrl() {
+const params = new URLSearchParams(window.location.search);
+return params.get("contactId");
+}
+
+async function apiGetContact(contactId) {
+const response = await fetch(`/api/contacts/${contactId}`);
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakt konnte nicht geladen werden.");
+}
+
+return result.contact;
+}
+
 function formatDate(date) {
 return date.toLocaleDateString("de-DE", {
 day: "2-digit",
@@ -143,6 +159,31 @@ window.location.href = "/offer-editor";
 }, 500);
 }
 
+async function preloadContact() {
+const contactId = getContactIdFromUrl();
+
+if (!contactId) return;
+
+try {
+const contact = await apiGetContact(contactId);
+
+document.getElementById("recipientName").value =
+contact.name || "";
+
+document.getElementById("recipientStreet").value =
+contact.street || "";
+
+document.getElementById("recipientCity").value =
+contact.city || "";
+
+document.getElementById("recipientEmail").value =
+contact.email || "";
+
+} catch (error) {
+console.error(error);
+}
+}
+
 offerCreateForm.addEventListener("submit", createOfferDraft);
 
 createRequestPoint();
@@ -150,3 +191,5 @@ createRequestPoint();
 addRequestPointBtn.addEventListener("click", () => {
 createRequestPoint();
 });
+
+document.addEventListener("DOMContentLoaded", preloadContact);

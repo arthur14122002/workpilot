@@ -413,6 +413,18 @@ return;
 try {
 const contact = await apiGetContact(contactId);
 
+const offerBtn = document.getElementById("createOfferFromContactBtn");
+
+if (offerBtn) {
+offerBtn.href = `/offer-create?contactId=${contactId}`;
+}
+
+const invoiceBtn = document.getElementById("createInvoiceFromContactBtn");
+
+if (invoiceBtn) {
+invoiceBtn.href = `/invoice-create?contactId=${contactId}`;
+}
+
 renderContact(contact);
 
 const editContactBtn = document.getElementById("editContactBtn");
