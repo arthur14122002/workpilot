@@ -117,10 +117,10 @@ let savedContact;
 
 if (contactId) {
 savedContact = await apiUpdateContact(contactId, contact);
-showToast("Kontakt wurde aktualisiert.");
+sessionStorage.setItem("workpilot_toast", "Kontaktdaten wurden aktualisiert.");
 } else {
 savedContact = await apiCreateContact(contact);
-showToast("Kontakt wurde erstellt.");
+sessionStorage.setItem("workpilot_toast", "Kontakt wurde erstellt.");
 }
 
 window.location.href = `/contact-detail?id=${savedContact.id}`;

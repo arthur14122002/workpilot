@@ -97,4 +97,11 @@ document.addEventListener("DOMContentLoaded", () => {
 setActiveNav();
 ensureToastContainer();
 updateEmailCounter();
+
+const pendingToast = sessionStorage.getItem("workpilot_toast");
+
+if (pendingToast) {
+showToast(pendingToast);
+sessionStorage.removeItem("workpilot_toast");
+}
 });
