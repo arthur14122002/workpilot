@@ -90,7 +90,7 @@ const invoiceId = crypto.randomUUID();
 const draft = {
 id: invoiceId,
 createdAt: new Date().toISOString(),
-contactId: getContactIdFromUrl(),
+contact_id: getContactIdFromUrl(),
 status: "open",
 
 recipientName: document.getElementById("recipientName").value.trim(),
