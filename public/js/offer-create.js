@@ -130,7 +130,7 @@ const offerId = crypto.randomUUID();
 const draft = {
 id: offerId,
 createdAt: new Date().toISOString(),
-contactId: null,
+contactId: getContactIdFromUrl(),
 status: "open",
 
 trade: document.getElementById("trade").value,
