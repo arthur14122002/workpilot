@@ -433,6 +433,9 @@ localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 async function saveOffer() {
 persistDraft();
 
+console.log("CURRENT DRAFT BEFORE SAVE:", currentDraft);
+console.log("CURRENT DRAFT CONTACT:", currentDraft.contactId);
+
 const saved = {
 ...currentDraft,
 companySettings,
