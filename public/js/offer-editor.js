@@ -443,6 +443,9 @@ status: currentDraft.status || "open",
 savedAt: new Date().toISOString()
 };
 
+console.log("SAVED BEFORE API:", saved);
+console.log("SAVED CONTACT ID:", saved.contactId);
+
 try {
 const response = await fetch("/api/offers", {
 method: "POST",
