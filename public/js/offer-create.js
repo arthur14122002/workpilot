@@ -130,7 +130,7 @@ const offerId = crypto.randomUUID();
 const draft = {
 id: offerId,
 createdAt: new Date().toISOString(),
-contact_id: getContactIdFromUrl(),
+contactId: getContactIdFromUrl(),
 status: "open",
 
 trade: document.getElementById("trade").value,
@@ -149,6 +149,9 @@ collectRequestPoints(),
 document.getElementById("trade").value
 )
 };
+
+console.log("CONTACT ID:", getContactIdFromUrl());
+console.log("DRAFT:", draft);
 
 localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
 
