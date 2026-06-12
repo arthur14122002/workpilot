@@ -195,9 +195,23 @@ return (result.messages || []).filter(
 );
 }
 
-function getOffersForContact(contactId) {
-const offers = getSavedJson(OFFERS_KEY, []);
-return offers.filter((offer) => offer.contactId === contactId);
+async function apiGetOffers(contactId) {
+const response = await fetch("/api/offers");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Angebote konnten nicht geladen werden.");
+}
+
+return (result.offers || [])
+.map((row) => ({
+...row.data,
+id: row.id,
+contactId: row.contact_id,
+status: row.status,
+offerNumber: row.offer_number
+}))
+.filter((offer) => offer.contactId === contactId);
 }
 
 function renderContact(contact) {
@@ -210,8 +224,15 @@ detailEmail.textContent = contact.email || "-";
 detailPhone.textContent = contact.phone || "-";
 }
 
-function renderOffers(contactId) {
-const offers = getOffersForContact(contactId);
+async function renderOffers(contactId) {
+let offers = [];
+
+try {
+offers = await apiGetOffers(contactId);
+} catch (error) {
+showToast(error.message);
+return;
+}
 
 contactOffersList.innerHTML = "";
 
@@ -439,7 +460,7 @@ if (createNoteBtn) {
 createNoteBtn.href = `/note-create?contactId=${contactId}`;
 }
 
-renderOffers(contactId);
+await renderOffers(contactId);
 renderInvoices(contactId);
 renderEmails (contactId);
 renderNotes(contactId);
