@@ -404,16 +404,13 @@ button.addEventListener("click", openEmail);
 
 function openOffer(event) {
 const offerId = event.target.dataset.open;
-const offers = getSavedJson(OFFERS_KEY, []);
-const offer = offers.find((entry) => entry.id === offerId);
 
-if (!offer) {
+if (!offerId) {
 showToast("Angebot konnte nicht geöffnet werden.");
 return;
 }
 
-localStorage.setItem(DRAFT_KEY, JSON.stringify(offer));
-window.location.href = "/offer-editor";
+window.location.href = `/offer-editor?id=${offerId}`;
 }
 
 function bindOfferActions() {
