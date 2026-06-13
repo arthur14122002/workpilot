@@ -264,13 +264,34 @@ contactOffersList.appendChild(item);
 bindOfferActions();
 }
 
-function getInvoicesForContact(contactId) {
-const invoices = getSavedJson(INVOICES_KEY, []);
-return invoices.filter((invoice) => invoice.contactId === contactId);
+async function apiGetInvoices(contactId) {
+const response = await fetch("/api/invoices");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Rechnungen konnten nicht geladen werden.");
 }
 
-function renderInvoices(contactId) {
-const invoices = getInvoicesForContact(contactId);
+return (result.invoices || [])
+.map((row) => ({
+...row.data,
+id: row.id,
+contactId: row.contact_id,
+status: row.status,
+invoiceNumber: row.invoice_number
+}))
+.filter((invoice) => invoice.contactId === contactId);
+}
+
+async function renderInvoices(contactId) {
+let invoices = [];
+
+try {
+invoices = await apiGetInvoices(contactId);
+} catch (error) {
+showToast(error.message);
+return;
+}
 
 contactInvoicesList.innerHTML = "";
 
@@ -370,16 +391,13 @@ bindEmailActions();
 
 function openInvoice(event) {
 const invoiceId = event.target.dataset.openInvoice;
-const invoices = getSavedJson(INVOICES_KEY, []);
-const invoice = invoices.find((entry) => entry.id === invoiceId);
 
-if (!invoice) {
+if (!invoiceId) {
 showToast("Rechnung konnte nicht geöffnet werden.");
 return;
 }
 
-localStorage.setItem("workpilot_current_invoice_draft", JSON.stringify(invoice));
-window.location.href = "/invoice-editor";
+window.location.href = `/invoice-editor?id=${invoiceId}`;
 }
 
 function bindInvoiceActions() {
@@ -458,7 +476,7 @@ createNoteBtn.href = `/note-create?contactId=${contactId}`;
 }
 
 await renderOffers(contactId);
-renderInvoices(contactId);
+await renderInvoices(contactId);
 renderEmails (contactId);
 renderNotes(contactId);
 
