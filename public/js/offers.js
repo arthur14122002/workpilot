@@ -97,7 +97,7 @@ function renderContactOptions(selectedId) {
 const contacts = getContacts();
 
 return `
-<option value="">Nicht zugeordnet</option>
+
 
 ${contacts
 .map((contact) => {
