@@ -97,7 +97,7 @@ function renderContactOptions(selectedId) {
 const contacts = getContacts();
 
 return `
-
+<option value="">Nicht zugeordnet</option>
 
 ${contacts
 .map((contact) => {
@@ -137,10 +137,6 @@ offers
 .forEach((offer) => {
 const item = document.createElement("div");
 item.className = "offerItem";
-
-const contactLabel =
-getContactName(offer.contactId) ||
-"Nicht zugeordnet";
 
 item.innerHTML = `
 <div class="offerInfo">
