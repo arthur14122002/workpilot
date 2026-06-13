@@ -138,6 +138,9 @@ offers
 const item = document.createElement("div");
 item.className = "offerItem";
 
+const contactLabel =
+getContactName(offer.contactId) ||
+
 item.innerHTML = `
 <div class="offerInfo">
 <div class="offerListTitle">
