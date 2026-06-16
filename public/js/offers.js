@@ -140,6 +140,7 @@ item.className = "offerItem";
 
 const contactLabel =
 getContactName(offer.contactId) ||
+"Nicht zugeordnet";
 
 item.innerHTML = `
 <div class="offerInfo">
@@ -155,13 +156,6 @@ ${offer.recipientName || "Kein Kunde"}
 Erstellt am ${offer.offerDate || "-"}
 </div>
 
-<div class="offerBadge">
-${contactLabel}
-</div>
-
-<div class="statusBadge">
-${getOfferStatusLabel(offer.status)}
-</div>
 </div>
 
 <div class="offerActions">

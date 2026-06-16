@@ -114,11 +114,6 @@ item.innerHTML = `
 <div class="invoiceMeta">${invoice.recipientName || "Kein Kunde"}</div>
 <div class="invoiceMeta">Rechnungsdatum: ${invoice.invoiceDate || "-"}</div>
 
-<div class="invoiceBadge">${contactLabel}</div>
-
-<div class="statusBadge">
-${getInvoiceStatusLabel(invoice.status)}
-</div>
 </div>
 
 <div class="invoiceActions">
