@@ -85,19 +85,10 @@ return Array.from(fields)
 .filter(Boolean);
 }
 
-function buildPositionsFromPoints(points, trade) {
-const tradeLabels = {
-maler: "Malerarbeiten",
-elektro: "Elektroarbeiten",
-sanitaer: "Sanitär-/Heizungsarbeiten",
-abriss: "Abrissarbeiten",
-kfz: "KFZ-Arbeiten",
-allgemein: "Arbeiten"
-};
-
+function buildPositionsFromPoints(points) {
 return points.map((point, index) => ({
 pos: index + 1,
-description: `${tradeLabels[trade] || tradeLabels.allgemein}: ${point}`,
+description: point,
 quantity: "",
 unit: "",
 unitPrice: "",
@@ -133,7 +124,6 @@ createdAt: new Date().toISOString(),
 contactId: getContactIdFromUrl(),
 status: "open",
 
-trade: document.getElementById("trade").value,
 recipientName: document.getElementById("recipientName").value.trim(),
 recipientStreet: document.getElementById("recipientStreet").value.trim(),
 recipientCity: document.getElementById("recipientCity").value.trim(),
@@ -145,8 +135,7 @@ validUntil: formatDate(addDays(today, validDays)),
 introText: "vielen Dank für Ihre Anfrage. Gerne unterbreiten wir Ihnen folgendes Angebot:",
 closingText: "Ich freue mich auf Ihre Rückmeldung und stehe für Rückfragen jederzeit zur Verfügung.",
 positions: buildPositionsFromPoints(
-collectRequestPoints(),
-document.getElementById("trade").value
+collectRequestPoints()
 )
 };
 
