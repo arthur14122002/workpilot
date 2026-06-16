@@ -12,7 +12,15 @@ const invoiceMailSubject = document.getElementById("invoiceMailSubject");
 const invoiceMailMessage = document.getElementById("invoiceMailMessage");
 const sendInvoiceMailBtn = document.getElementById("sendInvoiceMailBtn");
 
-let activeInvoiceForMail = null;
+let activeInvoiceForAssign = null;
+
+function openContactAssignModal(invoiceId) {
+activeInvoiceForAssign = invoiceId;
+
+document
+.getElementById("contactAssignModal")
+.classList.remove("hidden");
+}
 
 async function openInvoiceMailModal(invoiceId) {
 const invoices = await apiGetInvoices();
