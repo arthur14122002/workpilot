@@ -123,9 +123,12 @@ item.innerHTML = `
 <option value="overdue" ${invoice.status === "overdue" ? "selected" : ""}>Überfällig</option>
 </select>
 
-<select class="contactSelect" data-assign="${invoice.id}">
-${renderContactOptions(invoice.contactId)}
-</select>
+<button
+class="contactAssignBtn"
+data-assign="${invoice.id}"
+>
+${contactLabel}
+</button>
 
 <button class="btn btnSecondary" data-open="${invoice.id}">Öffnen</button>
 
@@ -299,8 +302,10 @@ document.querySelectorAll("[data-status]").forEach((select) => {
 select.addEventListener("change", updateInvoiceStatus);
 });
 
-document.querySelectorAll("[data-assign]").forEach((select) => {
-select.addEventListener("change", assignContact);
+document.querySelectorAll("[data-assign]").forEach((button) => {
+button.addEventListener("click", () => {
+openContactAssignModal(button.dataset.assign);
+});
 });
 }
 
