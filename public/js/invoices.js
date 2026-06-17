@@ -157,8 +157,21 @@ function getInvoices() {
 return getSavedJson(INVOICES_KEY, []);
 }
 
+let contactsCache = [];
+
+async function apiGetContacts() {
+const response = await fetch("/api/contacts");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakte konnten nicht geladen werden.");
+}
+
+return result.contacts || [];
+}
+
 function getContacts() {
-return getSavedJson(CONTACTS_KEY, []);
+return contactsCache;
 }
 
 function getContactName(contactId) {
@@ -406,7 +419,14 @@ openContactAssignModal(button.dataset.assign);
 });
 }
 
-document.addEventListener("DOMContentLoaded", renderInvoices);
+document.addEventListener("DOMContentLoaded", async () => {
+try {
+contactsCache = await apiGetContacts();
+await renderInvoices();
+} catch (error) {
+showToast(error.message);
+}
+});
 
 closeInvoiceMailModal.addEventListener("click", () => {
 invoiceMailModal.classList.add("hidden");
