@@ -480,7 +480,9 @@ await renderInvoices(contactId);
 renderEmails (contactId);
 renderNotes(contactId);
 
+if (noteForm) {
 noteForm.addEventListener("submit", createNote);
+}
 } catch (error) {
 showToast(error.message);
 window.location.href = "/";
