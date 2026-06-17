@@ -116,8 +116,21 @@ async function getSavedOffers() {
 return await apiGetOffers();
 }
 
+let contactsCache = [];
+
+async function apiGetContacts() {
+const response = await fetch("/api/contacts");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakte konnten nicht geladen werden.");
+}
+
+return result.contacts || [];
+}
+
 function getContacts() {
-return getSavedJson(CONTACTS_KEY, []);
+return contactsCache;
 }
 
 function getContactName(contactId) {
