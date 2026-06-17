@@ -17,9 +17,98 @@ let activeInvoiceForAssign = null;
 function openContactAssignModal(invoiceId) {
 activeInvoiceForAssign = invoiceId;
 
+const modal = document.getElementById("contactAssignModal");
+const searchInput = document.getElementById("contactSearchInput");
+
+modal.classList.remove("hidden");
+
+if (searchInput) {
+searchInput.value = "";
+searchInput.focus();
+}
+
+renderContactSearchResults("");
+}
+
+function renderContactSearchResults(searchTerm = "") {
+const resultsContainer = document.getElementById("contactSearchResults");
+
+if (!resultsContainer) return;
+
+const contacts = getContacts();
+
+const normalizedSearch = searchTerm.toLowerCase().trim();
+
+const filteredContacts = contacts.filter((contact) => {
+const text = `
+${contact.name || ""}
+${contact.email || ""}
+${contact.phone || ""}
+${contact.street || ""}
+${contact.city || ""}
+`.toLowerCase();
+
+return text.includes(normalizedSearch);
+});
+
+resultsContainer.innerHTML = "";
+
+if (!filteredContacts.length) {
+resultsContainer.innerHTML = `
+<div class="emptyState">
+<p>Keine Kontakte gefunden.</p>
+</div>
+`;
+return;
+}
+
+filteredContacts.forEach((contact) => {
+const item = document.createElement("button");
+item.type = "button";
+item.className = "contactSearchItem";
+item.dataset.contactId = contact.id;
+
+item.innerHTML = `
+<strong>${contact.name || "Unbekannter Kontakt"}</strong>
+<span>${contact.email || "Keine E-Mail"}</span>
+`;
+
+item.addEventListener("click", () => {
+assignContactFromModal(contact.id);
+});
+
+resultsContainer.appendChild(item);
+});
+}
+
+async function assignContactFromModal(contactId) {
+if (!activeInvoiceForAssign) return;
+
+try {
+const invoices = await apiGetInvoices();
+const invoice = invoices.find((entry) => entry.id === activeInvoiceForAssign);
+
+if (!invoice) {
+showToast("Rechnung wurde nicht gefunden.");
+return;
+}
+
+invoice.contactId = contactId;
+
+await apiSaveInvoice(invoice);
+
+showToast("Kontakt wurde zugeordnet.");
+
 document
 .getElementById("contactAssignModal")
-.classList.remove("hidden");
+.classList.add("hidden");
+
+activeInvoiceForAssign = null;
+
+renderInvoices();
+} catch (error) {
+showToast(error.message);
+}
 }
 
 async function openInvoiceMailModal(invoiceId) {
@@ -322,6 +411,25 @@ document.addEventListener("DOMContentLoaded", renderInvoices);
 closeInvoiceMailModal.addEventListener("click", () => {
 invoiceMailModal.classList.add("hidden");
 });
+
+const closeContactAssignModal = document.getElementById("closeContactAssignModal");
+const contactSearchInput = document.getElementById("contactSearchInput");
+
+if (closeContactAssignModal) {
+closeContactAssignModal.addEventListener("click", () => {
+document
+.getElementById("contactAssignModal")
+.classList.add("hidden");
+
+activeInvoiceForAssign = null;
+});
+}
+
+if (contactSearchInput) {
+contactSearchInput.addEventListener("input", () => {
+renderContactSearchResults(contactSearchInput.value);
+});
+}
 
 sendInvoiceMailBtn.addEventListener("click", async () => {
 if (!activeInvoiceForMail) {
