@@ -153,6 +153,28 @@ Speichere Kundeninfos, Telefonnotizen und spätere KI-Zusammenfassungen.
 </a>
 </div>
 
+<form id="noteForm" class="noteForm">
+
+<select id="noteType">
+<option value="note">Notiz</option>
+<option value="call">Telefonnotiz</option>
+<option value="email">E-Mail</option>
+<option value="ai">KI-Zusammenfassung</option>
+</select>
+
+<textarea
+id="noteText"
+placeholder="z. B. Kunde möchte Rückruf wegen Terminabsprache..."
+></textarea>
+
+<div class="buttonRow">
+<button class="btn btnPrimary" type="submit">
+Notiz speichern
+</button>
+</div>
+
+</form>
+
 <div id="notesList" class="notesList"></div>
 
 <div id="emptyNotes" class="emptyState">
