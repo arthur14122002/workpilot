@@ -26,7 +26,6 @@ document.getElementById("sendOfferMailBtn");
 let activeOfferForMail = null;
 
 let activeOfferForAssign = null;
-let contactsCache = [];
 
 async function apiGetContacts() {
 const response = await fetch("/api/contacts");
