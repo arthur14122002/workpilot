@@ -25,6 +25,24 @@ document.getElementById("sendOfferMailBtn");
 
 let activeOfferForMail = null;
 
+let activeOfferForAssign = null;
+let contactsCache = [];
+
+async function apiGetContacts() {
+const response = await fetch("/api/contacts");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Kontakte konnten nicht geladen werden.");
+}
+
+return result.contacts || [];
+}
+
+function getContacts() {
+return contactsCache;
+}
+
 async function openOfferMailModal(offerId) {
 const offers = await apiGetOffers();
 
@@ -62,6 +80,25 @@ offerMailModal.classList.remove("hidden");
 closeOfferMailModal.addEventListener("click", () => {
 offerMailModal.classList.add("hidden");
 });
+
+const closeContactAssignModal = document.getElementById("closeContactAssignModal");
+const contactSearchInput = document.getElementById("contactSearchInput");
+
+if (closeContactAssignModal) {
+closeContactAssignModal.addEventListener("click", () => {
+document
+.getElementById("contactAssignModal")
+.classList.add("hidden");
+
+activeOfferForAssign = null;
+});
+}
+
+if (contactSearchInput) {
+contactSearchInput.addEventListener("input", () => {
+renderContactSearchResults(contactSearchInput.value);
+});
+}
 
 function getSavedJson(key, fallback = []) {
 try {
@@ -165,9 +202,12 @@ Erstellt am ${offer.offerDate || "-"}
 <option value="rejected" ${offer.status === "rejected" ? "selected" : ""}>Abgelehnt</option>
 </select>
 
-<select class="contactSelect" data-assign="${offer.id}">
-${renderContactOptions(offer.contactId)}
-</select>
+<button
+class="contactAssignBtn"
+data-assign="${offer.id}"
+>
+${contactLabel}
+</button>
 
 <button class="btn btnSecondary" data-open="${offer.id}">Öffnen</button>
 <button
@@ -184,6 +224,102 @@ offersList.appendChild(item);
 });
 
 bindActions();
+}
+
+function openContactAssignModal(offerId) {
+activeOfferForAssign = offerId;
+
+const modal = document.getElementById("contactAssignModal");
+const searchInput = document.getElementById("contactSearchInput");
+
+modal.classList.remove("hidden");
+
+if (searchInput) {
+searchInput.value = "";
+searchInput.focus();
+}
+
+renderContactSearchResults("");
+}
+
+function renderContactSearchResults(searchTerm = "") {
+const resultsContainer = document.getElementById("contactSearchResults");
+
+if (!resultsContainer) return;
+
+const contacts = getContacts();
+const normalizedSearch = searchTerm.toLowerCase().trim();
+
+const filteredContacts = contacts.filter((contact) => {
+const text = `
+${contact.name || ""}
+${contact.email || ""}
+${contact.phone || ""}
+${contact.street || ""}
+${contact.city || ""}
+`.toLowerCase();
+
+return text.includes(normalizedSearch);
+});
+
+resultsContainer.innerHTML = "";
+
+if (!filteredContacts.length) {
+resultsContainer.innerHTML = `
+<div class="emptyState">
+<p>Keine Kontakte gefunden.</p>
+</div>
+`;
+return;
+}
+
+filteredContacts.forEach((contact) => {
+const item = document.createElement("button");
+item.type = "button";
+item.className = "contactSearchItem";
+item.dataset.contactId = contact.id;
+
+item.innerHTML = `
+<strong>${contact.name || "Unbekannter Kontakt"}</strong>
+<span>${contact.email || "Keine E-Mail"}</span>
+`;
+
+item.addEventListener("click", () => {
+assignContactFromModal(contact.id);
+});
+
+resultsContainer.appendChild(item);
+});
+}
+
+async function assignContactFromModal(contactId) {
+if (!activeOfferForAssign) return;
+
+try {
+const offers = await apiGetOffers();
+const offer = offers.find((entry) => entry.id === activeOfferForAssign);
+
+if (!offer) {
+showToast("Angebot wurde nicht gefunden.");
+return;
+}
+
+offer.contactId = contactId;
+
+await apiSaveOffer(offer);
+
+showToast("Kontakt wurde zugeordnet.");
+
+document
+.getElementById("contactAssignModal")
+.classList.add("hidden");
+
+activeOfferForAssign = null;
+
+renderOffers();
+} catch (error) {
+showToast(error.message);
+}
 }
 
 async function assignContact(event) {
@@ -255,8 +391,10 @@ document.querySelectorAll("[data-status]").forEach((select) => {
 select.addEventListener("change", updateOfferStatus);
 });
 
-document.querySelectorAll("[data-assign]").forEach((select) => {
-select.addEventListener("change", assignContact);
+document.querySelectorAll("[data-assign]").forEach((button) => {
+button.addEventListener("click", () => {
+openContactAssignModal(button.dataset.assign);
+});
 });
 
 document.querySelectorAll(".sendOfferMailBtn").forEach((button) => {
@@ -268,7 +406,14 @@ openOfferMailModal(offerId);
 });
 }
 
-document.addEventListener("DOMContentLoaded", renderOffers);
+document.addEventListener("DOMContentLoaded", async () => {
+try {
+contactsCache = await apiGetContacts();
+await renderOffers();
+} catch (error) {
+showToast(error.message);
+}
+});
 
 async function apiGetOffers() {
 const response = await fetch("/api/offers");
