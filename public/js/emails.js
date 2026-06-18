@@ -1078,9 +1078,7 @@ const createNoteFromEmailBtn =
 document.getElementById("createNoteFromEmailBtn");
 
 if (createNoteFromEmailBtn) {
-
 createNoteFromEmailBtn.addEventListener("click", () => {
-
 const params = new URLSearchParams();
 
 if (message.contact_id) {
@@ -1093,11 +1091,18 @@ if (message.id) {
 params.set("messageId", message.id);
 }
 
+const noteSummary =
+message.ai_summary ||
+message.email_threads?.ai_summary ||
+"";
+
+if (noteSummary) {
+params.set("note", noteSummary);
+}
+
 window.location.href =
 `/note-create?${params.toString()}`;
-
 });
-
 }
 
 if (useAiSuggestionBtn) {

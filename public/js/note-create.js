@@ -69,23 +69,24 @@ if (!message) {
 return;
 }
 
-const cleanBody = (message.body || "")
-.replace(/<[^>]*>/g, "")
-.trim();
+const noteFromUrl = getUrlParam("note");
+
+const noteContent =
+noteFromUrl ||
+message.ai_summary ||
+message.email_threads?.ai_summary ||
+"Keine KI-Zusammenfassung vorhanden.";
 
 noteText.value =
 `Notiz aus E-Mail
-
 Betreff: ${message.subject || "Ohne Betreff"}
-Von: ${message.sender || "-"}
 Datum: ${
 message.created_at
 ? new Date(message.created_at).toLocaleString("de-DE")
 : "-"
 }
 
-E-Mail-Inhalt:
-${cleanBody}`;
+${noteContent}`;
 
 } catch (error) {
 showToast(error.message);
