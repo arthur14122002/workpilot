@@ -1074,6 +1074,32 @@ window.location.href = `/calendar-create?${params.toString()}`;
 });
 }
 
+const createNoteFromEmailBtn =
+document.getElementById("createNoteFromEmailBtn");
+
+if (createNoteFromEmailBtn) {
+
+createNoteFromEmailBtn.addEventListener("click", () => {
+
+const params = new URLSearchParams();
+
+if (message.contact_id) {
+params.set("contactId", message.contact_id);
+}
+
+params.set("source", "email");
+
+if (message.id) {
+params.set("messageId", message.id);
+}
+
+window.location.href =
+`/note-create?${params.toString()}`;
+
+});
+
+}
+
 if (useAiSuggestionBtn) {
 useAiSuggestionBtn.addEventListener("click", () => {
 if (!message.ai_suggested_reply) {

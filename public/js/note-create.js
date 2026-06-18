@@ -4,9 +4,21 @@ document.getElementById("noteCreateForm");
 const noteText =
 document.getElementById("noteText");
 
-function getContactIdFromUrl() {
+function getUrlParam(name) {
 const params = new URLSearchParams(window.location.search);
-return params.get("contactId");
+return params.get(name);
+}
+
+function getContactIdFromUrl() {
+return getUrlParam("contactId");
+}
+
+function getSourceFromUrl() {
+return getUrlParam("source");
+}
+
+function getMessageIdFromUrl() {
+return getUrlParam("messageId");
 }
 
 async function apiCreateNote(note) {
@@ -27,6 +39,59 @@ throw new Error(result.error || "Notiz konnte nicht gespeichert werden.");
 return result.note;
 }
 
+async function apiGetEmails() {
+const response = await fetch("/api/email-inbox");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "E-Mail konnte nicht geladen werden.");
+}
+
+return result.messages || [];
+}
+
+async function prefillFromEmail() {
+const source = getSourceFromUrl();
+const messageId = getMessageIdFromUrl();
+
+if (source !== "email" || !messageId) {
+return;
+}
+
+try {
+const messages = await apiGetEmails();
+
+const message = messages.find((entry) => {
+return entry.id === messageId;
+});
+
+if (!message) {
+return;
+}
+
+const cleanBody = (message.body || "")
+.replace(/<[^>]*>/g, "")
+.trim();
+
+noteText.value =
+`Notiz aus E-Mail
+
+Betreff: ${message.subject || "Ohne Betreff"}
+Von: ${message.sender || "-"}
+Datum: ${
+message.created_at
+? new Date(message.created_at).toLocaleString("de-DE")
+: "-"
+}
+
+E-Mail-Inhalt:
+${cleanBody}`;
+
+} catch (error) {
+showToast(error.message);
+}
+}
+
 noteCreateForm.addEventListener("submit", async (event) => {
 event.preventDefault();
 
@@ -37,13 +102,23 @@ showToast("Kontakt wurde nicht gefunden.");
 return;
 }
 
+const text = noteText.value.trim();
+
+if (!text) {
+showToast("Bitte eine Notiz eingeben.");
+return;
+}
+
 try {
 
 await apiCreateNote({
 contactId,
 type: "note",
-text: noteText.value.trim(),
-source: "manual"
+text,
+source: getSourceFromUrl() || "manual",
+data: {
+messageId: getMessageIdFromUrl()
+}
 });
 
 sessionStorage.setItem(
@@ -58,3 +133,5 @@ window.location.href =
 showToast(error.message);
 }
 });
+
+document.addEventListener("DOMContentLoaded", prefillFromEmail);
