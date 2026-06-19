@@ -317,3 +317,43 @@ transition: 0.16s ease;
 opacity: 1;
 pointer-events: auto;
 }
+
+.noteItem {
+position: relative;
+}
+
+.noteActions {
+position: absolute;
+right: 12px;
+bottom: 12px;
+display: flex;
+gap: 6px;
+opacity: 0;
+pointer-events: none;
+transition: 0.16s ease;
+}
+
+.noteItem:hover .noteActions {
+opacity: 1;
+pointer-events: auto;
+}
+
+.noteEditBtn,
+.noteDeleteBtn {
+width: 32px;
+height: 32px;
+border: none;
+border-radius: 999px;
+background: #fff;
+box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+cursor: pointer;
+font-size: 14px;
+}
+
+.noteEditBtn:hover {
+background: var(--wp-orange-soft);
+}
+
+.noteDeleteBtn:hover {
+background: #fee2e2;
+}

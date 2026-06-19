@@ -121,9 +121,52 @@ ${new Date(note.created_at).toLocaleString("de-DE")}
 <div class="noteText">
 ${note.text}
 </div>
+
+<div class="noteActions">
+<button
+class="noteEditBtn"
+data-edit-note="${note.id}"
+title="Notiz bearbeiten"
+>
+✏️
+</button>
+
+<button
+class="noteDeleteBtn"
+data-delete-note="${note.id}"
+title="Notiz löschen"
+>
+🗑
+</button>
+</div>
 `;
 
 notesList.appendChild(item);
+});
+bindNoteActions(contactId);
+}
+
+function bindNoteActions(contactId) {
+document.querySelectorAll("[data-delete-note]").forEach((button) => {
+button.addEventListener("click", async () => {
+const noteId = button.dataset.deleteNote;
+
+try {
+await apiDeleteNote(noteId);
+
+showToast("Notiz wurde gelöscht.");
+
+await renderNotes(contactId);
+} catch (error) {
+showToast(error.message);
+}
+});
+});
+
+document.querySelectorAll("[data-edit-note]").forEach((button) => {
+button.addEventListener("click", () => {
+showToast("Notiz bearbeiten kommt im nächsten Schritt.");
+});
 });
 }
 
