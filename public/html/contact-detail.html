@@ -69,13 +69,14 @@ E-Mails
 </div>
 </section>
 
-<section class="card contactDetailCard">
-<div class="sectionHeader">
+<section class="card contactDetailCard collapsibleCard" data-collapsible-card>
+<div class="sectionHeader collapsibleHeader" data-collapsible-trigger>
 <div>
 <h2>Angebote</h2>
 <p>Alle Angebote, die diesem Kontakt zugeordnet sind.</p>
 </div>
 
+<div class="sectionHeaderActions">
 <a
 class="btn btnPrimary"
 id="createOfferFromContactBtn"
@@ -84,22 +85,31 @@ href="#"
 + Neues Angebot
 </a>
 
+<button class="collapseToggleBtn" type="button" aria-label="Bereich ein- oder ausklappen">
+⌄
+</button>
+</div>
 </div>
 
+<div class="collapsibleContent">
+<div class="collapsibleScrollArea">
 <div id="contactOffersList" class="contactOffersList"></div>
 
 <div id="emptyContactOffers" class="emptyState">
 <p>Noch keine Angebote für diesen Kontakt.</p>
 </div>
+</div>
+</div>
 </section>
 
-<section class="card contactDetailCard">
-<div class="sectionHeader">
+<section class="card contactDetailCard collapsibleCard" data-collapsible-card>
+<div class="sectionHeader collapsibleHeader" data-collapsible-trigger>
 <div>
 <h2>Rechnungen</h2>
 <p>Alle Rechnungen, die diesem Kontakt zugeordnet sind.</p>
 </div>
 
+<div class="sectionHeaderActions">
 <a
 class="btn btnPrimary"
 id="createInvoiceFromContactBtn"
@@ -108,39 +118,54 @@ href="#"
 + Neue Rechnung
 </a>
 
+<button class="collapseToggleBtn" type="button" aria-label="Bereich ein- oder ausklappen">
+⌄
+</button>
+</div>
 </div>
 
+<div class="collapsibleContent">
+<div class="collapsibleScrollArea">
 <div id="contactInvoicesList" class="contactOffersList"></div>
 
 <div id="emptyContactInvoices" class="emptyState">
 <p>Noch keine Rechnungen für diesen Kontakt.</p>
 </div>
+</div>
+</div>
 </section>
 
-<section class="card contactDetailCard">
-
-<div class="sectionHeader">
+<section class="card contactDetailCard collapsibleCard" data-collapsible-card>
+<div class="sectionHeader collapsibleHeader" data-collapsible-trigger>
 <div>
 <h2>E-Mail-Verlauf</h2>
 <p>Alle E-Mails, die diesem Kontakt zugeordnet wurden.</p>
 </div>
 
+<div class="sectionHeaderActions">
 <a class="btn btnSecondary" href="/emails">
 Postfach öffnen
 </a>
+
+<button class="collapseToggleBtn" type="button" aria-label="Bereich ein- oder ausklappen">
+⌄
+</button>
+</div>
 </div>
 
+<div class="collapsibleContent">
+<div class="collapsibleScrollArea">
 <div id="contactEmailsList" class="contactOffersList"></div>
 
 <div id="emptyContactEmails" class="emptyState">
 <p>Noch keine E-Mails vorhanden.</p>
 </div>
-
+</div>
+</div>
 </section>
 
-<section class="card contactDetailCard">
-
-<div class="sectionHeader">
+<section class="card contactDetailCard collapsibleCard" data-collapsible-card>
+<div class="sectionHeader collapsibleHeader" data-collapsible-trigger>
 <div>
 <h2>Notizen</h2>
 <p>
@@ -148,17 +173,26 @@ Speichere Kundeninfos, Telefonnotizen und spätere KI-Zusammenfassungen.
 </p>
 </div>
 
+<div class="sectionHeaderActions">
 <a class="btn btnPrimary" id="createNoteBtn" href="#">
 + Notiz
 </a>
+
+<button class="collapseToggleBtn" type="button" aria-label="Bereich ein- oder ausklappen">
+⌄
+</button>
+</div>
 </div>
 
+<div class="collapsibleContent">
+<div class="collapsibleScrollArea">
 <div id="notesList" class="notesList"></div>
 
 <div id="emptyNotes" class="emptyState">
 <p>Noch keine Notizen vorhanden.</p>
 </div>
-
+</div>
+</div>
 </section>
 
 </main>

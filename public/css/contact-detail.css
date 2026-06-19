@@ -357,3 +357,47 @@ background: var(--wp-orange-soft);
 .noteDeleteBtn:hover {
 background: #fee2e2;
 }
+
+.sectionHeaderActions {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.collapsibleHeader {
+cursor: pointer;
+}
+
+.collapseToggleBtn {
+width: 36px;
+height: 36px;
+border: none;
+border-radius: 999px;
+background: #fff;
+box-shadow: 0 8px 22px rgba(15, 23, 42, 0.10);
+cursor: pointer;
+font-size: 18px;
+transition: 0.18s ease;
+}
+
+.collapseToggleBtn:hover {
+background: var(--wp-orange-soft);
+}
+
+.collapsibleContent {
+margin-top: 18px;
+}
+
+.collapsibleScrollArea {
+max-height: 320px;
+overflow-y: auto;
+padding-right: 6px;
+}
+
+.collapsibleCard.isCollapsed .collapsibleContent {
+display: none;
+}
+
+.collapsibleCard.isCollapsed .collapseToggleBtn {
+transform: rotate(-90deg);
+}

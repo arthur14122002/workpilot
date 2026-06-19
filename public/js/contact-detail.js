@@ -526,10 +526,33 @@ renderNotes(contactId);
 if (noteForm) {
 noteForm.addEventListener("submit", createNote);
 }
+
+initCollapsibleCards();
+
 } catch (error) {
 showToast(error.message);
 window.location.href = "/";
 }
+}
+
+function initCollapsibleCards() {
+document.querySelectorAll("[data-collapsible-card]").forEach((card) => {
+const trigger = card.querySelector("[data-collapsible-trigger]");
+const toggleBtn = card.querySelector(".collapseToggleBtn");
+
+if (!trigger || !toggleBtn) return;
+
+trigger.addEventListener("click", (event) => {
+if (
+event.target.closest("a") ||
+event.target.closest("button")
+) {
+return;
+}
+
+card.classList.toggle("isCollapsed");
+});
+});
 }
 
 document.addEventListener("DOMContentLoaded", init);
