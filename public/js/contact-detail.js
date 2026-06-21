@@ -537,6 +537,7 @@ window.location.href = "/";
 
 function initCollapsibleCards() {
 document.querySelectorAll("[data-collapsible-card]").forEach((card) => {
+card.classList.add("isCollapsed");
 const trigger = card.querySelector("[data-collapsible-trigger]");
 const toggleBtn = card.querySelector(".collapseToggleBtn");
 
