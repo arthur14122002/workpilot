@@ -389,7 +389,7 @@ margin-top: 18px;
 }
 
 .collapsibleScrollArea {
-max-height: 320px;
+height: 320px;
 overflow-y: auto;
 padding-right: 6px;
 }

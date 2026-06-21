@@ -543,13 +543,15 @@ const toggleBtn = card.querySelector(".collapseToggleBtn");
 if (!trigger || !toggleBtn) return;
 
 trigger.addEventListener("click", (event) => {
-if (
-event.target.closest("a") ||
-event.target.closest("button")
-) {
+if (event.target.closest("a")) {
 return;
 }
 
+card.classList.toggle("isCollapsed");
+});
+
+toggleBtn.addEventListener("click", (event) => {
+event.stopPropagation();
 card.classList.toggle("isCollapsed");
 });
 });
