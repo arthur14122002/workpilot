@@ -58,7 +58,7 @@ try {
 const data = JSON.parse(saved);
 
 return {
-personalName: data.personalName || "",
+personalName: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
 gender: data.gender || "",
 
 communicationEmail: data.personalEmail || "",
