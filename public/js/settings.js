@@ -30,21 +30,7 @@ footerNote: document.getElementById("footerNote").value.trim()
 }
 
 function getDashboardGreetingName(data) {
-const fullName = `${data.firstName || ""} ${data.lastName || ""}`.trim();
-
-if (!fullName) {
-return "";
-}
-
-if (data.gender === "male") {
-return `Herr ${data.lastName || fullName}`;
-}
-
-if (data.gender === "female") {
-return `Frau ${data.lastName || fullName}`;
-}
-
-return data.firstName || fullName;
+return data.firstName || "";
 }
 
 function getCommunicationSettings() {
