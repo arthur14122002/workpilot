@@ -21,6 +21,7 @@ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 } catch {
 return {};
 }
+}
 
 function getFormData() {
 const existingSettings = getSavedSettings();
