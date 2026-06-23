@@ -3,14 +3,35 @@ const DASHBOARD_PROFILE_KEY = "workpilot_dashboard_profile";
 
 const settingsForm = document.getElementById("settingsForm");
 const resetBtn = document.getElementById("resetSettingsBtn");
+const emailVerificationStatus =
+document.getElementById("emailVerificationStatus");
+
+const phoneVerificationStatus =
+document.getElementById("phoneVerificationStatus");
+
+const verifyEmailBtn =
+document.getElementById("verifyEmailBtn");
+
+const verifyPhoneBtn =
+document.getElementById("verifyPhoneBtn");
+
+function getSavedSettings() {
+try {
+return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+} catch {
+return {};
+}
 
 function getFormData() {
+const existingSettings = getSavedSettings();
+
 return {
 firstName: document.getElementById("firstName").value.trim(),
 lastName: document.getElementById("lastName").value.trim(),
-gender: document.getElementById("gender").value,
 personalEmail: document.getElementById("personalEmail").value.trim(),
 personalPhone: document.getElementById("personalPhone").value.trim(),
+communicationEmailVerified: existingSettings.communicationEmailVerified || false,
+communicationPhoneVerified: existingSettings.communicationPhoneVerified || false,
 
 companyName: document.getElementById("companyName").value.trim(),
 ownerName: document.getElementById("ownerName").value.trim(),
@@ -45,7 +66,6 @@ const data = JSON.parse(saved);
 
 return {
 personalName: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
-gender: data.gender || "",
 
 communicationEmail: data.personalEmail || "",
 communicationPhone: data.personalPhone || "",
@@ -76,8 +96,33 @@ if (!saved) return;
 try {
 const data = JSON.parse(saved);
 fillForm(data);
+updateVerificationUi(data);
 } catch (error) {
 console.error("Firmendaten konnten nicht geladen werden:", error);
+}
+}
+
+function updateVerificationUi(data = {}) {
+if (emailVerificationStatus) {
+const verified = data.communicationEmailVerified === true;
+
+emailVerificationStatus.textContent = verified
+? "Verifiziert"
+: "Nicht verifiziert";
+
+emailVerificationStatus.classList.toggle("verified", verified);
+emailVerificationStatus.classList.toggle("pending", !verified);
+}
+
+if (phoneVerificationStatus) {
+const verified = data.communicationPhoneVerified === true;
+
+phoneVerificationStatus.textContent = verified
+? "Verifiziert"
+: "Nicht verifiziert";
+
+phoneVerificationStatus.classList.toggle("verified", verified);
+phoneVerificationStatus.classList.toggle("pending", !verified);
 }
 }
 
@@ -88,15 +133,15 @@ const data = getFormData();
 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
 localStorage.setItem(
-"workpilot_dashboard_profile",
+DASHBOARD_PROFILE_KEY,
 JSON.stringify({
 greetingName: getDashboardGreetingName(data),
 firstName: data.firstName,
-lastName: data.lastName,
-gender: data.gender
+lastName: data.lastName
 })
 );
 
+updateVerificationUi(data);
 showToast("Firmendaten wurden gespeichert.");
 }
 
@@ -109,6 +154,18 @@ showToast("Firmendaten wurden zurückgesetzt.");
 
 settingsForm.addEventListener("submit", saveSettings);
 resetBtn.addEventListener("click", resetSettings);
+
+if (verifyEmailBtn) {
+verifyEmailBtn.addEventListener("click", () => {
+showToast("E-Mail-Verifizierung kommt im nächsten Schritt.");
+});
+}
+
+if (verifyPhoneBtn) {
+verifyPhoneBtn.addEventListener("click", () => {
+showToast("Telefon-Verifizierung wird für den Telefonagenten vorbereitet.");
+});
+}
 
 document.addEventListener("DOMContentLoaded", loadSettings);
 
