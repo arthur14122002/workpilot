@@ -156,8 +156,63 @@ settingsForm.addEventListener("submit", saveSettings);
 resetBtn.addEventListener("click", resetSettings);
 
 if (verifyEmailBtn) {
-verifyEmailBtn.addEventListener("click", () => {
-showToast("E-Mail-Verifizierung kommt im nächsten Schritt.");
+verifyEmailBtn.addEventListener("click", async () => {
+const email = document.getElementById("personalEmail").value.trim();
+
+if (!email) {
+showToast("Bitte zuerst eine Kommunikations-E-Mail eingeben.");
+return;
+}
+
+try {
+const response = await fetch("/api/profile/send-email-verification", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({ email })
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Verifizierung konnte nicht gestartet werden.");
+}
+
+const code = prompt("Verifizierungscode eingeben:");
+
+if (!code) {
+showToast("Verifizierung abgebrochen.");
+return;
+}
+
+const verifyResponse = await fetch("/api/profile/verify-email-code", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+email,
+code
+})
+});
+
+const verifyResult = await verifyResponse.json();
+
+if (!verifyResult.ok) {
+throw new Error(verifyResult.error || "Code konnte nicht verifiziert werden.");
+}
+
+const data = getFormData();
+data.communicationEmailVerified = true;
+
+localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+updateVerificationUi(data);
+
+showToast("E-Mail wurde verifiziert.");
+} catch (error) {
+showToast(error.message);
+}
 });
 }
 

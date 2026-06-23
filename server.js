@@ -17,6 +17,7 @@ apiKey: process.env.OPENAI_API_KEY
 const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const emailVerificationCodes = new Map();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,97 @@ app.use(express.json());
 app.use((req, res, next) => {
 console.log("REQUEST:", req.method, req.url);
 next();
+});
+
+app.post("/api/profile/send-email-verification", async (req, res) => {
+const { email } = req.body;
+
+if (!email) {
+return res.status(400).json({
+ok: false,
+error: "E-Mail-Adresse fehlt."
+});
+}
+
+const code = String(Math.floor(100000 + Math.random() * 900000));
+
+emailVerificationCodes.set(email, {
+code,
+expiresAt: Date.now() + 10 * 60 * 1000
+});
+
+try {
+await resend.emails.send({
+from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
+to: email,
+subject: "WorkPilot E-Mail-Verifizierung",
+html: `
+<div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6;">
+<p>Ihr WorkPilot-Verifizierungscode lautet:</p>
+
+<p style="font-size: 24px; font-weight: bold;">
+${code}
+</p>
+
+<p>Der Code ist 10 Minuten gültig.</p>
+</div>
+`
+});
+
+res.json({
+ok: true
+});
+
+} catch (error) {
+console.error("EMAIL VERIFICATION ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: "Verifizierungs-E-Mail konnte nicht gesendet werden."
+});
+}
+});
+
+app.post("/api/profile/verify-email-code", async (req, res) => {
+const { email, code } = req.body;
+
+if (!email || !code) {
+return res.status(400).json({
+ok: false,
+error: "E-Mail oder Code fehlt."
+});
+}
+
+const entry = emailVerificationCodes.get(email);
+
+if (!entry) {
+return res.status(400).json({
+ok: false,
+error: "Kein Verifizierungscode gefunden."
+});
+}
+
+if (Date.now() > entry.expiresAt) {
+emailVerificationCodes.delete(email);
+
+return res.status(400).json({
+ok: false,
+error: "Der Verifizierungscode ist abgelaufen."
+});
+}
+
+if (String(entry.code) !== String(code).trim()) {
+return res.status(400).json({
+ok: false,
+error: "Der Verifizierungscode ist falsch."
+});
+}
+
+emailVerificationCodes.delete(email);
+
+res.json({
+ok: true
+});
 });
 
 app.get("/api/health/supabase", async (req, res) => {
