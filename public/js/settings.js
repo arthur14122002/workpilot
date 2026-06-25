@@ -270,8 +270,19 @@ mailboxConnectModal.classList.add("hidden");
 });
 }
 
-function startGoogleMailboxConnection() {
-showToast("Google-Verbindung wird vorbereitet.");
+async function startGoogleMailboxConnection() {
+try {
+const response = await fetch("/api/mailbox/google/start");
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Google-Verbindung konnte nicht gestartet werden.");
+}
+
+window.location.href = result.url;
+} catch (error) {
+showToast(error.message);
+}
 }
 
 function startMicrosoftMailboxConnection() {
