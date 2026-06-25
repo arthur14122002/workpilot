@@ -5,6 +5,7 @@ const OpenAI = require("openai");
 const puppeteer = require("puppeteer");
 const multer = require("multer");
 const crypto = require("crypto");
+const { google } = require("googleapis");
 
 const upload = multer({
 storage: multer.memoryStorage()
@@ -17,6 +18,12 @@ apiKey: process.env.OPENAI_API_KEY
 const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const googleOAuthClient = new google.auth.OAuth2(
+process.env.GOOGLE_CLIENT_ID,
+process.env.GOOGLE_CLIENT_SECRET,
+process.env.GOOGLE_REDIRECT_URI
+);
+
 const emailVerificationCodes = new Map();
 
 const app = express();
@@ -32,6 +39,22 @@ app.use(express.json());
 app.use((req, res, next) => {
 console.log("REQUEST:", req.method, req.url);
 next();
+});
+
+app.get("/api/mailbox/google/start", (req, res) => {
+const authUrl = googleOAuthClient.generateAuthUrl({
+access_type: "offline",
+prompt: "consent",
+scope: [
+"https://www.googleapis.com/auth/gmail.send",
+"https://www.googleapis.com/auth/gmail.readonly"
+]
+});
+
+res.json({
+ok: true,
+url: authUrl
+});
 });
 
 app.post("/api/profile/send-email-verification", async (req, res) => {
