@@ -270,11 +270,36 @@ mailboxConnectModal.classList.add("hidden");
 });
 }
 
+function startGoogleMailboxConnection() {
+showToast("Google-Verbindung wird vorbereitet.");
+}
+
+function startMicrosoftMailboxConnection() {
+showToast("Microsoft-Verbindung wird vorbereitet.");
+}
+
+function startSmtpMailboxConnection() {
+showToast("Anderer Anbieter wird vorbereitet.");
+}
+
 document.querySelectorAll("[data-mail-provider]").forEach((button) => {
 button.addEventListener("click", () => {
 const provider = button.dataset.mailProvider;
 
-showToast(`${provider} Verbindung wird im nächsten Schritt vorbereitet.`);
+if (provider === "google") {
+startGoogleMailboxConnection();
+return;
+}
+
+if (provider === "microsoft") {
+startMicrosoftMailboxConnection();
+return;
+}
+
+if (provider === "smtp") {
+startSmtpMailboxConnection();
+return;
+}
 });
 });
 
