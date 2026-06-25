@@ -260,13 +260,6 @@ showToast("Telefon-Verifizierung wird für den Telefonagenten vorbereitet.");
 
 if (connectMailboxBtn) {
 connectMailboxBtn.addEventListener("click", () => {
-console.log("Postfach Button geklickt", mailboxConnectModal);
-
-if (!mailboxConnectModal) {
-showToast("Mailbox-Popup wurde nicht gefunden.");
-return;
-}
-
 mailboxConnectModal.classList.remove("hidden");
 });
 }
