@@ -108,6 +108,23 @@ E-Mail verifizieren
 </div>
 </div>
 
+<div class="mailboxConnectBox">
+<div>
+<strong>Postfach</strong>
+<p id="mailboxConnectionText">
+Noch kein Postfach verbunden.
+</p>
+</div>
+
+<button
+type="button"
+class="btn btnSecondary"
+id="connectMailboxBtn"
+>
+Postfach verbinden
+</button>
+</div>
+
 <div class="formField">
 <label for="personalPhone">
 Kommunikations-Telefonnummer
@@ -240,6 +257,37 @@ Dieser Hinweis erscheint im unteren Bereich deiner Angebote und Rechnungen.
 </form>
 </section>
 </main>
+</div>
+
+<div id="mailboxConnectModal" class="modalOverlay hidden">
+<div class="modalCard mailboxModalCard">
+
+<div class="modalHeader">
+<h2>Postfach verbinden</h2>
+
+<button id="closeMailboxModal" class="iconButton">
+✕
+</button>
+</div>
+
+<div class="mailboxOptions">
+<button class="mailboxOption" data-mail-provider="google">
+<strong>Mit Google verbinden</strong>
+<span>Gmail / Google Workspace</span>
+</button>
+
+<button class="mailboxOption" data-mail-provider="microsoft">
+<strong>Mit Microsoft verbinden</strong>
+<span>Outlook / Microsoft 365</span>
+</button>
+
+<button class="mailboxOption" data-mail-provider="smtp">
+<strong>Anderer Anbieter</strong>
+<span>GMX, IONOS, Strato oder eigener Mailserver</span>
+</button>
+</div>
+
+</div>
 </div>
 
 <script src="/js/app-layout.js"></script>

@@ -15,6 +15,18 @@ document.getElementById("verifyEmailBtn");
 const verifyPhoneBtn =
 document.getElementById("verifyPhoneBtn");
 
+const connectMailboxBtn =
+document.getElementById("connectMailboxBtn");
+
+const mailboxConnectionText =
+document.getElementById("mailboxConnectionText");
+
+const mailboxConnectModal =
+document.getElementById("mailboxConnectModal");
+
+const closeMailboxModal =
+document.getElementById("closeMailboxModal");
+
 function getSavedSettings() {
 try {
 return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -33,6 +45,9 @@ personalEmail: document.getElementById("personalEmail").value.trim(),
 personalPhone: document.getElementById("personalPhone").value.trim(),
 communicationEmailVerified: existingSettings.communicationEmailVerified || false,
 communicationPhoneVerified: existingSettings.communicationPhoneVerified || false,
+mailProvider: existingSettings.mailProvider || null,
+mailboxConnected: existingSettings.mailboxConnected || false,
+mailboxEmail: existingSettings.mailboxEmail || "",
 
 companyName: document.getElementById("companyName").value.trim(),
 ownerName: document.getElementById("ownerName").value.trim(),
@@ -70,6 +85,9 @@ personalName: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
 
 communicationEmail: data.personalEmail || "",
 communicationPhone: data.personalPhone || "",
+mailProvider: data.mailProvider || null,
+mailboxConnected: data.mailboxConnected || false,
+mailboxEmail: data.mailboxEmail || data.personalEmail || "",
 
 companyEmail: data.email || "",
 companyPhone: data.phone || "",
@@ -98,6 +116,7 @@ try {
 const data = JSON.parse(saved);
 fillForm(data);
 updateVerificationUi(data);
+updateMailboxUi(data);
 } catch (error) {
 console.error("Firmendaten konnten nicht geladen werden:", error);
 }
@@ -125,6 +144,22 @@ phoneVerificationStatus.textContent = verified
 phoneVerificationStatus.classList.toggle("verified", verified);
 phoneVerificationStatus.classList.toggle("pending", !verified);
 }
+}
+
+function updateMailboxUi(data = {}) {
+if (!mailboxConnectionText) {
+return;
+}
+
+if (data.mailboxConnected) {
+mailboxConnectionText.textContent =
+`Verbunden: ${data.mailboxEmail}`;
+
+return;
+}
+
+mailboxConnectionText.textContent =
+"Noch kein Postfach verbunden.";
 }
 
 function saveSettings(event) {
@@ -222,6 +257,26 @@ verifyPhoneBtn.addEventListener("click", () => {
 showToast("Telefon-Verifizierung wird für den Telefonagenten vorbereitet.");
 });
 }
+
+if (connectMailboxBtn) {
+connectMailboxBtn.addEventListener("click", () => {
+mailboxConnectModal.classList.remove("hidden");
+});
+}
+
+if (closeMailboxModal) {
+closeMailboxModal.addEventListener("click", () => {
+mailboxConnectModal.classList.add("hidden");
+});
+}
+
+document.querySelectorAll("[data-mail-provider]").forEach((button) => {
+button.addEventListener("click", () => {
+const provider = button.dataset.mailProvider;
+
+showToast(`${provider} Verbindung wird im nächsten Schritt vorbereitet.`);
+});
+});
 
 document.addEventListener("DOMContentLoaded", loadSettings);
 
