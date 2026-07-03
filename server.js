@@ -192,7 +192,10 @@ res.redirect(
 );
 
 } catch (error) {
-console.error("GOOGLE CALLBACK ERROR:", error);
+console.error("GOOGLE CALLBACK ERROR");
+console.error("MESSAGE:", error.message);
+console.error("DATA:", JSON.stringify(error.response?.data, null, 2));
+console.error("CAUSE:", error.cause);
 
 res.redirect("/settings?google=error");
 }
