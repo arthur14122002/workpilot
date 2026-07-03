@@ -161,6 +161,40 @@ return res.status(500).json({ ok: false, error: error.message });
 res.json({ ok: true, data });
 });
 
+app.get("/auth/google/callback", async (req, res) => {
+const { code } = req.query;
+
+if (!code) {
+return res.redirect("/settings?google=error");
+}
+
+try {
+const { tokens } = await googleOAuthClient.getToken(code);
+
+googleOAuthClient.setCredentials(tokens);
+
+const oauth2 = google.oauth2({
+auth: googleOAuthClient,
+version: "v2"
+});
+
+const { data: userInfo } = await oauth2.userinfo.get();
+
+console.log("GOOGLE MAILBOX CONNECTED:", {
+email: userInfo.email,
+tokens
+});
+
+res.redirect(
+`/settings?google=connected&email=${encodeURIComponent(userInfo.email || "")}`
+);
+} catch (error) {
+console.error("GOOGLE CALLBACK ERROR:", error);
+
+res.redirect("/settings?google=error");
+}
+});
+
 app.get("/api/contacts", async (req, res) => {
 const { data, error } = await supabase
 .from("contacts")
