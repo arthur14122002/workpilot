@@ -173,21 +173,24 @@ const { tokens } = await googleOAuthClient.getToken(code);
 
 googleOAuthClient.setCredentials(tokens);
 
-const oauth2 = google.oauth2({
-auth: googleOAuthClient,
-version: "v2"
+const gmail = google.gmail({
+version: "v1",
+auth: googleOAuthClient
 });
 
-const { data: userInfo } = await oauth2.userinfo.get();
+const { data: profile } = await gmail.users.getProfile({
+userId: "me"
+});
 
 console.log("GOOGLE MAILBOX CONNECTED:", {
-email: userInfo.email,
+email: profile.emailAddress,
 tokens
 });
 
 res.redirect(
-`/settings?google=connected&email=${encodeURIComponent(userInfo.email || "")}`
+`/settings?google=connected&email=${encodeURIComponent(profile.emailAddress || "")}`
 );
+
 } catch (error) {
 console.error("GOOGLE CALLBACK ERROR:", error);
 
