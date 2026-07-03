@@ -290,6 +290,91 @@ Dieser Hinweis erscheint im unteren Bereich deiner Angebote und Rechnungen.
 </div>
 </div>
 
+<div id="emailImportModal" class="modalOverlay hidden">
+
+<div class="modalCard mailboxModalCard">
+
+<div class="modalHeader">
+<h2>E-Mails importieren</h2>
+
+<button
+id="closeImportModal"
+class="iconButton"
+type="button"
+>
+✕
+</button>
+</div>
+
+<p class="modalText">
+Von welchem Zeitraum sollen bestehende E-Mails importiert werden?
+</p>
+
+<div class="mailImportOptions">
+
+<label class="mailImportOption">
+<input
+type="radio"
+name="mailImportRange"
+value="30"
+checked
+/>
+<span>Letzte 30 Tage</span>
+</label>
+
+<label class="mailImportOption">
+<input
+type="radio"
+name="mailImportRange"
+value="60"
+/>
+<span>Letzte 60 Tage</span>
+</label>
+
+<label class="mailImportOption">
+<input
+type="radio"
+name="mailImportRange"
+value="90"
+/>
+<span>Letzte 90 Tage</span>
+</label>
+
+<label class="mailImportOption">
+<input
+type="radio"
+name="mailImportRange"
+value="all"
+/>
+<span>Alle E-Mails</span>
+</label>
+
+</div>
+
+<div class="modalFooter">
+
+<button
+type="button"
+class="btn btnSecondary"
+id="cancelImportBtn"
+>
+Abbrechen
+</button>
+
+<button
+type="button"
+class="btn btnPrimary"
+id="startImportBtn"
+>
+Import starten
+</button>
+
+</div>
+
+</div>
+
+</div>
+
 <script src="/js/app-layout.js"></script>
 <script src="/js/settings.js"></script>
 </body>

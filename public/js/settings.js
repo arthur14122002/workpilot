@@ -27,6 +27,18 @@ document.getElementById("mailboxConnectModal");
 const closeMailboxModal =
 document.getElementById("closeMailboxModal");
 
+const emailImportModal =
+document.getElementById("emailImportModal");
+
+const closeImportModal =
+document.getElementById("closeImportModal");
+
+const cancelImportBtn =
+document.getElementById("cancelImportBtn");
+
+const startImportBtn =
+document.getElementById("startImportBtn");
+
 function getSavedSettings() {
 try {
 return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -168,7 +180,11 @@ mailboxConnectionText.textContent =
 `${providerLabel} verbunden: ${data.mailboxEmail}`;
 
 if (connectMailboxBtn) {
-connectMailboxBtn.textContent = "Postfach entfernen";
+connectMailboxBtn.textContent = "E-Mails importieren";
+
+connectMailboxBtn.onclick = () => {
+emailImportModal.classList.remove("hidden");
+};
 }
 
 return;
@@ -364,5 +380,34 @@ return;
 });
 
 document.addEventListener("DOMContentLoaded", loadSettings);
+
+if (closeImportModal) {
+closeImportModal.addEventListener("click", () => {
+emailImportModal.classList.add("hidden");
+});
+}
+
+if (cancelImportBtn) {
+cancelImportBtn.addEventListener("click", () => {
+emailImportModal.classList.add("hidden");
+});
+}
+
+if (startImportBtn) {
+startImportBtn.addEventListener("click", () => {
+
+const selectedRange =
+document.querySelector(
+'input[name="mailImportRange"]:checked'
+)?.value;
+
+showToast(
+`Import wird vorbereitet (${selectedRange}).`
+);
+
+emailImportModal.classList.add("hidden");
+
+});
+}
 
 window.getCommunicationSettings = getCommunicationSettings;
