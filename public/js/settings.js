@@ -110,7 +110,11 @@ if (field) field.value = data[key] || "";
 
 function loadSettings() {
 const saved = localStorage.getItem(STORAGE_KEY);
-if (!saved) return;
+
+if (!saved) {
+handleGoogleCallbackResult();
+return;
+}
 
 try {
 const data = JSON.parse(saved);
@@ -120,6 +124,7 @@ updateMailboxUi(data);
 handleGoogleCallbackResult();
 } catch (error) {
 console.error("Firmendaten konnten nicht geladen werden:", error);
+handleGoogleCallbackResult();
 }
 }
 
