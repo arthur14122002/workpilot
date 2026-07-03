@@ -117,6 +117,7 @@ const data = JSON.parse(saved);
 fillForm(data);
 updateVerificationUi(data);
 updateMailboxUi(data);
+handleGoogleCallbackResult();
 } catch (error) {
 console.error("Firmendaten konnten nicht geladen werden:", error);
 }
@@ -152,14 +153,57 @@ return;
 }
 
 if (data.mailboxConnected) {
+const providerLabel = {
+google: "Gmail",
+microsoft: "Microsoft",
+smtp: "Anderer Anbieter"
+}[data.mailProvider] || "Postfach";
+
 mailboxConnectionText.textContent =
-`Verbunden: ${data.mailboxEmail}`;
+`${providerLabel} verbunden: ${data.mailboxEmail}`;
+
+if (connectMailboxBtn) {
+connectMailboxBtn.textContent = "Postfach entfernen";
+}
 
 return;
 }
 
 mailboxConnectionText.textContent =
 "Noch kein Postfach verbunden.";
+
+if (connectMailboxBtn) {
+connectMailboxBtn.textContent = "Postfach verbinden";
+}
+}
+
+function handleGoogleCallbackResult() {
+const params = new URLSearchParams(window.location.search);
+
+const googleStatus = params.get("google");
+const email = params.get("email");
+
+if (googleStatus === "connected" && email) {
+const data = getFormData();
+
+data.mailProvider = "google";
+data.mailboxConnected = true;
+data.mailboxEmail = email;
+
+localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+updateMailboxUi(data);
+
+showToast("Google-Postfach wurde verbunden.");
+
+window.history.replaceState({}, document.title, "/settings");
+}
+
+if (googleStatus === "error") {
+showToast("Google-Postfach konnte nicht verbunden werden.");
+
+window.history.replaceState({}, document.title, "/settings");
+}
 }
 
 function saveSettings(event) {
