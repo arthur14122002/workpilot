@@ -39,6 +39,9 @@ document.getElementById("cancelImportBtn");
 const startImportBtn =
 document.getElementById("startImportBtn");
 
+const importMailboxBtn =
+document.getElementById("importMailboxBtn");
+
 function getSavedSettings() {
 try {
 return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -180,11 +183,11 @@ mailboxConnectionText.textContent =
 `${providerLabel} verbunden: ${data.mailboxEmail}`;
 
 if (connectMailboxBtn) {
-connectMailboxBtn.textContent = "E-Mails importieren";
+connectMailboxBtn.textContent = "Postfach entfernen";
+}
 
-connectMailboxBtn.onclick = () => {
-emailImportModal.classList.remove("hidden");
-};
+if (importMailboxBtn) {
+importMailboxBtn.classList.remove("hidden");
 }
 
 return;
@@ -195,6 +198,10 @@ mailboxConnectionText.textContent =
 
 if (connectMailboxBtn) {
 connectMailboxBtn.textContent = "Postfach verbinden";
+}
+
+if (importMailboxBtn) {
+importMailboxBtn.classList.add("hidden");
 }
 }
 
@@ -325,7 +332,27 @@ showToast("Telefon-Verifizierung wird für den Telefonagenten vorbereitet.");
 
 if (connectMailboxBtn) {
 connectMailboxBtn.addEventListener("click", () => {
+const data = getSavedSettings();
+
+if (data.mailboxConnected) {
+data.mailProvider = null;
+data.mailboxConnected = false;
+data.mailboxEmail = "";
+
+localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+updateMailboxUi(data);
+
+showToast("Postfach wurde entfernt.");
+return;
+}
+
 mailboxConnectModal.classList.remove("hidden");
+});
+}
+
+if (importMailboxBtn) {
+importMailboxBtn.addEventListener("click", () => {
+emailImportModal.classList.remove("hidden");
 });
 }
 
