@@ -34,6 +34,8 @@ process.env.SUPABASE_URL,
 process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+let connectedGoogleTokens = null;
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -171,6 +173,8 @@ return res.redirect("/settings?google=error");
 try {
 const { tokens } = await googleOAuthClient.getToken(code);
 
+connectedGoogleTokens = tokens;
+
 googleOAuthClient.setCredentials(tokens);
 
 const gmail = google.gmail({
@@ -205,7 +209,20 @@ app.post("/api/mailbox/google/import", async (req, res) => {
 const { range } = req.body;
 
 try {
-const auth = googleOAuthClient;
+if (!connectedGoogleTokens) {
+return res.status(400).json({
+ok: false,
+error: "Kein Google-Postfach verbunden."
+});
+}
+
+const auth = new google.auth.OAuth2(
+process.env.GOOGLE_CLIENT_ID,
+process.env.GOOGLE_CLIENT_SECRET,
+process.env.GOOGLE_REDIRECT_URI
+);
+
+auth.setCredentials(connectedGoogleTokens);
 
 const gmail = google.gmail({
 version: "v1",
