@@ -201,6 +201,47 @@ res.redirect("/settings?google=error");
 }
 });
 
+app.post("/api/mailbox/google/import", async (req, res) => {
+const { range } = req.body;
+
+try {
+const auth = googleOAuthClient;
+
+const gmail = google.gmail({
+version: "v1",
+auth
+});
+
+const query =
+range === "all"
+? ""
+: `newer_than:${range}d`;
+
+const listResponse = await gmail.users.messages.list({
+userId: "me",
+maxResults: 20,
+q: query
+});
+
+const messages = listResponse.data.messages || [];
+
+res.json({
+ok: true,
+range,
+count: messages.length,
+messages
+});
+
+} catch (error) {
+console.error("GOOGLE IMPORT ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: "Google-E-Mails konnten nicht importiert werden."
+});
+}
+});
+
 app.get("/api/contacts", async (req, res) => {
 const { data, error } = await supabase
 .from("contacts")

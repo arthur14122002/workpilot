@@ -421,19 +421,41 @@ emailImportModal.classList.add("hidden");
 }
 
 if (startImportBtn) {
-startImportBtn.addEventListener("click", () => {
-
+startImportBtn.addEventListener("click", async () => {
 const selectedRange =
 document.querySelector(
 'input[name="mailImportRange"]:checked'
-)?.value;
+)?.value || "30";
 
-showToast(
-`Import wird vorbereitet (${selectedRange}).`
-);
+startImportBtn.disabled = true;
+startImportBtn.textContent = "Import läuft...";
+
+try {
+const response = await fetch("/api/mailbox/google/import", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+range: selectedRange
+})
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(result.error || "Import konnte nicht gestartet werden.");
+}
+
+showToast(`${result.count} E-Mails wurden gefunden.`);
 
 emailImportModal.classList.add("hidden");
-
+} catch (error) {
+showToast(error.message);
+} finally {
+startImportBtn.disabled = false;
+startImportBtn.textContent = "Import starten";
+}
 });
 }
 
