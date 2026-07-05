@@ -179,6 +179,10 @@ intent === "invoice_question"
 return "invoice";
 }
 
+if (message.direction === "inbound") {
+return "inbox";
+}
+
 return "other";
 }
 
