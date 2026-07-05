@@ -231,22 +231,44 @@ res.redirect("/settings?google=error");
 }
 });
 
-app.post("/api/mailbox/google/import", async (req, res) => {
-const { range } = req.body;
+async function getActiveGoogleMailboxAuth() {
+const { data: mailbox, error } = await supabase
+.from("mailbox_connections")
+.select("*")
+.eq("provider", "google")
+.eq("is_active", true)
+.order("updated_at", { ascending: false })
+.limit(1)
+.single();
 
-if (!connectedGoogleTokens) {
-return res.status(400).json({
-ok: false,
-error: "Kein Google-Postfach verbunden."
-});
+if (error || !mailbox) {
+throw new Error("Kein Google-Postfach verbunden.");
 }
 
-try {
 const auth = new google.auth.OAuth2(
 process.env.GOOGLE_CLIENT_ID,
 process.env.GOOGLE_CLIENT_SECRET,
 process.env.GOOGLE_REDIRECT_URI
 );
+
+auth.setCredentials({
+access_token: mailbox.access_token,
+refresh_token: mailbox.refresh_token,
+scope: mailbox.scope,
+token_type: mailbox.token_type,
+expiry_date: mailbox.expiry_date
+});
+
+return {
+auth,
+mailbox
+};
+}
+
+app.post("/api/mailbox/google/import", async (req, res) => {
+const { range } = req.body;
+
+const { auth } = await getActiveGoogleMailboxAuth();
 
 auth.setCredentials(connectedGoogleTokens);
 
