@@ -150,6 +150,10 @@ if (message.deleted_at) return "trash";
 if (message.direction === "outbound") return "sent";
 
 if (manualFolder) {
+if (manualFolder === "inbox") {
+return "other";
+}
+
 return manualFolder;
 }
 
@@ -177,10 +181,6 @@ aiCategory === "invoice" ||
 intent === "invoice_question"
 ) {
 return "invoice";
-}
-
-if (message.direction === "inbound") {
-return "inbox";
 }
 
 return "other";
