@@ -173,8 +173,6 @@ return res.redirect("/settings?google=error");
 try {
 const { tokens } = await googleOAuthClient.getToken(code);
 
-connectedGoogleTokens = tokens;
-
 googleOAuthClient.setCredentials(tokens);
 
 const gmail = google.gmail({
@@ -186,13 +184,41 @@ const { data: profile } = await gmail.users.getProfile({
 userId: "me"
 });
 
+const connectedEmail = profile.emailAddress || "";
+
+connectedGoogleTokens = tokens;
+
+const { error: mailboxError } = await supabase
+.from("mailbox_connections")
+.upsert(
+[
+{
+provider: "google",
+email: connectedEmail,
+access_token: tokens.access_token || null,
+refresh_token: tokens.refresh_token || null,
+scope: tokens.scope || null,
+token_type: tokens.token_type || null,
+expiry_date: tokens.expiry_date || null,
+is_active: true,
+updated_at: new Date().toISOString()
+}
+],
+{
+onConflict: "provider,email"
+}
+);
+
+if (mailboxError) {
+throw mailboxError;
+}
+
 console.log("GOOGLE MAILBOX CONNECTED:", {
-email: profile.emailAddress,
-tokens
+email: connectedEmail
 });
 
 res.redirect(
-`/settings?google=connected&email=${encodeURIComponent(profile.emailAddress || "")}`
+`/settings?google=connected&email=${encodeURIComponent(connectedEmail)}`
 );
 
 } catch (error) {
