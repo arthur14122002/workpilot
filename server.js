@@ -208,7 +208,6 @@ res.redirect("/settings?google=error");
 app.post("/api/mailbox/google/import", async (req, res) => {
 const { range } = req.body;
 
-try {
 if (!connectedGoogleTokens) {
 return res.status(400).json({
 ok: false,
@@ -216,6 +215,7 @@ error: "Kein Google-Postfach verbunden."
 });
 }
 
+try {
 const auth = new google.auth.OAuth2(
 process.env.GOOGLE_CLIENT_ID,
 process.env.GOOGLE_CLIENT_SECRET,
@@ -240,13 +240,104 @@ maxResults: 20,
 q: query
 });
 
-const messages = listResponse.data.messages || [];
+const gmailMessages = listResponse.data.messages || [];
+
+let importedCount = 0;
+
+for (const gmailMessage of gmailMessages) {
+const detailResponse = await gmail.users.messages.get({
+userId: "me",
+id: gmailMessage.id,
+format: "metadata",
+metadataHeaders: [
+"From",
+"To",
+"Subject",
+"Date"
+]
+});
+
+const messageData = detailResponse.data;
+const headers = messageData.payload?.headers || [];
+
+const getHeader = (name) => {
+const found = headers.find((header) => {
+return header.name.toLowerCase() === name.toLowerCase();
+});
+
+return found?.value || "";
+};
+
+const sender = getHeader("From");
+const recipient = getHeader("To");
+const subject = getHeader("Subject") || "Ohne Betreff";
+const dateHeader = getHeader("Date");
+
+const createdAt = dateHeader
+? new Date(dateHeader).toISOString()
+: new Date().toISOString();
+
+const gmailThreadId = messageData.threadId;
+const gmailMessageId = messageData.id;
+
+const { data: existingMessage } = await supabase
+.from("email_messages")
+.select("id")
+.eq("external_message_id", gmailMessageId)
+.maybeSingle();
+
+if (existingMessage) {
+continue;
+}
+
+const { data: thread, error: threadError } = await supabase
+.from("email_threads")
+.insert([
+{
+subject,
+related_type: "gmail",
+related_id: gmailThreadId,
+status: "open",
+ai_category: "Importiert",
+manual_folder: "inbox"
+}
+])
+.select()
+.single();
+
+if (threadError) {
+throw threadError;
+}
+
+const { error: messageError } = await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: thread.id,
+direction: "inbound",
+sender,
+recipient,
+subject,
+body: messageData.snippet || "",
+message_status: "received",
+external_message_id: gmailMessageId,
+external_thread_id: gmailThreadId,
+created_at: createdAt
+}
+]);
+
+if (messageError) {
+throw messageError;
+}
+
+importedCount++;
+}
 
 res.json({
 ok: true,
 range,
-count: messages.length,
-messages
+count: importedCount,
+found: gmailMessages.length
 });
 
 } catch (error) {
