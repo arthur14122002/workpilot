@@ -265,6 +265,46 @@ mailbox
 };
 }
 
+function makeBase64Url(input) {
+return Buffer.from(input)
+.toString("base64")
+.replace(/\+/g, "-")
+.replace(/\//g, "_")
+.replace(/=+$/, "");
+}
+
+async function sendEmailWithGoogle({ to, subject, html }) {
+const { auth, mailbox } = await getActiveGoogleMailboxAuth();
+
+const gmail = google.gmail({
+version: "v1",
+auth
+});
+
+const rawMessage = [
+`From: WorkPilot <${mailbox.email}>`,
+`To: ${to}`,
+`Subject: ${subject}`,
+"MIME-Version: 1.0",
+'Content-Type: text/html; charset="UTF-8"',
+"",
+html
+].join("\r\n");
+
+const result = await gmail.users.messages.send({
+userId: "me",
+requestBody: {
+raw: makeBase64Url(rawMessage)
+}
+});
+
+return {
+provider: "google",
+email: result.data,
+sender: mailbox.email
+};
+}
+
 app.post("/api/mailbox/google/import", async (req, res) => {
 const { range } = req.body;
 
@@ -1150,7 +1190,7 @@ const { data, error } = await supabase
 thread_id: threadId,
 contact_id: finalContactId,
 direction: "outbound",
-sender: senderEmail,
+sender: email.sender,
 recipient: recipient || "kunde@example.com",
 subject: replySubject,
 body,
@@ -2359,12 +2399,10 @@ filename: file.originalname,
 content: file.buffer.toString("base64")
 }));
 
-const email = await resend.emails.send({
-from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
+const email = await sendEmailWithGoogle({
 to,
 subject,
-html,
-attachments: resendAttachments
+html
 });
 
 const matchedContact = await findMatchingContact(to);
@@ -2376,7 +2414,7 @@ const { data: message, error: messageError } = await supabase
 thread_id: finalThreadId,
 contact_id: matchedContact?.id || null,
 direction: "outbound",
-sender: senderEmail,
+sender: email.sender,
 recipient: to,
 subject,
 body: html,
