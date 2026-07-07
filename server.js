@@ -268,9 +268,8 @@ mailbox
 app.post("/api/mailbox/google/import", async (req, res) => {
 const { range } = req.body;
 
+try {
 const { auth } = await getActiveGoogleMailboxAuth();
-
-auth.setCredentials(connectedGoogleTokens);
 
 const gmail = google.gmail({
 version: "v1",
