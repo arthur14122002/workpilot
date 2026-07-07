@@ -1256,10 +1256,8 @@ const profileSettings = JSON.parse(
 localStorage.getItem("workpilot_company_settings") || "{}"
 );
 
-const communicationEmail = profileSettings.personalEmail || "";
-
-if (!communicationEmail) {
-showToast("Bitte hinterlege zuerst deine persönliche Geschäfts-E-Mail im Profil.");
+if (!profileSettings.mailboxConnected) {
+showToast("Bitte verbinde zuerst ein Postfach im Profil.");
 return;
 }
 
@@ -1278,7 +1276,6 @@ const formData = new FormData();
 formData.append("to", recipient);
 formData.append("subject", subject);
 formData.append("html", body);
-formData.append("fromDisplayEmail", communicationEmail);
 
 selectedAttachments.forEach((file) => {
 formData.append("attachments", file);
