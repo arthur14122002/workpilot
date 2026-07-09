@@ -2585,6 +2585,37 @@ error: "Inbound-E-Mail konnte nicht verarbeitet werden."
 }
 });
 
+app.post("/api/gmail/webhook", async (req, res) => {
+try {
+console.log("GMAIL WEBHOOK RAW:", req.body);
+
+const message = req.body?.message;
+
+if (!message?.data) {
+return res.status(200).json({
+ok: true,
+ignored: true
+});
+}
+
+const decoded = Buffer.from(message.data, "base64").toString("utf8");
+const payload = JSON.parse(decoded);
+
+console.log("GMAIL WEBHOOK PAYLOAD:", payload);
+
+res.status(200).json({
+ok: true
+});
+
+} catch (error) {
+console.error("GMAIL WEBHOOK ERROR:", error);
+
+res.status(200).json({
+ok: false
+});
+}
+});
+
 app.get("/api/email-inbox", async (req, res) => {
 const { data, error } = await supabase
 .from("email_messages")
