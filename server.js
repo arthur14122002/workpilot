@@ -276,7 +276,7 @@ auth
 const response = await gmail.users.watch({
 userId: "me",
 requestBody: {
-topicName: "projects/rosy-sky-500516-j7/topics/workpilot-gmail-updates"
+topicName: "projects/rosy-sky-500516-j7/topics/workpilot-gmail-updates",
 labelIds: ["INBOX"]
 }
 });
