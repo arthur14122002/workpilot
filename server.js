@@ -2631,6 +2631,104 @@ error: "Inbound-E-Mail konnte nicht verarbeitet werden."
 }
 });
 
+async function importSingleGoogleMessage(gmail, gmailMessageId) {
+const detailResponse = await gmail.users.messages.get({
+userId: "me",
+id: gmailMessageId,
+format: "metadata",
+metadataHeaders: ["From", "To", "Subject", "Date"]
+});
+
+const messageData = detailResponse.data;
+const headers = messageData.payload?.headers || [];
+
+const getHeader = (name) => {
+const found = headers.find((header) =>
+header.name.toLowerCase() === name.toLowerCase()
+);
+
+return found?.value || "";
+};
+
+const sender = getHeader("From");
+const recipient = getHeader("To");
+const subject = getHeader("Subject") || "Ohne Betreff";
+const dateHeader = getHeader("Date");
+
+const createdAt = dateHeader
+? new Date(dateHeader).toISOString()
+: new Date().toISOString();
+
+const gmailThreadId = messageData.threadId;
+const gmailMessageIdFinal = messageData.id;
+
+const { data: existingMessage } = await supabase
+.from("email_messages")
+.select("id")
+.eq("external_message_id", gmailMessageIdFinal)
+.maybeSingle();
+
+if (existingMessage) {
+return null;
+}
+
+let { data: thread } = await supabase
+.from("email_threads")
+.select("*")
+.eq("external_thread_id", gmailThreadId)
+.maybeSingle();
+
+if (!thread) {
+const { data: newThread, error: threadError } = await supabase
+.from("email_threads")
+.insert([
+{
+subject,
+related_type: "gmail",
+related_id: gmailThreadId,
+status: "open",
+ai_category: "Importiert",
+manual_folder: "inbox",
+external_thread_id: gmailThreadId
+}
+])
+.select()
+.single();
+
+if (threadError) throw threadError;
+
+thread = newThread;
+}
+
+const matchedContact = await findMatchingContact(sender);
+
+const { data: message, error: messageError } = await supabase
+.from("email_messages")
+.insert([
+{
+thread_id: thread.id,
+contact_id: matchedContact?.id || null,
+direction: "inbound",
+sender,
+recipient,
+subject,
+body: messageData.snippet || "",
+message_status: "received",
+external_message_id: gmailMessageIdFinal,
+external_thread_id: gmailThreadId,
+created_at: createdAt
+}
+])
+.select()
+.single();
+
+if (messageError) throw messageError;
+
+await analyzeInboundEmail(message, thread);
+
+return message;
+}
+
 app.post("/api/gmail/webhook", async (req, res) => {
 try {
 
