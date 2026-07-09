@@ -2633,32 +2633,39 @@ error: "Inbound-E-Mail konnte nicht verarbeitet werden."
 
 app.post("/api/gmail/webhook", async (req, res) => {
 try {
-console.log("GMAIL WEBHOOK RAW:", req.body);
 
 const message = req.body?.message;
 
 if (!message?.data) {
 return res.status(200).json({
-ok: true,
-ignored: true
+ok: true
 });
 }
 
-const decoded = Buffer.from(message.data, "base64").toString("utf8");
-const payload = JSON.parse(decoded);
+const payload = JSON.parse(
+Buffer.from(message.data, "base64").toString("utf8")
+);
 
-console.log("GMAIL WEBHOOK PAYLOAD:", payload);
+console.log("GMAIL PAYLOAD:", payload);
+
+const historyId = payload.historyId;
+const emailAddress = payload.emailAddress;
+
+console.log("HISTORY ID:", historyId);
+console.log("EMAIL:", emailAddress);
 
 res.status(200).json({
 ok: true
 });
 
 } catch (error) {
-console.error("GMAIL WEBHOOK ERROR:", error);
+
+console.error("WEBHOOK ERROR:", error);
 
 res.status(200).json({
 ok: false
 });
+
 }
 });
 
