@@ -1249,6 +1249,12 @@ originalMessage?.contact_id ||
 matchedContact?.id ||
 null;
 
+const sentEmail = await sendEmailWithGoogle({
+to: recipient,
+subject: replySubject,
+html: body.replaceAll("\n", "<br>")
+});
+
 const { data, error } = await supabase
 .from("email_messages")
 .insert([
