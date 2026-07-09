@@ -2749,6 +2749,48 @@ console.log("GMAIL PAYLOAD:", payload);
 const historyId = payload.historyId;
 const emailAddress = payload.emailAddress;
 
+const { auth, mailbox } = await getActiveGoogleMailboxAuth();
+
+const gmail = google.gmail({
+  version: "v1",
+  auth
+});
+
+const startHistoryId =
+mailbox.gmail_history_id ||
+historyId;
+
+const historyResponse = await gmail.users.history.list({
+  userId: "me",
+  startHistoryId: startHistoryId,
+  historyTypes: ["messageAdded"]
+});
+
+const history = historyResponse.data.history || [];
+
+for (const entry of history) {
+
+  const addedMessages = entry.messagesAdded || [];
+
+  for (const added of addedMessages) {
+
+    await importSingleGoogleMessage(
+      gmail,
+      added.message.id
+    );
+
+  }
+
+}
+
+await supabase
+.from("mailbox_connections")
+.update({
+  gmail_history_id: String(historyId),
+  updated_at: new Date().toISOString()
+})
+.eq("id", mailbox.id);
+
 console.log("HISTORY ID:", historyId);
 console.log("EMAIL:", emailAddress);
 
