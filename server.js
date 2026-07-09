@@ -265,6 +265,52 @@ mailbox
 };
 }
 
+async function startGoogleMailboxWatch() {
+const { auth, mailbox } = await getActiveGoogleMailboxAuth();
+
+const gmail = google.gmail({
+version: "v1",
+auth
+});
+
+const response = await gmail.users.watch({
+userId: "me",
+requestBody: {
+topicName: "projects/640969897762/topics/workpilot-gmail-updates",
+labelIds: ["INBOX"]
+}
+});
+
+await supabase
+.from("mailbox_connections")
+.update({
+gmail_history_id: String(response.data.historyId),
+watch_expiration: Number(response.data.expiration),
+updated_at: new Date().toISOString()
+})
+.eq("id", mailbox.id);
+
+return response.data;
+}
+
+app.post("/api/mailbox/google/watch", async (req, res) => {
+try {
+const watch = await startGoogleMailboxWatch();
+
+res.json({
+ok: true,
+watch
+});
+} catch (error) {
+console.error("GOOGLE WATCH ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error: error.message
+});
+}
+});
+
 function makeBase64Url(input) {
 return Buffer.from(input)
 .toString("base64")
