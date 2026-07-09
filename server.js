@@ -328,7 +328,7 @@ auth
 });
 
 const rawMessage = [
-`From: WorkPilot <${mailbox.email}>`,
+`From: ${mailbox.email}`,
 `To: ${to}`,
 `Subject: ${subject}`,
 "MIME-Version: 1.0",
@@ -349,6 +349,16 @@ provider: "google",
 email: result.data,
 sender: mailbox.email
 };
+}
+
+function extractEmailAddress(value = "") {
+const match = value.match(/<([^>]+)>/);
+
+if (match) {
+return match[1].trim().toLowerCase();
+}
+
+return value.trim().toLowerCase();
 }
 
 app.post("/api/mailbox/google/import", async (req, res) => {
@@ -401,8 +411,12 @@ return header.name.toLowerCase() === name.toLowerCase();
 return found?.value || "";
 };
 
-const sender = getHeader("From");
-const recipient = getHeader("To");
+const senderRaw = getHeader("From");
+const recipientRaw = getHeader("To");
+
+const sender = extractEmailAddress(senderRaw);
+const recipient = extractEmailAddress(recipientRaw);
+
 const subject = getHeader("Subject") || "Ohne Betreff";
 const dateHeader = getHeader("Date");
 
@@ -1065,6 +1079,12 @@ originalMessage?.contact_id ||
 matchedContact?.id ||
 null;
 
+const sentEmail = await sendEmailWithGoogle({
+to: recipient,
+subject: replySubject,
+html: body.replaceAll("\n", "<br>")
+});
+
 const { data, error } = await supabase
 .from("email_messages")
 .insert([
@@ -1236,7 +1256,7 @@ const { data, error } = await supabase
 thread_id: threadId,
 contact_id: finalContactId,
 direction: "outbound",
-sender: email.sender,
+sender: sentEmail.sender,
 recipient: recipient || "kunde@example.com",
 subject: replySubject,
 body,
