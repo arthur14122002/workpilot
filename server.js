@@ -2676,8 +2676,8 @@ header.name.toLowerCase() === name.toLowerCase()
 return found?.value || "";
 };
 
-const sender = getHeader("From");
-const recipient = getHeader("To");
+const sender = extractEmailAddress(getHeader("From"));
+const recipient = extractEmailAddress(getHeader("To"));
 const subject = getHeader("Subject") || "Ohne Betreff";
 const dateHeader = getHeader("Date");
 
@@ -2859,9 +2859,15 @@ error: error.message
 });
 }
 
+const normalizedMessages = (data || []).map((message) => ({
+...message,
+sender: extractEmailAddress(message.sender || ""),
+recipient: extractEmailAddress(message.recipient || "")
+}));
+
 res.json({
 ok: true,
-messages: data || []
+messages: normalizedMessages
 });
 });
 
