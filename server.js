@@ -364,6 +364,15 @@ return value.trim().toLowerCase();
 app.post("/api/mailbox/google/import", async (req, res) => {
 const { range } = req.body;
 
+const allowedRanges = ["30", "60", "90", "all"];
+
+if (!allowedRanges.includes(String(range))) {
+return res.status(400).json({
+ok: false,
+error: "Ungültiger Importzeitraum."
+});
+}
+
 try {
 const { auth } = await getActiveGoogleMailboxAuth();
 
@@ -373,118 +382,50 @@ auth
 });
 
 const query =
-range === "all"
+String(range) === "all"
 ? ""
-: `newer_than:${range}d`;
+: `newer_than:${Number(range)}d`;
 
+let pageToken = null;
+let foundCount = 0;
+let importedCount = 0;
+let skippedCount = 0;
+
+do {
 const listResponse = await gmail.users.messages.list({
 userId: "me",
-maxResults: 20,
-q: query
+maxResults: 500,
+q: query,
+pageToken: pageToken || undefined
 });
 
 const gmailMessages = listResponse.data.messages || [];
 
-let importedCount = 0;
+foundCount += gmailMessages.length;
 
 for (const gmailMessage of gmailMessages) {
-const detailResponse = await gmail.users.messages.get({
-userId: "me",
-id: gmailMessage.id,
-format: "metadata",
-metadataHeaders: [
-"From",
-"To",
-"Subject",
-"Date"
-]
-});
+const importedMessage = await importSingleGoogleMessage(
+gmail,
+gmailMessage.id
+);
 
-const messageData = detailResponse.data;
-const headers = messageData.payload?.headers || [];
-
-const getHeader = (name) => {
-const found = headers.find((header) => {
-return header.name.toLowerCase() === name.toLowerCase();
-});
-
-return found?.value || "";
-};
-
-const senderRaw = getHeader("From");
-const recipientRaw = getHeader("To");
-
-const sender = extractEmailAddress(senderRaw);
-const recipient = extractEmailAddress(recipientRaw);
-
-const subject = getHeader("Subject") || "Ohne Betreff";
-const dateHeader = getHeader("Date");
-
-const createdAt = dateHeader
-? new Date(dateHeader).toISOString()
-: new Date().toISOString();
-
-const gmailThreadId = messageData.threadId;
-const gmailMessageId = messageData.id;
-
-const { data: existingMessage } = await supabase
-.from("email_messages")
-.select("id")
-.eq("external_message_id", gmailMessageId)
-.maybeSingle();
-
-if (existingMessage) {
-continue;
-}
-
-const { data: thread, error: threadError } = await supabase
-.from("email_threads")
-.insert([
-{
-subject,
-related_type: "gmail",
-related_id: gmailThreadId,
-status: "open",
-ai_category: "Importiert",
-manual_folder: "inbox"
-}
-])
-.select()
-.single();
-
-if (threadError) {
-throw threadError;
-}
-
-const { error: messageError } = await supabase
-.from("email_messages")
-.insert([
-{
-thread_id: thread.id,
-direction: "inbound",
-sender,
-recipient,
-subject,
-body: messageData.snippet || "",
-message_status: "received",
-external_message_id: gmailMessageId,
-external_thread_id: gmailThreadId,
-created_at: createdAt
-}
-]);
-
-if (messageError) {
-throw messageError;
-}
-
+if (importedMessage) {
 importedCount++;
+} else {
+skippedCount++;
 }
+}
+
+pageToken = listResponse.data.nextPageToken || null;
+
+} while (pageToken);
 
 res.json({
 ok: true,
 range,
+found: foundCount,
 count: importedCount,
-found: gmailMessages.length
+skipped: skippedCount
 });
 
 } catch (error) {
@@ -492,7 +433,9 @@ console.error("GOOGLE IMPORT ERROR:", error);
 
 res.status(500).json({
 ok: false,
-error: "Google-E-Mails konnten nicht importiert werden."
+error:
+error.message ||
+"Google-E-Mails konnten nicht importiert werden."
 });
 }
 });
