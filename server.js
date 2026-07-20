@@ -2778,6 +2778,109 @@ ok: false
 }
 });
 
+app.delete("/api/mailbox/disconnect", async (req, res) => {
+try {
+let auth = null;
+
+try {
+const googleMailbox = await getActiveGoogleMailboxAuth();
+auth = googleMailbox.auth;
+} catch {
+auth = null;
+}
+
+if (auth) {
+try {
+const gmail = google.gmail({
+version: "v1",
+auth
+});
+
+await gmail.users.stop({
+userId: "me"
+});
+} catch (stopError) {
+console.error("GOOGLE WATCH STOP ERROR:", stopError);
+}
+}
+
+const { data: attachments, error: attachmentsLoadError } =
+await supabase
+.from("email_attachments")
+.select("file_path");
+
+if (attachmentsLoadError) {
+throw attachmentsLoadError;
+}
+
+const attachmentPaths = (attachments || [])
+.map((attachment) => attachment.file_path)
+.filter(Boolean);
+
+if (attachmentPaths.length) {
+const { error: storageError } = await supabase.storage
+.from("email-attachments")
+.remove(attachmentPaths);
+
+if (storageError) {
+throw storageError;
+}
+}
+
+const { error: attachmentDeleteError } = await supabase
+.from("email_attachments")
+.delete()
+.not("id", "is", null);
+
+if (attachmentDeleteError) {
+throw attachmentDeleteError;
+}
+
+const { error: messageDeleteError } = await supabase
+.from("email_messages")
+.delete()
+.not("id", "is", null);
+
+if (messageDeleteError) {
+throw messageDeleteError;
+}
+
+const { error: threadDeleteError } = await supabase
+.from("email_threads")
+.delete()
+.not("id", "is", null);
+
+if (threadDeleteError) {
+throw threadDeleteError;
+}
+
+const { error: mailboxDeleteError } = await supabase
+.from("mailbox_connections")
+.delete()
+.not("id", "is", null);
+
+if (mailboxDeleteError) {
+throw mailboxDeleteError;
+}
+
+connectedGoogleTokens = null;
+
+res.json({
+ok: true
+});
+
+} catch (error) {
+console.error("MAILBOX DISCONNECT ERROR:", error);
+
+res.status(500).json({
+ok: false,
+error:
+error.message ||
+"Das Postfach konnte nicht vollständig entfernt werden."
+});
+}
+});
+
 app.get("/api/email-inbox", async (req, res) => {
 const { data, error } = await supabase
 .from("email_messages")

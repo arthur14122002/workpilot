@@ -331,22 +331,63 @@ showToast("Telefon-Verifizierung wird für den Telefonagenten vorbereitet.");
 }
 
 if (connectMailboxBtn) {
-connectMailboxBtn.addEventListener("click", () => {
+connectMailboxBtn.addEventListener("click", async () => {
 const data = getSavedSettings();
 
-if (data.mailboxConnected) {
+if (!data.mailboxConnected) {
+mailboxConnectModal.classList.remove("hidden");
+return;
+}
+
+const confirmed = confirm(
+"Postfach wirklich entfernen?\n\nDabei werden die Verbindung, alle E-Mails, E-Mail-Verläufe und Anhänge aus WorkPilot gelöscht."
+);
+
+if (!confirmed) {
+return;
+}
+
+connectMailboxBtn.disabled = true;
+connectMailboxBtn.textContent = "Wird entfernt...";
+
+try {
+const response = await fetch("/api/mailbox/disconnect", {
+method: "DELETE"
+});
+
+const result = await response.json();
+
+if (!result.ok) {
+throw new Error(
+result.error ||
+"Das Postfach konnte nicht entfernt werden."
+);
+}
+
 data.mailProvider = null;
 data.mailboxConnected = false;
 data.mailboxEmail = "";
 
-localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+localStorage.setItem(
+STORAGE_KEY,
+JSON.stringify(data)
+);
+
 updateMailboxUi(data);
 
-showToast("Postfach wurde entfernt.");
-return;
-}
+showToast(
+"Postfach und zugehörige E-Mails wurden entfernt."
+);
 
-mailboxConnectModal.classList.remove("hidden");
+} catch (error) {
+showToast(error.message);
+
+} finally {
+connectMailboxBtn.disabled = false;
+
+const updatedData = getSavedSettings();
+updateMailboxUi(updatedData);
+}
 });
 }
 
