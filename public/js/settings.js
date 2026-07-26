@@ -460,7 +460,19 @@ password
 }
 );
 
-const result = await response.json();
+const responseText = await response.text();
+
+let result = {};
+
+if (responseText) {
+    try {
+        result = JSON.parse(responseText);
+    } catch (error) {
+        throw new Error(
+            "Der Server hat keine gültige Antwort geliefert."
+        );
+    }
+}
 
 if (!response.ok || !result.ok) {
 throw new Error(

@@ -8,7 +8,8 @@ const crypto = require("crypto");
 const { google } = require("googleapis");
 const nodemailer = require("nodemailer");
 const { ImapFlow } = require("imapflow");
-const { discoverMailProvider } = require("./mailDiscovery");
+const { discoverMailProvider } = require("./mail/mailDiscovery");
+const { importMailbox } = require("./mail/mailImport");
 
 const upload = multer({
 storage: multer.memoryStorage()
@@ -62,16 +63,34 @@ async function verifyImapConnection({
         },
 
         logger: false,
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 20000
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000
+    });
+
+    let imapError = null;
+
+    client.on("error", (error) => {
+        imapError = error;
+
+        console.error("IMAP CLIENT ERROR:", {
+            message: error.message,
+            code: error.code,
+            authenticationFailed: error.authenticationFailed
+        });
     });
 
     try {
         await client.connect();
+
+        if (imapError) {
+            throw imapError;
+        }
     } finally {
         if (client.usable) {
             await client.logout().catch(() => {});
+        } else {
+            client.close();
         }
     }
 }
@@ -99,6 +118,58 @@ async function verifySmtpConnection({
 
     await transporter.verify();
 }
+
+app.post("/api/mailbox/import", requireAuth, async (req, res) => {
+
+    try {
+
+        const connection = await db.mailbox_connections.findUnique({
+
+            where: {
+                user_id: req.user.id
+            }
+
+        });
+
+        if (!connection) {
+
+            return res.status(404).json({
+
+                success: false,
+                message: "Kein Postfach verbunden."
+
+            });
+
+        }
+
+        const mails = await importMailbox(connection);
+
+        console.log("📥 Importierte Mails:");
+
+        console.log(mails);
+
+        return res.json({
+
+            success: true,
+
+            imported: mails.length
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+
+            success: false,
+            message: error.message
+
+        });
+
+    }
+
+});
 
 app.post("/api/mailbox/connect", async (req, res) => {
     const email = String(req.body?.email || "")
@@ -377,7 +448,7 @@ const { data: mailbox, error } = await supabase
 .single();
 
 if (error || !mailbox) {
-throw new Error("Kein Google-Postfach verbunden.");
+throw new Error("Bitte verbinde zuerst ein Postfach.");
 }
 
 const auth = new google.auth.OAuth2(
