@@ -19,6 +19,10 @@ const openai = new OpenAI({
 apiKey: process.env.OPENAI_API_KEY
 });
 
+const {
+    encryptMailPassword
+} = require("./mail/mailCrypto");
+
 const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -176,6 +180,46 @@ app.post("/api/mailbox/connect", async (req, res) => {
         });
 
         console.log("SMTP LOGIN SUCCESS:", email);
+
+        const encryptedPassword = encryptMailPassword(password);
+
+const { error: mailboxError } = await supabase
+    .from("mailbox_connections")
+    .upsert(
+        [
+            {
+                provider: "imap",
+                provider_name: configuration.providerName,
+                email,
+                username: email,
+                auth_method: "password",
+                encrypted_password: encryptedPassword,
+
+                imap_host: configuration.imap.host,
+                imap_port: configuration.imap.port,
+                imap_secure: configuration.imap.secure,
+
+                smtp_host: configuration.smtp.host,
+                smtp_port: configuration.smtp.port,
+                smtp_secure: configuration.smtp.secure,
+
+                is_active: true,
+                updated_at: new Date().toISOString()
+            }
+        ],
+        {
+            onConflict: "provider,email"
+        }
+    );
+
+if (mailboxError) {
+    throw mailboxError;
+}
+
+console.log("IMAP MAILBOX SAVED:", {
+    email,
+    providerName: configuration.providerName
+});
 
         return res.json({
             ok: true,
