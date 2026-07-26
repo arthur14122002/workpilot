@@ -120,55 +120,21 @@ async function verifySmtpConnection({
 }
 
 app.post("/api/mailbox/import", async (req, res) => {
-
     try {
-
-        const connection = await db.mailbox_connections.findUnique({
-
-            where: {
-                user_id: req.user.id
-            }
-
-        });
-
-        if (!connection) {
-
-            return res.status(404).json({
-
-                success: false,
-                message: "Kein Postfach verbunden."
-
-            });
-
-        }
-
-        const mails = await importMailbox(connection);
-
-        console.log("📥 Importierte Mails:");
-
-        console.log(mails);
+        console.log("📥 Allgemeine Mailbox-Import-Route wurde aufgerufen.");
 
         return res.json({
-
             success: true,
-
-            imported: mails.length
-
+            message: "Import-Route funktioniert."
         });
-
     } catch (error) {
-
-        console.error(error);
+        console.error("MAILBOX IMPORT ERROR:", error);
 
         return res.status(500).json({
-
             success: false,
             message: error.message
-
         });
-
     }
-
 });
 
 app.post("/api/mailbox/connect", async (req, res) => {
