@@ -16,8 +16,6 @@ async function importMailbox(connection) {
     }
 }
 
-const { ImapFlow } = require("imapflow");
-
 async function importImapMailbox(connection) {
 
     const client = new ImapFlow({
