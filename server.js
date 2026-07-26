@@ -119,7 +119,7 @@ async function verifySmtpConnection({
     await transporter.verify();
 }
 
-app.post("/api/mailbox/import", requireAuth, async (req, res) => {
+app.post("/api/mailbox/import", async (req, res) => {
 
     try {
 
