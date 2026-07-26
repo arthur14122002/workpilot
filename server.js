@@ -6,6 +6,8 @@ const puppeteer = require("puppeteer");
 const multer = require("multer");
 const crypto = require("crypto");
 const { google } = require("googleapis");
+const nodemailer = require("nodemailer");
+const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./mailDiscovery");
 
 const upload = multer({
@@ -42,6 +44,138 @@ app.use(express.json());
 app.use((req, res, next) => {
 console.log("REQUEST:", req.method, req.url);
 next();
+});
+
+async function verifyImapConnection({
+    email,
+    password,
+    configuration
+}) {
+    const client = new ImapFlow({
+        host: configuration.imap.host,
+        port: configuration.imap.port,
+        secure: configuration.imap.secure,
+
+        auth: {
+            user: email,
+            pass: password
+        },
+
+        logger: false,
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 20000
+    });
+
+    try {
+        await client.connect();
+    } finally {
+        if (client.usable) {
+            await client.logout().catch(() => {});
+        }
+    }
+}
+
+async function verifySmtpConnection({
+    email,
+    password,
+    configuration
+}) {
+    const transporter = nodemailer.createTransport({
+        host: configuration.smtp.host,
+        port: configuration.smtp.port,
+        secure: configuration.smtp.secure,
+        requireTLS: configuration.smtp.requireTLS,
+
+        auth: {
+            user: email,
+            pass: password
+        },
+
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 20000
+    });
+
+    await transporter.verify();
+}
+
+app.post("/api/mailbox/connect", async (req, res) => {
+    const email = String(req.body?.email || "")
+        .trim()
+        .toLowerCase();
+
+    const password = String(req.body?.password || "");
+
+    if (!email || !password) {
+        return res.status(400).json({
+            ok: false,
+            error: "Bitte gib eine E-Mail-Adresse und ein Passwort ein."
+        });
+    }
+
+    try {
+        const configuration = await discoverMailProvider(email);
+
+        console.log("MAIL PROVIDER DISCOVERED:", {
+            email,
+            provider: configuration.providerName,
+            source: configuration.source,
+            domain: configuration.domain
+        });
+
+        await verifyImapConnection({
+            email,
+            password,
+            configuration
+        });
+
+        console.log("IMAP LOGIN SUCCESS:", email);
+
+        await verifySmtpConnection({
+            email,
+            password,
+            configuration
+        });
+
+        console.log("SMTP LOGIN SUCCESS:", email);
+
+        return res.json({
+            ok: true,
+            message: "Das Postfach wurde erfolgreich geprüft.",
+            provider: configuration.provider,
+            providerName: configuration.providerName,
+            email
+        });
+    } catch (error) {
+        console.error("MAILBOX CONNECT ERROR:", {
+            message: error.message,
+            code: error.code,
+            responseCode: error.responseCode,
+            authenticationFailed: error.authenticationFailed
+        });
+
+        const authenticationFailed =
+            error.authenticationFailed === true ||
+            error.code === "EAUTH" ||
+            error.responseCode === 534 ||
+            error.responseCode === 535;
+
+        if (authenticationFailed) {
+            return res.status(401).json({
+                ok: false,
+                error:
+                    "Die Anmeldung wurde vom E-Mail-Anbieter abgelehnt. Bitte überprüfe E-Mail-Adresse, Passwort und die IMAP-Freigabe."
+            });
+        }
+
+        return res.status(400).json({
+            ok: false,
+            error:
+                error.message ||
+                "Das Postfach konnte nicht verbunden werden."
+        });
+    }
 });
 
 app.get("/api/mailbox/google/start", (req, res) => {

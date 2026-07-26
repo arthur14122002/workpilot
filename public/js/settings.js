@@ -447,7 +447,7 @@ submitSmtpConnectionBtn.textContent =
 
 try {
 const response = await fetch(
-"/api/mailbox/smtp/connect",
+"/api/mailbox/connect",
 {
 method: "POST",
 headers: {
