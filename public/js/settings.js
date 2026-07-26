@@ -631,7 +631,7 @@ startImportBtn.disabled = true;
 startImportBtn.textContent = "Import läuft...";
 
 try {
-const response = await fetch("/api/mailbox/google/import", {
+const response = await fetch("/api/mailbox/import", {
 method: "POST",
 headers: {
 "Content-Type": "application/json"
