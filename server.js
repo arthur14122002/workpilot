@@ -6,6 +6,7 @@ const puppeteer = require("puppeteer");
 const multer = require("multer");
 const crypto = require("crypto");
 const { google } = require("googleapis");
+const { discoverMailProvider } = require("./mailDiscovery");
 
 const upload = multer({
 storage: multer.memoryStorage()
@@ -3081,6 +3082,30 @@ ok: false,
 message: "Route nicht gefunden",
 path: req.url
 });
+});
+
+app.post("/api/mailbox/discover", async (req, res) => {
+
+    try {
+
+        const provider = await discoverMailProvider(
+            req.body.email
+        );
+
+        return res.json({
+            ok: true,
+            provider
+        });
+
+    } catch (error) {
+
+        return res.status(400).json({
+            ok: false,
+            error: error.message
+        });
+
+    }
+
 });
 
 app.listen(PORT, async () => {

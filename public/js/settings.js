@@ -27,6 +27,27 @@ document.getElementById("mailboxConnectModal");
 const closeMailboxModal =
 document.getElementById("closeMailboxModal");
 
+const smtpConnectModal =
+document.getElementById("smtpConnectModal");
+
+const closeSmtpModal =
+document.getElementById("closeSmtpModal");
+
+const cancelSmtpConnectionBtn =
+document.getElementById("cancelSmtpConnectionBtn");
+
+const smtpConnectForm =
+document.getElementById("smtpConnectForm");
+
+const smtpMailboxEmail =
+document.getElementById("smtpMailboxEmail");
+
+const smtpMailboxPassword =
+document.getElementById("smtpMailboxPassword");
+
+const submitSmtpConnectionBtn =
+document.getElementById("submitSmtpConnectionBtn");
+
 const emailImportModal =
 document.getElementById("emailImportModal");
 
@@ -403,6 +424,109 @@ mailboxConnectModal.classList.add("hidden");
 });
 }
 
+if (smtpConnectForm) {
+smtpConnectForm.addEventListener("submit", async (event) => {
+event.preventDefault();
+
+const email = smtpMailboxEmail.value
+.trim()
+.toLowerCase();
+
+const password = smtpMailboxPassword.value;
+
+if (!email || !password) {
+showToast(
+"Bitte gib deine E-Mail-Adresse und dein E-Mail-Passwort ein."
+);
+return;
+}
+
+submitSmtpConnectionBtn.disabled = true;
+submitSmtpConnectionBtn.textContent =
+"Verbindung wird geprüft...";
+
+try {
+const response = await fetch(
+"/api/mailbox/smtp/connect",
+{
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+email,
+password
+})
+}
+);
+
+const result = await response.json();
+
+if (!response.ok || !result.ok) {
+throw new Error(
+result.error ||
+"Das Postfach konnte nicht verbunden werden."
+);
+}
+
+const data = getSavedSettings();
+
+data.mailProvider = "smtp";
+data.mailboxConnected = true;
+data.mailboxEmail = email;
+data.mailProviderName =
+result.providerName || "Anderer Anbieter";
+
+localStorage.setItem(
+STORAGE_KEY,
+JSON.stringify(data)
+);
+
+updateMailboxUi(data);
+closeSmtpConnectionModal();
+
+showToast(
+`${data.mailProviderName} wurde erfolgreich verbunden.`
+);
+
+} catch (error) {
+showToast(error.message);
+
+} finally {
+submitSmtpConnectionBtn.disabled = false;
+submitSmtpConnectionBtn.textContent =
+"Postfach verbinden";
+}
+});
+}
+
+function closeSmtpConnectionModal() {
+if (smtpConnectModal) {
+smtpConnectModal.classList.add("hidden");
+}
+
+if (smtpConnectForm) {
+smtpConnectForm.reset();
+}
+}
+
+if (closeSmtpModal) {
+closeSmtpModal.addEventListener(
+"click",
+closeSmtpConnectionModal
+);
+}
+
+if (cancelSmtpConnectionBtn) {
+cancelSmtpConnectionBtn.addEventListener("click", () => {
+closeSmtpConnectionModal();
+
+if (mailboxConnectModal) {
+mailboxConnectModal.classList.remove("hidden");
+}
+});
+}
+
 async function startGoogleMailboxConnection() {
 try {
 const response = await fetch("/api/mailbox/google/start");
@@ -423,7 +547,30 @@ showToast("Microsoft-Verbindung wird vorbereitet.");
 }
 
 function startSmtpMailboxConnection() {
-showToast("Anderer Anbieter wird vorbereitet.");
+if (mailboxConnectModal) {
+mailboxConnectModal.classList.add("hidden");
+}
+
+if (smtpConnectModal) {
+smtpConnectModal.classList.remove("hidden");
+}
+
+if (smtpMailboxEmail) {
+const settings = getSavedSettings();
+
+smtpMailboxEmail.value =
+settings.personalEmail ||
+settings.communicationEmail ||
+"";
+}
+
+if (smtpMailboxPassword) {
+smtpMailboxPassword.value = "";
+}
+
+setTimeout(() => {
+smtpMailboxEmail?.focus();
+}, 50);
 }
 
 document.querySelectorAll("[data-mail-provider]").forEach((button) => {

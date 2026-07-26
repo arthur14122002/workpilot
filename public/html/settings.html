@@ -298,6 +298,76 @@ Dieser Hinweis erscheint im unteren Bereich deiner Angebote und Rechnungen.
 </div>
 </div>
 
+<div id="smtpConnectModal" class="modalOverlay hidden">
+<div class="modalCard mailboxModalCard">
+
+<div class="modalHeader">
+<h2>Anderes Postfach verbinden</h2>
+
+<button id="closeSmtpModal" class="iconButton" type="button">
+✕
+</button>
+</div>
+
+<form id="smtpConnectForm">
+
+<div class="formGroup">
+<label for="smtpMailboxEmail">
+E-Mail-Adresse
+</label>
+
+<input
+id="smtpMailboxEmail"
+name="email"
+type="email"
+placeholder="name@anbieter.de"
+autocomplete="email"
+required
+>
+</div>
+
+<div class="formGroup">
+<label for="smtpMailboxPassword">
+E-Mail-Passwort
+</label>
+
+<input
+id="smtpMailboxPassword"
+name="password"
+type="password"
+placeholder="Passwort oder App-Passwort"
+autocomplete="current-password"
+required
+>
+</div>
+
+<p class="formHint">
+WorkPilot erkennt deinen E-Mail-Anbieter und die benötigten Servereinstellungen automatisch.
+</p>
+
+<div class="modalActions">
+<button
+id="cancelSmtpConnectionBtn"
+class="secondaryButton"
+type="button"
+>
+Abbrechen
+</button>
+
+<button
+id="submitSmtpConnectionBtn"
+class="primaryButton"
+type="submit"
+>
+Postfach verbinden
+</button>
+</div>
+
+</form>
+
+</div>
+</div>
+
 <div id="emailImportModal" class="modalOverlay hidden">
 
 <div class="modalCard mailboxModalCard">
