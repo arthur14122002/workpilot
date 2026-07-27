@@ -156,8 +156,7 @@ const mails = await importMailbox({
 });
 
 for (const mail of mails) {
-
-    await supabase
+    const { data, error } = await supabase
         .from("email_messages")
         .upsert(
             {
@@ -177,7 +176,6 @@ for (const mail of mails) {
 
                 external_message_id:
                     mail.messageId ||
-
                     `imap-${mail.uid}-${mailbox.email}`,
 
                 external_thread_id:
@@ -198,8 +196,22 @@ for (const mail of mails) {
             {
                 onConflict: "external_message_id"
             }
-        );
+        )
+        .select();
 
+    if (error) {
+        console.error("EMAIL SAVE ERROR:", {
+            uid: mail.uid,
+            subject: mail.subject,
+            error
+        });
+    } else {
+        console.log("EMAIL SAVED:", {
+            uid: mail.uid,
+            subject: mail.subject,
+            data
+        });
+    }
 }
 
 console.log("IMAP IMPORT SUCCESS:", {
