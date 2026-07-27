@@ -20,7 +20,8 @@ apiKey: process.env.OPENAI_API_KEY
 });
 
 const {
-    encryptMailPassword
+    encryptMailPassword,
+    decryptMailPassword
 } = require("./mail/mailCrypto");
 
 const { Resend } = require("resend");
@@ -125,18 +126,79 @@ async function verifySmtpConnection({
 
 app.post("/api/mailbox/import", async (req, res) => {
     try {
-        console.log("📥 Allgemeine Mailbox-Import-Route wurde aufgerufen.");
+        const mailbox = await getActiveMailboxConnection();
 
-        return res.json({
-            success: true,
-            message: "Import-Route funktioniert."
+        console.log("MAILBOX IMPORT START:", {
+            provider: mailbox.provider,
+            providerName: mailbox.provider_name,
+            email: mailbox.email
+        });
+
+        if (mailbox.provider === "imap") {
+            const password = decryptMailPassword(
+                mailbox.encrypted_password
+            );
+
+            const mails = await importMailbox({
+                provider: "imap",
+
+                email: mailbox.email,
+                username: mailbox.username || mailbox.email,
+                password,
+
+                imap_host: mailbox.imap_host,
+                imap_port: mailbox.imap_port,
+                imap_secure: mailbox.imap_secure,
+
+                smtp_host: mailbox.smtp_host,
+                smtp_port: mailbox.smtp_port,
+                smtp_secure: mailbox.smtp_secure
+            });
+
+            console.log("IMAP IMPORT SUCCESS:", {
+                email: mailbox.email,
+                imported: mails.length
+            });
+
+            return res.json({
+                success: true,
+                imported: mails.length,
+                provider: "imap"
+            });
+        }
+
+        if (mailbox.provider === "google") {
+            return res.status(501).json({
+                success: false,
+                message:
+                    "Der Google-Import wird später an die allgemeine Import-Route angeschlossen."
+            });
+        }
+
+        if (mailbox.provider === "microsoft") {
+            return res.status(501).json({
+                success: false,
+                message:
+                    "Der Microsoft-Import ist noch nicht implementiert."
+            });
+        }
+
+        return res.status(400).json({
+            success: false,
+            message: `Unbekannter Mail-Anbieter: ${mailbox.provider}`
         });
     } catch (error) {
-        console.error("MAILBOX IMPORT ERROR:", error);
+        console.error("MAILBOX IMPORT ERROR:", {
+            message: error.message,
+            code: error.code,
+            authenticationFailed: error.authenticationFailed
+        });
 
         return res.status(500).json({
             success: false,
-            message: error.message
+            message:
+                error.message ||
+                "Das Postfach konnte nicht importiert werden."
         });
     }
 });
@@ -479,6 +541,22 @@ return {
 auth,
 mailbox
 };
+}
+
+async function getActiveMailboxConnection() {
+    const { data: mailbox, error } = await supabase
+        .from("mailbox_connections")
+        .select("*")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
+
+    if (error || !mailbox) {
+        throw new Error("Bitte verbinde zuerst ein Postfach.");
+    }
+
+    return mailbox;
 }
 
 async function startGoogleMailboxWatch() {
