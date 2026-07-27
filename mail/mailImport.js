@@ -1,24 +1,6 @@
 const { ImapFlow } = require("imapflow");
 
-async function importMailbox(connection) {
-    switch (connection.provider) {
-        case "google":
-            throw new Error("Google-Import noch nicht implementiert.");
-
-        case "microsoft":
-            throw new Error("Microsoft-Import noch nicht implementiert.");
-
-        case "imap":
-            return importImapMailbox(connection);
-
-        default:
-            throw new Error(
-                `Unbekannter Provider: ${connection.provider}`
-            );
-    }
-}
-
-async function importImapMailbox(connection) {
+function createImapClient(connection) {
     const client = new ImapFlow({
         host: connection.imap_host,
         port: Number(connection.imap_port),
@@ -44,6 +26,30 @@ async function importImapMailbox(connection) {
         });
     });
 
+    return client;
+}
+
+async function importMailbox(connection) {
+    switch (connection.provider) {
+        case "google":
+            throw new Error("Google-Import noch nicht implementiert.");
+
+        case "microsoft":
+            throw new Error("Microsoft-Import noch nicht implementiert.");
+
+        case "imap":
+            return importImapMailbox(connection);
+
+        default:
+            throw new Error(
+                `Unbekannter Provider: ${connection.provider}`
+            );
+    }
+}
+
+async function importImapMailbox(connection) {
+    const client = createImapClient(connection);
+
     try {
         await client.connect();
 
@@ -57,42 +63,170 @@ async function importImapMailbox(connection) {
 
         const mails = [];
 
+        /*
+         * Wichtig:
+         * Hier wird absichtlich NICHT "source: true" abgerufen.
+         * Dadurch laden wir beim Import weder Mailinhalt noch Anhänge.
+         */
         for await (const message of client.fetch("1:*", {
             uid: true,
             envelope: true,
-            source: true,
-            flags: true
+            flags: true,
+            size: true,
+            bodyStructure: true
         })) {
+            const flags = Array.from(message.flags || []);
+            const bodyStructure = message.bodyStructure || null;
+
             mails.push({
+                provider: "imap",
+
+                externalId: `imap:${connection.email}:${message.uid}`,
                 uid: message.uid,
 
-                subject: message.envelope?.subject || "",
+                messageId:
+                    message.envelope?.messageId || null,
 
-                from: message.envelope?.from || [],
-                to: message.envelope?.to || [],
-                cc: message.envelope?.cc || [],
-                bcc: message.envelope?.bcc || [],
+                inReplyTo:
+                    message.envelope?.inReplyTo || null,
 
-                date: message.envelope?.date || null,
+                subject:
+                    message.envelope?.subject || "",
 
-                flags: Array.from(message.flags || []),
+                from:
+                    message.envelope?.from || [],
 
-                raw: message.source
-                    ? message.source.toString("utf8")
-                    : ""
+                to:
+                    message.envelope?.to || [],
+
+                cc:
+                    message.envelope?.cc || [],
+
+                bcc:
+                    message.envelope?.bcc || [],
+
+                date:
+                    message.envelope?.date || null,
+
+                size:
+                    Number(message.size || 0),
+
+                flags,
+
+                isRead:
+                    flags.includes("\\Seen"),
+
+                isStarred:
+                    flags.includes("\\Flagged"),
+
+                hasAttachments:
+                    bodyStructureHasAttachments(bodyStructure),
+
+                /*
+                 * Inhalt bleibt zunächst leer.
+                 * Er wird erst beim Öffnen der Nachricht geladen.
+                 */
+                text: null,
+                html: null,
+                contentLoaded: false
             });
         }
 
         return mails;
     } finally {
-        if (client.usable) {
-            await client.logout().catch(() => {});
-        } else {
-            client.close();
-        }
+        await closeImapClient(client);
     }
 }
 
+/*
+ * Wird später aufgerufen, sobald der Nutzer eine einzelne Mail öffnet.
+ * Nur dann wird die vollständige Rohmail inklusive Anhängen geladen.
+ */
+async function loadImapMessage(connection, uid) {
+    const client = createImapClient(connection);
+
+    try {
+        await client.connect();
+        await client.mailboxOpen("INBOX");
+
+        const message = await client.fetchOne(
+            String(uid),
+            {
+                uid: true,
+                envelope: true,
+                flags: true,
+                source: true,
+                bodyStructure: true
+            },
+            {
+                uid: true
+            }
+        );
+
+        if (!message) {
+            throw new Error(
+                `Die IMAP-Nachricht mit UID ${uid} wurde nicht gefunden.`
+            );
+        }
+
+        return {
+            uid: message.uid,
+
+            envelope:
+                message.envelope || null,
+
+            flags:
+                Array.from(message.flags || []),
+
+            bodyStructure:
+                message.bodyStructure || null,
+
+            raw:
+                message.source
+                    ? message.source.toString("utf8")
+                    : ""
+        };
+    } finally {
+        await closeImapClient(client);
+    }
+}
+
+function bodyStructureHasAttachments(part) {
+    if (!part) {
+        return false;
+    }
+
+    const disposition = String(
+        part.disposition || ""
+    ).toLowerCase();
+
+    if (
+        disposition === "attachment" ||
+        part.dispositionParameters?.filename ||
+        part.parameters?.name
+    ) {
+        return true;
+    }
+
+    if (Array.isArray(part.childNodes)) {
+        return part.childNodes.some(
+            bodyStructureHasAttachments
+        );
+    }
+
+    return false;
+}
+
+async function closeImapClient(client) {
+    if (client.usable) {
+        await client.logout().catch(() => {});
+        return;
+    }
+
+    client.close();
+}
+
 module.exports = {
-    importMailbox
+    importMailbox,
+    loadImapMessage
 };
