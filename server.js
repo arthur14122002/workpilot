@@ -139,32 +139,79 @@ app.post("/api/mailbox/import", async (req, res) => {
                 mailbox.encrypted_password
             );
 
-            const mails = await importMailbox({
+const mails = await importMailbox({
+    provider: "imap",
+
+    email: mailbox.email,
+    username: mailbox.username || mailbox.email,
+    password,
+
+    imap_host: mailbox.imap_host,
+    imap_port: mailbox.imap_port,
+    imap_secure: mailbox.imap_secure,
+
+    smtp_host: mailbox.smtp_host,
+    smtp_port: mailbox.smtp_port,
+    smtp_secure: mailbox.smtp_secure
+});
+
+for (const mail of mails) {
+
+    await supabase
+        .from("email_messages")
+        .upsert(
+            {
+                direction: "inbound",
+
+                sender: JSON.stringify(mail.from),
+
+                recipient: JSON.stringify(mail.to),
+
+                subject: mail.subject,
+
+                body: null,
+
                 provider: "imap",
 
-                email: mailbox.email,
-                username: mailbox.username || mailbox.email,
-                password,
+                mailbox_email: mailbox.email,
 
-                imap_host: mailbox.imap_host,
-                imap_port: mailbox.imap_port,
-                imap_secure: mailbox.imap_secure,
+                external_message_id:
+                    mail.messageId ||
 
-                smtp_host: mailbox.smtp_host,
-                smtp_port: mailbox.smtp_port,
-                smtp_secure: mailbox.smtp_secure
-            });
+                    `imap-${mail.uid}-${mailbox.email}`,
 
-            console.log("IMAP IMPORT SUCCESS:", {
-                email: mailbox.email,
-                imported: mails.length
-            });
+                external_thread_id:
+                    mail.inReplyTo || null,
 
-            return res.json({
-                success: true,
-                imported: mails.length,
-                provider: "imap"
-            });
+                imap_uid: mail.uid,
+
+                has_attachments:
+                    mail.hasAttachments,
+
+                content_loaded: false,
+
+                received_at: mail.date,
+
+                message_status:
+                    mail.isRead ? "read" : "unread"
+            },
+            {
+                onConflict: "external_message_id"
+            }
+        );
+
+}
+
+console.log("IMAP IMPORT SUCCESS:", {
+    email: mailbox.email,
+    imported: mails.length
+});
+
+return res.json({
+    success: true,
+    imported: mails.length,
+    provider: "imap"
+});
         }
 
         if (mailbox.provider === "google") {
