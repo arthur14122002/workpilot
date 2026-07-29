@@ -366,7 +366,9 @@ ${message.direction === "outbound" ? message.recipient || "Unbekannt" : message.
 </div>
 
 <div class="threadDate">
-${new Date(message.created_at).toLocaleDateString("de-DE")}
+${new Date(
+    message.received_at || message.created_at
+).toLocaleDateString("de-DE")}
 </div>
 </div>
 
@@ -700,6 +702,37 @@ return div.textContent || div.innerText || "";
 }
 
 async function openMailDetail(message) {
+
+if (
+    message.provider === "imap" &&
+    message.content_loaded !== true
+) {
+    try {
+
+        const response = await fetch(
+            `/api/mailbox/message/${message.id}/content`
+        );
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(
+                result.message ||
+                "Der Inhalt konnte nicht geladen werden."
+            );
+        }
+
+        message.body = result.message.body;
+        message.content_loaded = true;
+
+    } catch (error) {
+
+        console.error(error);
+
+        showToast(error.message);
+
+    }
+}
 emptyMailState.classList.add("hidden");
 mailDetailView.classList.remove("hidden");
 
@@ -818,7 +851,9 @@ Kontakt erstellen
 </div>
 
 <div class="mailDetailDate">
-${new Date(message.created_at).toLocaleDateString("de-DE")}
+new Date(
+    message.received_at || message.created_at
+)
 </div>
 </div>
 
