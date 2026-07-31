@@ -3516,6 +3516,15 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
             loaded.raw
         );
 
+        console.log("===== RAW =====");
+console.log(loaded.raw);
+
+console.log("===== TEXT =====");
+console.log(parsed.text);
+
+console.log("===== HTML =====");
+console.log(parsed.html);
+
         const body =
             parsed.text ||
             parsed.html ||
