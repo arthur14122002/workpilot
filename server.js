@@ -12,11 +12,6 @@ const { discoverMailProvider } = require("./mail/mailDiscovery");
 const { importMailbox } = require("./mail/mailImport");
 const { simpleParser } = require("mailparser");
 
-const {
-    importMailbox,
-    loadImapMessage
-} = require("./mail/mailImport");
-
 const upload = multer({
 storage: multer.memoryStorage()
 });
