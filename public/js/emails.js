@@ -47,6 +47,8 @@ sent: "Von WorkPilot gesendete E-Mails.",
 trash: "Gelöschte E-Mails werden später nach 30 Tagen entfernt."
 };
 
+import { parseMailBody } from "./mail/mailBodyParser.js";
+
 function renderCommunicationInfo() {
 
 const profileSettings = JSON.parse(
@@ -723,6 +725,7 @@ if (
         }
 
         message.body = result.message.body;
+        message.body_html = result.message.body_html;
         message.content_loaded = true;
 
     } catch (error) {
@@ -872,7 +875,7 @@ ${new Date(
 </div>
 
 <div class="detailMessageBody">
-${message.body || ""}
+${parseMailBody(message)}
 </div>
 
 ${

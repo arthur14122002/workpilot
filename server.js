@@ -3485,9 +3485,10 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
         if (message.content_loaded) {
             return res.json({
                 success: true,
-                message: {
-                    body: message.body || ""
-                }
+               message: {
+    body: message.body || "",
+    body_html: message.body_html || ""
+}
             });
         }
 
@@ -3525,24 +3526,24 @@ console.log(parsed.text);
 console.log("===== HTML =====");
 console.log(parsed.html);
 
-        const body =
-            parsed.text ||
-            parsed.html ||
-            "";
+      const body = parsed.text || "";
+      const body_html = parsed.html || "";
 
         await supabase
             .from("email_messages")
-            .update({
-                body,
-                content_loaded: true
-            })
+           .update({
+    body,
+    body_html,
+    content_loaded: true
+})
             .eq("id", message.id);
 
         return res.json({
             success: true,
-            message: {
-                body
-            }
+           message: {
+    body,
+    body_html
+}
         });
 
     } catch (error) {
