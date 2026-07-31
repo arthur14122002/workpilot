@@ -872,7 +872,7 @@ ${new Date(
 </div>
 
 <div class="detailMessageBody">
-${message.body || ""}
+<pre>${message.body || ""}</pre>
 </div>
 
 ${
