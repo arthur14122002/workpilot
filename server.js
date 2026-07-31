@@ -3499,6 +3499,7 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
         );
 
         const loaded = await loadImapMessage(
+
             {
                 provider: "imap",
 
@@ -3512,6 +3513,11 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
             },
             message.imap_uid
         );
+
+        console.log("UID:", message.imap_uid);
+
+console.log("RAW START:");
+console.log(loaded.raw.substring(0,1000));
 
         const parsed = await simpleParser(
             loaded.raw
