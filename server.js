@@ -9,7 +9,10 @@ const { google } = require("googleapis");
 const nodemailer = require("nodemailer");
 const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./mail/mailDiscovery");
-const { importMailbox } = require("./mail/mailImport");
+const {
+    importMailbox,
+    loadImapMessage
+} = require("./mail/mailImport");
 const { simpleParser } = require("mailparser");
 
 const upload = multer({
