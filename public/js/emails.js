@@ -804,6 +804,8 @@ message.direction === "outbound"
 ? message.recipient
 : message.sender;
 
+const parsedBody = await parseMailBody(message);
+
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
 <div>
@@ -873,7 +875,7 @@ ${new Date(
 </div>
 
 <div class="detailMessageBody">
-${parseMailBody(message)}
+${parsedBody}
 </div>
 
 ${
