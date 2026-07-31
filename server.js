@@ -159,6 +159,15 @@ const mails = await importMailbox({
     smtp_secure: mailbox.smtp_secure
 });
 
+function extractFirstEmail(addresses) {
+
+    if (!Array.isArray(addresses) || !addresses.length) {
+        return null;
+    }
+
+    return addresses[0]?.address || null;
+}
+
 for (const mail of mails) {
     const { data, error } = await supabase
         .from("email_messages")
@@ -166,9 +175,9 @@ for (const mail of mails) {
             {
                 direction: "inbound",
 
-                sender: JSON.stringify(mail.from),
+                sender: extractFirstEmail(mail.from),
 
-                recipient: JSON.stringify(mail.to),
+                recipient: extractFirstEmail(mail.to),
 
                 subject: mail.subject,
 

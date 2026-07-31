@@ -851,9 +851,9 @@ Kontakt erstellen
 </div>
 
 <div class="mailDetailDate">
-new Date(
+${new Date(
     message.received_at || message.created_at
-)
+).toLocaleDateString("de-DE")}
 </div>
 </div>
 
@@ -865,7 +865,9 @@ ${message.direction === "inbound" ? "Eingegangen" : "Gesendet"}
 </strong>
 
 <span>
-${new Date(message.created_at).toLocaleString("de-DE")}
+${new Date(
+    message.received_at || message.created_at
+).toLocaleString("de-DE")}
 </span>
 </div>
 
