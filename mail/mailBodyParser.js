@@ -1,6 +1,6 @@
 const DEBUG = false;
 
-export function parseMailBody(message) {
+function parseMailBody(message) {
 
     const html = message.body_html || "";
     const text = message.body || "";
@@ -376,3 +376,5 @@ function containsEscapedHtml(text) {
     );
 
 }
+
+window.parseMailBody = parseMailBody;

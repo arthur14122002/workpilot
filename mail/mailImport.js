@@ -122,10 +122,6 @@ async function importImapMailbox(connection) {
                 hasAttachments:
                     bodyStructureHasAttachments(bodyStructure),
 
-                /*
-                 * Inhalt bleibt zunächst leer.
-                 * Er wird erst beim Öffnen der Nachricht geladen.
-                 */
                 text: null,
                 html: null,
                 contentLoaded: false
