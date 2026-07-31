@@ -1,6 +1,6 @@
 function renderHtmlMail(parsedMail) {
 
-    let html = parsedMail.html || "";
+    let html = parsedMail.body_html || "";
 
     html = sanitizeMailHtml(html);
 

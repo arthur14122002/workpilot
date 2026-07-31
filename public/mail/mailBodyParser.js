@@ -4,7 +4,7 @@ async function parseMailBody(parsedMail) {
         return "";
     }
 
-    if (parsedMail.html) {
+    if (parsedMail.body_html) {
         return renderHtmlMail(parsedMail);
     }
 
