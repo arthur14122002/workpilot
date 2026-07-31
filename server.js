@@ -3370,6 +3370,88 @@ event: data
 });
 });
 
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/contacts", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "index.html"));
+});
+
+app.get("/contact-create", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "contact-create.html"));
+});
+
+app.get("/note-create", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "note-create.html"));
+});
+
+app.get("/login", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "login.html"));
+});
+
+app.get("/settings", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "settings.html"));
+});
+
+app.get("/offer-create", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "offer-create.html"));
+});
+
+app.get("/offers", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "offers.html"));
+});
+
+app.get("/offer-editor", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "offer-editor.html"));
+});
+
+app.get("/contact-detail", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "contact-detail.html"));
+});
+
+app.get("/invoices", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "invoices.html"));
+});
+
+app.get("/invoice-create", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "invoice-create.html"));
+});
+
+app.get("/invoice-editor", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "invoice-editor.html"));
+});
+
+app.get("/emails", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "emails.html"));
+});
+
+app.get("/", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "html", "dashboard.html"));
+});
+
+app.post("/api/mailbox/discover", async (req, res) => {
+
+    try {
+
+        const provider = await discoverMailProvider(
+            req.body.email
+        );
+
+        return res.json({
+            ok: true,
+            provider
+        });
+
+    } catch (error) {
+
+        return res.status(400).json({
+            ok: false,
+            error: error.message
+        });
+
+    }
+
+});
+
 app.get("/api/mailbox/message/:id/content", async (req, res) => {
     try {
 
@@ -3454,64 +3536,6 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
     }
 });
 
-app.use(express.static(path.join(__dirname, "public")));
-
-app.get("/contacts", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "index.html"));
-});
-
-app.get("/contact-create", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "contact-create.html"));
-});
-
-app.get("/note-create", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "note-create.html"));
-});
-
-app.get("/login", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "login.html"));
-});
-
-app.get("/settings", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "settings.html"));
-});
-
-app.get("/offer-create", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "offer-create.html"));
-});
-
-app.get("/offers", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "offers.html"));
-});
-
-app.get("/offer-editor", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "offer-editor.html"));
-});
-
-app.get("/contact-detail", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "contact-detail.html"));
-});
-
-app.get("/invoices", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "invoices.html"));
-});
-
-app.get("/invoice-create", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "invoice-create.html"));
-});
-
-app.get("/invoice-editor", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "invoice-editor.html"));
-});
-
-app.get("/emails", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "emails.html"));
-});
-
-app.get("/", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "html", "dashboard.html"));
-});
-
 app.use((req, res) => {
 console.log("404 ROUTE:", req.method, req.url);
 res.status(404).json({
@@ -3519,30 +3543,6 @@ ok: false,
 message: "Route nicht gefunden",
 path: req.url
 });
-});
-
-app.post("/api/mailbox/discover", async (req, res) => {
-
-    try {
-
-        const provider = await discoverMailProvider(
-            req.body.email
-        );
-
-        return res.json({
-            ok: true,
-            provider
-        });
-
-    } catch (error) {
-
-        return res.status(400).json({
-            ok: false,
-            error: error.message
-        });
-
-    }
-
 });
 
 app.listen(PORT, async () => {
