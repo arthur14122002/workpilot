@@ -3370,6 +3370,90 @@ event: data
 });
 });
 
+app.get("/api/mailbox/message/:id/content", async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const { data: message, error } = await supabase
+            .from("email_messages")
+            .select("*")
+            .eq("id", id)
+            .single();
+
+        if (error || !message) {
+            return res.status(404).json({
+                success: false,
+                message: "Nachricht nicht gefunden."
+            });
+        }
+
+        if (message.content_loaded) {
+            return res.json({
+                success: true,
+                message: {
+                    body: message.body || ""
+                }
+            });
+        }
+
+        const mailbox = await getActiveMailboxConnection();
+
+        const password = decryptMailPassword(
+            mailbox.encrypted_password
+        );
+
+        const loaded = await loadImapMessage(
+            {
+                provider: "imap",
+
+                email: mailbox.email,
+                username: mailbox.username || mailbox.email,
+                password,
+
+                imap_host: mailbox.imap_host,
+                imap_port: mailbox.imap_port,
+                imap_secure: mailbox.imap_secure
+            },
+            message.imap_uid
+        );
+
+        const parsed = await simpleParser(
+            loaded.raw
+        );
+
+        const body =
+            parsed.text ||
+            parsed.html ||
+            "";
+
+        await supabase
+            .from("email_messages")
+            .update({
+                body,
+                content_loaded: true
+            })
+            .eq("id", message.id);
+
+        return res.json({
+            success: true,
+            message: {
+                body
+            }
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/contacts", (req, res) => {
@@ -3459,90 +3543,6 @@ app.post("/api/mailbox/discover", async (req, res) => {
 
     }
 
-});
-
-app.get("/api/mailbox/message/:id/content", async (req, res) => {
-    try {
-
-        const { id } = req.params;
-
-        const { data: message, error } = await supabase
-            .from("email_messages")
-            .select("*")
-            .eq("id", id)
-            .single();
-
-        if (error || !message) {
-            return res.status(404).json({
-                success: false,
-                message: "Nachricht nicht gefunden."
-            });
-        }
-
-        if (message.content_loaded) {
-            return res.json({
-                success: true,
-                message: {
-                    body: message.body || ""
-                }
-            });
-        }
-
-        const mailbox = await getActiveMailboxConnection();
-
-        const password = decryptMailPassword(
-            mailbox.encrypted_password
-        );
-
-        const loaded = await loadImapMessage(
-            {
-                provider: "imap",
-
-                email: mailbox.email,
-                username: mailbox.username || mailbox.email,
-                password,
-
-                imap_host: mailbox.imap_host,
-                imap_port: mailbox.imap_port,
-                imap_secure: mailbox.imap_secure
-            },
-            message.imap_uid
-        );
-
-        const parsed = await simpleParser(
-            loaded.raw
-        );
-
-        const body =
-            parsed.text ||
-            parsed.html ||
-            "";
-
-        await supabase
-            .from("email_messages")
-            .update({
-                body,
-                content_loaded: true
-            })
-            .eq("id", message.id);
-
-        return res.json({
-            success: true,
-            message: {
-                body
-            }
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
-
-    }
 });
 
 app.listen(PORT, async () => {
