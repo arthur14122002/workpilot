@@ -138,10 +138,6 @@ async function importImapMailbox(connection) {
     }
 }
 
-/*
- * Wird später aufgerufen, sobald der Nutzer eine einzelne Mail öffnet.
- * Nur dann wird die vollständige Rohmail inklusive Anhängen geladen.
- */
 async function loadImapMessage(connection, uid) {
     const client = createImapClient(connection);
 
