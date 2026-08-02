@@ -8,11 +8,11 @@ const crypto = require("crypto");
 const { google } = require("googleapis");
 const nodemailer = require("nodemailer");
 const { ImapFlow } = require("imapflow");
-const { discoverMailProvider } = require("./mail/mailDiscovery");
+const { discoverMailProvider } = require("./public/mail/core/mailDiscovery");
 const {
     importMailbox,
     loadImapMessage
-} = require("./mail/mailImport");
+} = require("./public/mail/core/mailImport");
 const { simpleParser } = require("mailparser");
 
 const upload = multer({
@@ -26,7 +26,7 @@ apiKey: process.env.OPENAI_API_KEY
 const {
     encryptMailPassword,
     decryptMailPassword
-} = require("./mail/mailCrypto");
+} = require("./public/mail/core/mailCrypto");
 
 const { Resend } = require("resend");
 
