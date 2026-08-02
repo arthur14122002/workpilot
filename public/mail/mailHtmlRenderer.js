@@ -11,6 +11,8 @@ function renderHtmlMail(parsedMail) {
         parsedMail.attachments || []
     );
 
+console.log(html.substring(0, 3000));
+
     return html;
 
 }
