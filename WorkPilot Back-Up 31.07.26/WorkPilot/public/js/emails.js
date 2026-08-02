@@ -874,8 +874,17 @@ ${new Date(
 </span>
 </div>
 
-<div class="detailMessageBody">
-${parsedBody}
+<div
+class="detailMessageBody"
+id="mailBodyContainer"
+>
+
+${
+!useFrame
+? parsedBody
+: ""
+}
+
 </div>
 
 ${

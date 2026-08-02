@@ -806,6 +806,9 @@ message.direction === "outbound"
 
 const parsedBody = await parseMailBody(message);
 
+const useFrame =
+    Boolean(message.body_html);
+
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
 <div>
@@ -966,6 +969,20 @@ Senden
 : ""
 }
 `;
+
+if (useFrame) {
+
+    const container =
+        document.getElementById(
+            "mailBodyContainer"
+        );
+
+    await renderMailFrame(
+        container,
+        message.body_html
+    );
+
+}
 
 bindReplyActions(message, subject);
 
