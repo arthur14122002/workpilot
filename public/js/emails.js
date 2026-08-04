@@ -804,7 +804,19 @@ message.direction === "outbound"
 ? message.recipient
 : message.sender;
 
-const parsedBody = await parseMailBody(message);
+const report =
+    await analyzeMailHtml(message.body_html || "");
+
+const optimizedHtml =
+    await optimizeMailHtml(
+        message.body_html || "",
+        report
+    );
+
+message.body_html = optimizedHtml;
+
+const parsedBody =
+    await parseMailBody(message);
 
 const useFrame =
     Boolean(message.body_html);
