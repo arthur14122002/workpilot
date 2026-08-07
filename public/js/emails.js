@@ -865,39 +865,75 @@ ${new Date(
 </div>
 
 <div class="mailMessagesDetailList">
-<div class="detailMessageItem">
-<div class="detailMessageTop">
-<strong>
-${message.direction === "inbound" ? "Eingegangen" : "Gesendet"}
-</strong>
-
-<span>
-${new Date(
-    message.received_at || message.created_at
-).toLocaleString("de-DE")}
-</span>
-</div>
-
-<div class="detailMessageBody">
-${
-    useFrame
-        ? `<div id="mailBodyContainer"></div>`
-        : parsedBody
-}
-</div>
-
 ${
 attachments.length
 ? `
-<div class="mailAttachmentsView">
-<strong>Anhänge</strong>
+<div class="mailAttachmentsHeader">
 
-${attachments.map((attachment) => `
-<button class="mailAttachmentOpenBtn" data-attachment-id="${attachment.id}">
-📎 ${attachment.file_name}
-</button>
-`).join("")}
+<h4>📎 Anhänge (${attachments.length})</h4>
+
+<div class="mailAttachmentsGrid">
+
+${attachments.map((attachment) => {
+
+const size =
+formatAttachmentSize(
+attachment.file_size || 0
+);
+
+const icon =
+getAttachmentIcon(
+attachment.mime_type,
+attachment.file_name
+);
+
+const preview =
+attachment.mime_type?.startsWith("image/")
+? `
+<img
+src="/api/email-attachments/${attachment.id}/open?preview=1"
+class="mailAttachmentPreview"
+/>
+`
+: `
+<div class="mailAttachmentIcon">
+${icon}
 </div>
+`;
+
+return `
+
+<div
+class="mailAttachmentCard"
+data-attachment-id="${attachment.id}"
+>
+
+${preview}
+
+<div class="mailAttachmentInfo">
+
+<div class="mailAttachmentName">
+${attachment.file_name}
+</div>
+
+<div class="mailAttachmentSize">
+${size}
+</div>
+
+</div>
+
+</div>
+
+`;
+
+}).join("")}
+
+</div>
+
+</div>
+`
+: ""
+}
 `
 : ""
 }
@@ -1033,15 +1069,78 @@ showToast(error.message);
 });
 });
 
-document.querySelectorAll(".mailAttachmentOpenBtn").forEach((button) => {
-button.addEventListener("click", async () => {
+document.querySelectorAll(".mailAttachmentCard").forEach((card) => {
+
+card.addEventListener("click", async () => {
+
 try {
-await openAttachment(button.dataset.attachmentId);
+
+await openAttachment(card.dataset.attachmentId);
+
 } catch (error) {
+
 showToast(error.message);
+
 }
+
 });
+
 });
+}
+
+function formatAttachmentSize(bytes) {
+
+if (!bytes) return "";
+
+if (bytes < 1024) {
+return `${bytes} B`;
+}
+
+if (bytes < 1024 * 1024) {
+return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
+}
+
+function getAttachmentIcon(mime, name) {
+
+const file =
+(name || "").toLowerCase();
+
+if (mime?.startsWith("image/"))
+return "🖼️";
+
+if (mime === "application/pdf")
+return "📕";
+
+if (
+file.endsWith(".doc") ||
+file.endsWith(".docx")
+)
+return "📘";
+
+if (
+file.endsWith(".xls") ||
+file.endsWith(".xlsx")
+)
+return "📗";
+
+if (
+file.endsWith(".ppt") ||
+file.endsWith(".pptx")
+)
+return "📙";
+
+if (
+file.endsWith(".zip") ||
+file.endsWith(".rar")
+)
+return "🗜️";
+
+return "📄";
+
 }
 
 function getCalendarSuggestionFromMessage(message, subject) {

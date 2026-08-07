@@ -696,3 +696,71 @@ display: flex;
 justify-content: flex-end;
 gap: 10px;
 }
+
+.mailAttachmentsHeader{
+    margin-top:20px;
+    border-top:1px solid #ececec;
+    padding-top:18px;
+}
+
+.mailAttachmentsHeader h4{
+    margin:0 0 14px;
+    font-size:15px;
+    font-weight:600;
+}
+
+.mailAttachmentsGrid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+}
+
+.mailAttachmentCard{
+    width:180px;
+    border:1px solid #e5e5e5;
+    border-radius:14px;
+    overflow:hidden;
+    background:#fff;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.mailAttachmentCard:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 18px rgba(0,0,0,.08);
+}
+
+.mailAttachmentPreview{
+    width:100%;
+    height:120px;
+    object-fit:cover;
+    display:block;
+    background:#f5f5f5;
+}
+
+.mailAttachmentIcon{
+    height:120px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:42px;
+    background:#f7f7f7;
+}
+
+.mailAttachmentInfo{
+    padding:12px;
+}
+
+.mailAttachmentName{
+    font-size:14px;
+    font-weight:600;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.mailAttachmentSize{
+    margin-top:4px;
+    font-size:12px;
+    color:#888;
+}
