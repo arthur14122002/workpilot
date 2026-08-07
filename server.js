@@ -3469,97 +3469,294 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
 
         const { id } = req.params;
 
-        const { data: message, error } = await supabase
+        const {
+            data: message,
+            error: messageError
+        } = await supabase
             .from("email_messages")
             .select("*")
             .eq("id", id)
             .single();
 
-        if (error || !message) {
+        if (messageError || !message) {
             return res.status(404).json({
                 success: false,
                 message: "Nachricht nicht gefunden."
             });
         }
 
-        if (message.content_loaded) {
-            return res.json({
-                success: true,
-               message: {
-    body: message.body || "",
-    body_html: message.body_html || ""
-}
-            });
+        const {
+            data: existingAttachments,
+            error: existingAttachmentError
+        } = await supabase
+            .from("email_attachments")
+            .select("id")
+            .eq("message_id", message.id);
+
+        if (existingAttachmentError) {
+            throw existingAttachmentError;
         }
 
-        const mailbox = await getActiveMailboxConnection();
+        const attachmentsAlreadyLoaded =
+            Array.isArray(existingAttachments) &&
+            existingAttachments.length > 0;
 
-        const password = decryptMailPassword(
-            mailbox.encrypted_password
-        );
+        const needsAttachmentImport =
+            Boolean(message.has_attachments) &&
+            !attachmentsAlreadyLoaded;
 
-        const loaded = await loadImapMessage(
+        if (
+            message.content_loaded &&
+            !needsAttachmentImport
+        ) {
 
-            {
-                provider: "imap",
+            return res.json({
+                success: true,
 
-                email: mailbox.email,
-                username: mailbox.username || mailbox.email,
-                password,
+                message: {
+                    body:
+                        message.body || "",
 
-                imap_host: mailbox.imap_host,
-                imap_port: mailbox.imap_port,
-                imap_secure: mailbox.imap_secure
-            },
-            message.imap_uid
-        );
+                    body_html:
+                        message.body_html || ""
+                }
+            });
 
-        console.log("UID:", message.imap_uid);
+        }
 
-console.log("RAW START:");
-console.log(loaded.raw.substring(0,1000));
+        const mailbox =
+            await getActiveMailboxConnection();
 
-        const parsed = await simpleParser(
-            loaded.raw
-        );
+        if (!mailbox) {
+            throw new Error(
+                "Keine aktive Mailbox-Verbindung gefunden."
+            );
+        }
 
-        console.log("===== RAW =====");
-console.log(loaded.raw);
+        const password =
+            decryptMailPassword(
+                mailbox.encrypted_password
+            );
 
-console.log("===== TEXT =====");
-console.log(parsed.text);
+        const loaded =
+            await loadImapMessage(
+                {
+                    provider: "imap",
 
-console.log("===== HTML =====");
-console.log(parsed.html);
+                    email:
+                        mailbox.email,
 
-      const body = parsed.text || "";
-      const body_html = parsed.html || "";
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
 
-        await supabase
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure
+                },
+
+                message.imap_uid
+            );
+
+
+        if (!loaded?.raw) {
+            throw new Error(
+                "Die vollständige E-Mail konnte nicht geladen werden."
+            );
+        }
+
+        const parsed =
+            await simpleParser(
+                loaded.raw
+            );
+
+        const body =
+            parsed.text || "";
+
+        const body_html =
+            parsed.html || "";
+
+        const parsedAttachments =
+            Array.isArray(parsed.attachments)
+                ? parsed.attachments
+                : [];
+
+        if (
+            parsedAttachments.length > 0 &&
+            !attachmentsAlreadyLoaded
+        ) {
+
+            for (
+                const attachment
+                of parsedAttachments
+            ) {
+
+                if (
+                    !attachment ||
+                    !attachment.content
+                ) {
+                    continue;
+                }
+
+                const originalFileName =
+                    attachment.filename ||
+                    "anhang";
+
+                const safeFileName =
+                    originalFileName
+                        .replace(
+                            /[^a-zA-Z0-9äöüÄÖÜß._-]/g,
+                            "_"
+                        )
+                        .replace(
+                            /_+/g,
+                            "_"
+                        );
+
+                const mimeType =
+                    attachment.contentType ||
+                    "application/octet-stream";
+
+                const contentId =
+                    attachment.cid ||
+                    null;
+
+                const disposition =
+                    attachment.contentDisposition ||
+                    (
+                        contentId
+                            ? "inline"
+                            : "attachment"
+                    );
+
+                const isInline =
+                    disposition === "inline" ||
+                    Boolean(contentId);
+
+                const uniqueId =
+                    crypto.randomUUID();
+
+                const storagePath =
+                    `${message.id}/${uniqueId}-${safeFileName}`;
+
+                const {
+                    error: uploadError
+                } = await supabase.storage
+                    .from("email-attachments")
+                    .upload(
+                        storagePath,
+                        attachment.content,
+                        {
+                            contentType:
+                                mimeType,
+
+                            upsert:
+                                false
+                        }
+                    );
+
+                if (uploadError) {
+                    throw uploadError;
+                }
+
+                const {
+                    error: insertError
+                } = await supabase
+                    .from("email_attachments")
+                    .insert({
+                        message_id:
+                            message.id,
+
+                        file_name:
+                            originalFileName,
+
+                        file_size:
+                            attachment.size ||
+                            attachment.content.length ||
+                            0,
+
+                        file_path:
+                            storagePath,
+
+                        mime_type:
+                            mimeType,
+
+                        content_id:
+                            contentId,
+
+                        disposition:
+                            disposition,
+
+                        is_inline:
+                            isInline
+                    });
+
+                if (insertError) {
+
+                    await supabase.storage
+                        .from("email-attachments")
+                        .remove([
+                            storagePath
+                        ]);
+
+                    throw insertError;
+                }
+
+            }
+
+        }
+
+        const {
+            error: updateError
+        } = await supabase
             .from("email_messages")
-           .update({
-    body,
-    body_html,
-    content_loaded: true
-})
-            .eq("id", message.id);
+            .update({
+                body,
+                body_html,
+                content_loaded: true
+            })
+            .eq(
+                "id",
+                message.id
+            );
+
+        if (updateError) {
+            throw updateError;
+        }
 
         return res.json({
             success: true,
-           message: {
-    body,
-    body_html
-}
+
+            message: {
+                body,
+                body_html
+            }
         });
+
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "MAIL CONTENT LOAD ERROR:",
+            error
+        );
 
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        return res
+            .status(500)
+            .json({
+                success: false,
+
+                message:
+                    error.message ||
+                    "E-Mail konnte nicht geladen werden."
+            });
 
     }
 });
