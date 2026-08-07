@@ -934,9 +934,6 @@ ${size}
 `
 : ""
 }
-`
-: ""
-}
 
 ${
 showReplyBox && message.ai_suggested_reply
