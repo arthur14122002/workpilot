@@ -811,6 +811,15 @@ const useFrame =
     Boolean(message.body_html);
 
 mailDetailView.innerHTML = `
+
+document
+    .querySelectorAll(".mailAttachmentLazyPreview")
+    .forEach((img) => {
+
+        loadAttachmentPreview(img);
+
+    });
+
 <div class="mailDetailHeader">
 
     <div>
@@ -1149,6 +1158,44 @@ showToast(error.message);
 });
 
 });
+}
+
+async function loadAttachmentPreview(img) {
+
+    const attachmentId =
+        img.dataset.attachmentId;
+
+    if (!attachmentId) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/email-attachments/${attachmentId}/open`
+            );
+
+        const result =
+            await response.json();
+
+        if (!result.ok || !result.url) {
+            throw new Error(
+                result.error ||
+                "Vorschau konnte nicht geladen werden."
+            );
+        }
+
+        img.src = result.url;
+
+    } catch (error) {
+
+        console.error(
+            "Attachment Preview Fehler:",
+            error
+        );
+
+    }
 }
 
 function formatAttachmentSize(bytes) {
