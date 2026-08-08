@@ -928,6 +928,14 @@ ${size}
 
 }).join("")}
 
+<div class="mailMessageBody">
+    ${
+        useFrame
+        ? `<div id="mailBodyContainer"></div>`
+        : parsedBody
+    }
+</div>
+
 </div>
 
 </div>
