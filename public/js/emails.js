@@ -812,14 +812,6 @@ const useFrame =
 
 mailDetailView.innerHTML = `
 
-document
-    .querySelectorAll(".mailAttachmentLazyPreview")
-    .forEach((img) => {
-
-        loadAttachmentPreview(img);
-
-    });
-
 <div class="mailDetailHeader">
 
     <div>
@@ -1082,6 +1074,12 @@ ${
     : ""
 }
 `;
+
+document
+    .querySelectorAll(".mailAttachmentLazyPreview")
+    .forEach((img) => {
+        loadAttachmentPreview(img);
+    });
 
 if (useFrame) {
 
