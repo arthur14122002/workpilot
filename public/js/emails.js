@@ -812,207 +812,265 @@ const useFrame =
 
 mailDetailView.innerHTML = `
 <div class="mailDetailHeader">
-<div>
-<div class="mailDetailType">
-${folderLabels[getMessageFolder(message)] || "E-Mail"}
+
+    <div>
+
+        <div class="mailDetailType">
+            ${folderLabels[getMessageFolder(message)] || "E-Mail"}
+        </div>
+
+        <h2>${subject}</h2>
+
+        <p>
+            Von: ${message.sender || "Unbekannt"}<br>
+            An: ${message.recipient || "Unbekannt"}
+        </p>
+
+        ${
+            matchedContact
+            ? `
+                <div class="mailLinkedContact">
+
+                    <strong>Kontakt:</strong>
+
+                    ${matchedContact.name || matchedContact.email}
+
+                    <button
+                        class="mailOpenContactBtn"
+                        data-contact-id="${matchedContact.id}"
+                    >
+                        Kontakt öffnen
+                    </button>
+
+                </div>
+            `
+            : `
+                <div class="mailNoContact">
+
+                    <div>
+                        Kein Kontakt zugeordnet.
+                    </div>
+
+                    <button
+                        class="mailCreateContactBtn"
+                        data-name="${contactEmail || ""}"
+                        data-email="${contactEmail || ""}"
+                    >
+                        Kontakt erstellen
+                    </button>
+
+                </div>
+            `
+        }
+
+    </div>
+
+    <div class="mailDetailDate">
+        ${
+            new Date(
+                message.received_at || message.created_at
+            ).toLocaleDateString("de-DE")
+        }
+    </div>
+
 </div>
 
-<h2>${subject}</h2>
-
-<p>
-Von: ${message.sender || "Unbekannt"}<br>
-An: ${message.recipient || "Unbekannt"}
-</p>
-
-${
-matchedContact
-? `
-<div class="mailLinkedContact">
-<strong>Kontakt:</strong>
-${matchedContact.name || matchedContact.email}
-
-<button
-class="mailOpenContactBtn"
-data-contact-id="${matchedContact.id}"
->
-Kontakt öffnen
-</button>
-</div>
-`
-: `
-<div class="mailNoContact">
-<div>
-Kein Kontakt zugeordnet.
-</div>
-
-<button
-class="mailCreateContactBtn"
-data-name="${contactEmail || ""}"
-data-email="${contactEmail || ""}"
->
-Kontakt erstellen
-</button>
-</div>
-`
-}
-</div>
-
-<div class="mailDetailDate">
-${new Date(
-    message.received_at || message.created_at
-).toLocaleDateString("de-DE")}
-</div>
-</div>
 
 <div class="mailMessagesDetailList">
+
+    <div class="detailMessageItem">
+
+        <div class="detailMessageTop">
+
+            <strong>
+                ${
+                    message.direction === "inbound"
+                    ? "Eingegangen"
+                    : "Gesendet"
+                }
+            </strong>
+
+            <span>
+                ${
+                    new Date(
+                        message.received_at || message.created_at
+                    ).toLocaleString("de-DE")
+                }
+            </span>
+
+        </div>
+
+
+        ${
+            attachments.length
+            ? `
+                <div class="mailAttachmentsHeader">
+
+                    <h4>
+                        📎 Anhänge (${attachments.length})
+                    </h4>
+
+                    <div class="mailAttachmentsGrid">
+
+                        ${
+                            attachments.map((attachment) => {
+
+                                const size =
+                                    formatAttachmentSize(
+                                        attachment.file_size || 0
+                                    );
+
+                                const icon =
+                                    getAttachmentIcon(
+                                        attachment.mime_type,
+                                        attachment.file_name
+                                    );
+
+                                return `
+                                    <div
+                                        class="mailAttachmentCard"
+                                        data-attachment-id="${attachment.id}"
+                                    >
+
+                                        <div class="mailAttachmentIcon">
+                                            ${icon}
+                                        </div>
+
+                                        <div class="mailAttachmentInfo">
+
+                                            <div class="mailAttachmentName">
+                                                ${attachment.file_name || "Anhang"}
+                                            </div>
+
+                                            <div class="mailAttachmentSize">
+                                                ${size}
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                `;
+
+                            }).join("")
+                        }
+
+                    </div>
+
+                </div>
+            `
+            : ""
+        }
+
+
+        <div class="detailMessageBody">
+
+            ${
+                useFrame
+                ? `<div id="mailBodyContainer"></div>`
+                : parsedBody
+            }
+
+        </div>
+
+
+        ${
+            showReplyBox && message.ai_suggested_reply
+            ? `
+                <div class="detailAiReply">
+
+                    <div class="aiReplyHeader">
+
+                        <strong>
+                            KI-Antwortvorschlag:
+                        </strong>
+
+                        <button
+                            id="useAiSuggestionBtn"
+                            class="btn btnSecondary"
+                        >
+                            Vorschlag übernehmen
+                        </button>
+
+                    </div>
+
+                    <div>
+                        ${message.ai_suggested_reply}
+                    </div>
+
+                </div>
+            `
+            : ""
+        }
+
+    </div>
+
+</div>
+
+
 ${
-attachments.length
-? `
-<div class="mailAttachmentsHeader">
+    showReplyBox
+    ? `
+        <div class="mailReplyBox">
 
-<h4>📎 Anhänge (${attachments.length})</h4>
+            <textarea
+                id="mailReplyTextarea"
+                class="mailReplyTextarea"
+                placeholder="Antwort schreiben..."
+            ></textarea>
 
-<div class="mailAttachmentsGrid">
+            <div class="mailReplyActions">
 
-${attachments.map((attachment) => {
+                ${
+                    showOfferButton
+                    ? `
+                        <button
+                            id="createOfferFromEmailBtn"
+                            class="btn btnSecondary"
+                        >
+                            📄 Angebot
+                        </button>
+                    `
+                    : ""
+                }
 
-const size =
-formatAttachmentSize(
-attachment.file_size || 0
-);
+                ${
+                    showCalendarButton
+                    ? `
+                        <button
+                            id="createCalendarFromEmailBtn"
+                            class="btn btnSecondary"
+                        >
+                            📅 Termin
+                        </button>
+                    `
+                    : ""
+                }
 
-const icon =
-getAttachmentIcon(
-attachment.mime_type,
-attachment.file_name
-);
+                ${
+                    showNoteButton
+                    ? `
+                        <button
+                            id="createNoteFromEmailBtn"
+                            class="btn btnSecondary"
+                        >
+                            📝 Notiz
+                        </button>
+                    `
+                    : ""
+                }
 
-const preview =
-attachment.mime_type?.startsWith("image/")
-? `
-<img
-src="/api/email-attachments/${attachment.id}/open?preview=1"
-class="mailAttachmentPreview"
-/>
-`
-: `
-<div class="mailAttachmentIcon">
-${icon}
-</div>
-`;
+                <button
+                    id="sendMailReplyBtn"
+                    class="btn btnPrimary"
+                >
+                    Senden
+                </button>
 
-return `
+            </div>
 
-<div
-class="mailAttachmentCard"
-data-attachment-id="${attachment.id}"
->
-
-${preview}
-
-<div class="mailAttachmentInfo">
-
-<div class="mailAttachmentName">
-${attachment.file_name}
-</div>
-
-<div class="mailAttachmentSize">
-${size}
-</div>
-
-</div>
-
-</div>
-
-`;
-
-}).join("")}
-
-<div class="mailMessageBody">
-    ${
-        useFrame
-        ? `<div id="mailBodyContainer"></div>`
-        : parsedBody
-    }
-</div>
-
-</div>
-
-</div>
-`
-: ""
-}
-
-${
-showReplyBox && message.ai_suggested_reply
-? `
-<div class="detailAiReply">
-<div class="aiReplyHeader">
-<strong>KI-Antwortvorschlag:</strong>
-
-<button id="useAiSuggestionBtn" class="btn btnSecondary">
-Vorschlag übernehmen
-</button>
-</div>
-
-<div>
-${message.ai_suggested_reply}
-</div>
-</div>
-`
-: ""
-}
-</div>
-</div>
-
-${
-showReplyBox
-? `
-<div class="mailReplyBox">
-<textarea
-id="mailReplyTextarea"
-class="mailReplyTextarea"
-placeholder="Antwort schreiben..."
-></textarea>
-
-<div class="mailReplyActions">
-${
-showOfferButton
-? `
-<button id="createOfferFromEmailBtn" class="btn btnSecondary">
-📄 Angebot
-</button>
-`
-: ""
-}
-
-${
-showCalendarButton
-? `
-<button id="createCalendarFromEmailBtn" class="btn btnSecondary">
-📅 Termin
-</button>
-`
-: ""
-}
-
-${
-showNoteButton
-? `
-<button id="createNoteFromEmailBtn" class="btn btnSecondary">
-📝 Notiz
-</button>
-`
-: ""
-}
-
-<button id="sendMailReplyBtn" class="btn btnPrimary">
-Senden
-</button>
-</div>
-</div>
-`
-: ""
+        </div>
+    `
+    : ""
 }
 `;
 
