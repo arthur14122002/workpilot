@@ -11,9 +11,13 @@ const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./public/mail/core/mailDiscovery");
 const {
     importMailbox,
-    loadImapMessage
+    loadImapMessage,
+    saveSentMailToImap
 } = require("./public/mail/core/mailImport");
 const { simpleParser } = require("mailparser");
+
+const MailComposer =
+    require("nodemailer/lib/mail-composer");
 
 const upload = multer({
 storage: multer.memoryStorage()
@@ -199,31 +203,71 @@ async function sendEmailFromActiveMailbox({
 
         });
 
+    const mailOptions = {
+
+        from:
+            mailbox.email,
+
+        to,
+        subject,
+        html,
+
+        attachments:
+            attachments.map((file) => ({
+                filename:
+                    file.originalname,
+
+                content:
+                    file.buffer,
+
+                contentType:
+                    file.mimetype
+            }))
+
+    };
 
     const result =
-        await transporter.sendMail({
+        await transporter.sendMail(
+            mailOptions
+        );
 
-            from:
-                mailbox.email,
+    try {
 
-            to,
-            subject,
-            html,
+        const rawMessage =
+            await new MailComposer(
+                mailOptions
+            )
+                .compile()
+                .build();
 
-            attachments:
-                attachments.map((file) => ({
-                    filename:
-                        file.originalname,
-
-                    content:
-                        file.buffer,
-
-                    contentType:
-                        file.mimetype
-                }))
-
+        await saveSentMailToImap({
+            mailbox,
+            password,
+            rawMessage
         });
 
+
+        console.log(
+            "SENT MAIL SAVED TO IMAP:",
+            {
+                email:
+                    mailbox.email,
+
+                recipient:
+                    to,
+
+                subject
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "SENT MAIL IMAP SAVE ERROR:",
+            error
+        );
+
+    }
 
     return {
 
@@ -237,6 +281,7 @@ async function sendEmailFromActiveMailbox({
             result.messageId
 
     };
+
 }
 
 app.post("/api/mailbox/import", async (req, res) => {

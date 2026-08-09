@@ -29,6 +29,110 @@ function createImapClient(connection) {
     return client;
 }
 
+async function findSentMailbox(client) {
+
+    const mailboxes =
+        await client.list();
+
+    const sentByFlag =
+        mailboxes.find((mailbox) => {
+
+            return (
+                Array.isArray(mailbox.specialUse)
+                    ? mailbox.specialUse.includes("\\Sent")
+                    : mailbox.specialUse === "\\Sent"
+            );
+
+        });
+
+    if (sentByFlag) {
+        return sentByFlag.path;
+    }
+
+    const fallbackNames = [
+        "Sent",
+        "Gesendet",
+        "Sent Messages",
+        "Sent Mail"
+    ];
+
+    for (const name of fallbackNames) {
+
+        const found =
+            mailboxes.find((mailbox) =>
+                String(mailbox.path || "")
+                    .toLowerCase() ===
+                name.toLowerCase()
+            );
+
+        if (found) {
+            return found.path;
+        }
+
+    }
+
+
+    throw new Error(
+        "Der Ordner für gesendete E-Mails wurde nicht gefunden."
+    );
+}
+
+async function saveSentMailToImap({
+    mailbox,
+    password,
+    rawMessage
+}) {
+
+    const client =
+        createImapClient({
+            imap_host:
+                mailbox.imap_host,
+
+            imap_port:
+                mailbox.imap_port,
+
+            imap_secure:
+                mailbox.imap_secure,
+
+            username:
+                mailbox.username ||
+                mailbox.email,
+
+            email:
+                mailbox.email,
+
+            password
+        });
+
+
+    try {
+
+        await client.connect();
+
+        const sentMailbox =
+            await findSentMailbox(client);
+
+        await client.append(
+            sentMailbox,
+            rawMessage,
+            ["\\Seen"],
+            new Date()
+        );
+
+    } finally {
+
+        try {
+            await client.logout();
+        } catch (error) {
+            console.error(
+                "IMAP LOGOUT ERROR:",
+                error
+            );
+        }
+
+    }
+}
+
 async function importMailbox(connection) {
     switch (connection.provider) {
         case "google":
@@ -220,5 +324,6 @@ async function closeImapClient(client) {
 
 module.exports = {
     importMailbox,
-    loadImapMessage
+    loadImapMessage,
+    saveSentMailToImap
 };
