@@ -128,6 +128,117 @@ async function verifySmtpConnection({
     await transporter.verify();
 }
 
+async function sendEmailFromActiveMailbox({
+    to,
+    subject,
+    html,
+    attachments = []
+}) {
+
+    const mailbox =
+        await getActiveMailboxConnection();
+
+    if (!mailbox) {
+        throw new Error(
+            "Kein aktives Postfach verbunden."
+        );
+    }
+
+    if (mailbox.provider === "google") {
+
+        await sendEmailWithGoogle({
+            to,
+            subject,
+            html
+        });
+
+        return {
+            sender: mailbox.email,
+            provider: "google",
+            messageId: null
+        };
+    }
+
+    if (mailbox.provider !== "imap") {
+        throw new Error(
+            `Nicht unterstützter Mail-Provider: ${mailbox.provider}`
+        );
+    }
+
+
+    const password =
+        decryptMailPassword(
+            mailbox.encrypted_password
+        );
+
+
+    const transporter =
+        nodemailer.createTransport({
+
+            host:
+                mailbox.smtp_host,
+
+            port:
+                Number(mailbox.smtp_port),
+
+            secure:
+                Boolean(mailbox.smtp_secure),
+
+            auth: {
+                user:
+                    mailbox.username ||
+                    mailbox.email,
+
+                pass:
+                    password
+            },
+
+            connectionTimeout: 15000,
+            greetingTimeout: 15000,
+            socketTimeout: 20000
+
+        });
+
+
+    const result =
+        await transporter.sendMail({
+
+            from:
+                mailbox.email,
+
+            to,
+            subject,
+            html,
+
+            attachments:
+                attachments.map((file) => ({
+                    filename:
+                        file.originalname,
+
+                    content:
+                        file.buffer,
+
+                    contentType:
+                        file.mimetype
+                }))
+
+        });
+
+
+    return {
+
+        sender:
+            mailbox.email,
+
+        provider:
+            mailbox.provider,
+
+        messageId:
+            result.messageId
+
+    };
+}
+
 app.post("/api/mailbox/import", async (req, res) => {
     try {
         const mailbox = await getActiveMailboxConnection();
@@ -2739,7 +2850,12 @@ error: "Rechnung konnte nicht per E-Mail gesendet werden."
 });
 
 app.post("/api/send-email", upload.array("attachments"), async (req, res) => {
-const { to, subject, html, threadId, fromDisplayEmail } = req.body;
+const {
+    to,
+    subject,
+    html,
+    threadId
+} = req.body;
 const uploadedFiles = req.files || [];
 
 if (!to || !subject || !html) {
@@ -2748,10 +2864,6 @@ ok: false,
 error: "Fehlende E-Mail-Daten."
 });
 }
-
-const senderEmail =
-fromDisplayEmail ||
-process.env.RESEND_FROM_EMAIL;
 
 try {
 let finalThreadId = threadId;
@@ -2775,16 +2887,13 @@ if (threadError) throw threadError;
 finalThreadId = thread.id;
 }
 
-const resendAttachments = uploadedFiles.map((file) => ({
-filename: file.originalname,
-content: file.buffer.toString("base64")
-}));
-
-const email = await sendEmailWithGoogle({
-to,
-subject,
-html
-});
+const email =
+    await sendEmailFromActiveMailbox({
+        to,
+        subject,
+        html,
+        attachments: uploadedFiles
+    });
 
 const matchedContact = await findMatchingContact(to);
 
@@ -2831,10 +2940,25 @@ const { error: attachmentError } = await supabase
 .from("email_attachments")
 .insert([
 {
-message_id: message.id,
-file_name: file.originalname,
-file_size: file.size,
-file_path: filePath
+    message_id: message.id,
+
+    file_name:
+        file.originalname,
+
+    file_size:
+        file.size,
+
+    file_path:
+        filePath,
+
+    mime_type:
+        file.mimetype,
+
+    disposition:
+        "attachment",
+
+    is_inline:
+        false
 }
 ]);
 
