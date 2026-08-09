@@ -92,14 +92,238 @@ return result.attachments || [];
 }
 
 async function openAttachment(attachmentId) {
-const response = await fetch(`/api/email-attachments/${attachmentId}/open`);
-const result = await response.json();
 
-if (!result.ok) {
-throw new Error(result.error || "Anhang konnte nicht geöffnet werden.");
+    try {
+
+        const attachmentResponse =
+            await fetch(
+                `/api/email-attachments/${attachmentId}/open`
+            );
+
+        const result =
+            await attachmentResponse.json();
+
+        if (!result.ok || !result.url) {
+            throw new Error(
+                result.error ||
+                "Anhang konnte nicht geöffnet werden."
+            );
+        }
+
+        const attachmentCard =
+            document.querySelector(
+                `.mailAttachmentCard[data-attachment-id="${attachmentId}"]`
+            );
+
+        const mimeType =
+            attachmentCard?.dataset.mimeType ||
+            "";
+
+        const fileName =
+            attachmentCard?.dataset.fileName ||
+            "Anhang";
+
+        if (
+            mimeType.startsWith("image/")
+        ) {
+
+            openAttachmentViewer({
+                url: result.url,
+                fileName,
+                type: "image"
+            });
+
+            return;
+        }
+
+        if (
+            mimeType === "application/pdf" ||
+            fileName.toLowerCase().endsWith(".pdf")
+        ) {
+
+            openAttachmentViewer({
+                url: result.url,
+                fileName,
+                type: "pdf"
+            });
+
+            return;
+        }
+
+        const link =
+            document.createElement("a");
+
+        link.href =
+            result.url;
+
+        link.download =
+            fileName;
+
+        link.style.display =
+            "none";
+
+        document.body.appendChild(
+            link
+        );
+
+        link.click();
+
+        link.remove();
+
+
+    } catch (error) {
+
+        console.error(
+            "Attachment Fehler:",
+            error
+        );
+
+        throw error;
+
+    }
+
 }
 
-window.open(result.url, "_blank");
+function openAttachmentViewer({
+    url,
+    fileName,
+    type
+}) {
+
+    const existingViewer =
+        document.getElementById(
+            "mailAttachmentViewer"
+        );
+
+    if (existingViewer) {
+        existingViewer.remove();
+    }
+
+
+    const overlay =
+        document.createElement("div");
+
+    overlay.id =
+        "mailAttachmentViewer";
+
+    overlay.className =
+        "mailAttachmentViewerOverlay";
+
+
+    let content = "";
+
+
+    if (type === "image") {
+
+        content = `
+            <div class="mailAttachmentViewerImageWrap">
+                <img
+                    src="${url}"
+                    class="mailAttachmentViewerImage"
+                    alt=""
+                >
+            </div>
+        `;
+
+    } else if (type === "pdf") {
+
+        content = `
+            <iframe
+                src="${url}"
+                class="mailAttachmentViewerPdf"
+                title="${fileName}"
+            ></iframe>
+        `;
+
+    }
+
+
+    overlay.innerHTML = `
+        <div class="mailAttachmentViewer">
+
+            <div class="mailAttachmentViewerHeader">
+
+                <div class="mailAttachmentViewerTitle">
+                    ${escapeHtml(fileName)}
+                </div>
+
+                <div class="mailAttachmentViewerActions">
+
+                    <a
+                        href="${url}"
+                        download="${escapeHtml(fileName)}"
+                        class="mailAttachmentViewerDownload"
+                    >
+                        ↓
+                    </a>
+
+                    <button
+                        type="button"
+                        class="mailAttachmentViewerClose"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="mailAttachmentViewerContent">
+                ${content}
+            </div>
+
+        </div>
+    `;
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    const closeButton =
+        overlay.querySelector(
+            ".mailAttachmentViewerClose"
+        );
+
+    closeButton.addEventListener(
+        "click",
+        () => {
+            overlay.remove();
+        }
+    );
+
+
+    overlay.addEventListener(
+        "click",
+        (event) => {
+
+            if (event.target === overlay) {
+                overlay.remove();
+            }
+
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        function closeWithEscape(event) {
+
+            if (event.key !== "Escape") {
+                return;
+            }
+
+            overlay.remove();
+
+            document.removeEventListener(
+                "keydown",
+                closeWithEscape
+            );
+
+        }
+    );
+
 }
 
 function renderAttachments(){
@@ -928,10 +1152,12 @@ mailDetailView.innerHTML = `
                                     );
 
                                 return `
-                                    <div
-                                        class="mailAttachmentCard"
-                                        data-attachment-id="${attachment.id}"
-                                    >
+                                <div
+    class="mailAttachmentCard"
+    data-attachment-id="${attachment.id}"
+    data-mime-type="${attachment.mime_type || ""}"
+    data-file-name="${escapeHtml(attachment.file_name || "Anhang")}"
+>
 
                                         <div class="mailAttachmentIcon">
                                             ${icon}
