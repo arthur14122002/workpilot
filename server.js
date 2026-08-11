@@ -284,6 +284,134 @@ async function sendEmailFromActiveMailbox({
 
 }
 
+function extractFirstEmail(addresses) {
+
+    if (
+        !Array.isArray(addresses) ||
+        !addresses.length
+    ) {
+        return null;
+    }
+
+    return addresses[0]?.address || null;
+}
+
+
+async function saveImportedImapMails({
+    mailbox,
+    mails
+}) {
+
+    let savedCount = 0;
+
+    for (const mail of mails) {
+
+        const {
+            data,
+            error
+        } = await supabase
+            .from("email_messages")
+            .upsert(
+                {
+                    direction:
+                        "inbound",
+
+                    sender:
+                        extractFirstEmail(
+                            mail.from
+                        ),
+
+                    recipient:
+                        extractFirstEmail(
+                            mail.to
+                        ),
+
+                    subject:
+                        mail.subject,
+
+                    body:
+                        null,
+
+                    provider:
+                        "imap",
+
+                    mailbox_email:
+                        mailbox.email,
+
+                    external_message_id:
+                        mail.messageId ||
+                        `imap-${mail.uid}-${mailbox.email}`,
+
+                    external_thread_id:
+                        mail.inReplyTo || null,
+
+                    imap_uid:
+                        mail.uid,
+
+                    has_attachments:
+                        mail.hasAttachments,
+
+                    content_loaded:
+                        false,
+
+                    received_at:
+                        mail.date,
+
+                    message_status:
+                        mail.isRead
+                            ? "read"
+                            : "unread"
+                },
+                {
+                    onConflict:
+                        "external_message_id"
+                }
+            )
+            .select();
+
+        if (error) {
+
+            console.error(
+                "EMAIL SAVE ERROR:",
+                {
+                    uid:
+                        mail.uid,
+
+                    subject:
+                        mail.subject,
+
+                    error
+                }
+            );
+
+            continue;
+        }
+
+
+        savedCount++;
+
+
+        console.log(
+            "EMAIL SAVED:",
+            {
+                uid:
+                    mail.uid,
+
+                subject:
+                    mail.subject,
+
+                data
+            }
+        );
+
+    }
+
+
+    return {
+        savedCount
+    };
+}
+
 app.post("/api/mailbox/import", async (req, res) => {
     try {
         const mailbox = await getActiveMailboxConnection();
@@ -315,77 +443,17 @@ const mails = await importMailbox({
     smtp_secure: mailbox.smtp_secure
 });
 
-function extractFirstEmail(addresses) {
-
-    if (!Array.isArray(addresses) || !addresses.length) {
-        return null;
-    }
-
-    return addresses[0]?.address || null;
-}
-
-for (const mail of mails) {
-    const { data, error } = await supabase
-        .from("email_messages")
-        .upsert(
-            {
-                direction: "inbound",
-
-                sender: extractFirstEmail(mail.from),
-
-                recipient: extractFirstEmail(mail.to),
-
-                subject: mail.subject,
-
-                body: null,
-
-                provider: "imap",
-
-                mailbox_email: mailbox.email,
-
-                external_message_id:
-                    mail.messageId ||
-                    `imap-${mail.uid}-${mailbox.email}`,
-
-                external_thread_id:
-                    mail.inReplyTo || null,
-
-                imap_uid: mail.uid,
-
-                has_attachments:
-                    mail.hasAttachments,
-
-                content_loaded: false,
-
-                received_at: mail.date,
-
-                message_status:
-                    mail.isRead ? "read" : "unread"
-            },
-            {
-                onConflict: "external_message_id"
-            }
-        )
-        .select();
-
-    if (error) {
-        console.error("EMAIL SAVE ERROR:", {
-            uid: mail.uid,
-            subject: mail.subject,
-            error
-        });
-    } else {
-        console.log("EMAIL SAVED:", {
-            uid: mail.uid,
-            subject: mail.subject,
-            data
-        });
-    }
-}
+const {
+    savedCount
+} = await saveImportedImapMails({
+    mailbox,
+    mails
+});
 
 console.log("IMAP IMPORT SUCCESS:", {
     email: mailbox.email,
-    imported: mails.length
+    fetched: mails.length,
+    saved: savedCount
 });
 
 return res.json({

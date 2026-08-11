@@ -167,11 +167,6 @@ async function importImapMailbox(connection) {
 
         const mails = [];
 
-        /*
-         * Wichtig:
-         * Hier wird absichtlich NICHT "source: true" abgerufen.
-         * Dadurch laden wir beim Import weder Mailinhalt noch Anhänge.
-         */
         for await (const message of client.fetch("1:*", {
             uid: true,
             envelope: true,
