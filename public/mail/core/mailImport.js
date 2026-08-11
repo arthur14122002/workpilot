@@ -501,6 +501,7 @@ async function closeImapClient(client) {
 }
 
 module.exports = {
+    createImapClient,
     importMailbox,
     importNewImapMessages,
     loadImapMessage,

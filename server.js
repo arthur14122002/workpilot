@@ -10,6 +10,7 @@ const nodemailer = require("nodemailer");
 const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./public/mail/core/mailDiscovery");
 const {
+    createImapClient,
     importMailbox,
     importNewImapMessages,
     loadImapMessage,
@@ -4150,6 +4151,255 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
     }
 });
 
+let mailboxLiveSyncClient = null;
+let mailboxLiveSyncRunning = false;
+
+
+async function startMailboxLiveSync() {
+
+    if (mailboxLiveSyncRunning) {
+        console.log("📡 MAIL LIVE SYNC läuft bereits.");
+        return;
+    }
+
+
+    let mailbox = null;
+
+    try {
+
+        mailbox =
+            await getActiveMailboxConnection();
+
+
+        if (
+            !mailbox ||
+            mailbox.provider !== "imap"
+        ) {
+
+            console.log(
+                "📡 MAIL LIVE SYNC: Kein aktives IMAP-Postfach."
+            );
+
+            return;
+        }
+
+
+        const password =
+            decryptMailPassword(
+                mailbox.encrypted_password
+            );
+
+
+        const client =
+            createImapClient({
+                email:
+                    mailbox.email,
+
+                username:
+                    mailbox.username ||
+                    mailbox.email,
+
+                password,
+
+                imap_host:
+                    mailbox.imap_host,
+
+                imap_port:
+                    mailbox.imap_port,
+
+                imap_secure:
+                    mailbox.imap_secure
+            });
+
+
+        mailboxLiveSyncClient =
+            client;
+
+        mailboxLiveSyncRunning =
+            true;
+
+        client.on(
+            "exists",
+            async (event) => {
+
+                console.log(
+                    "📨 IMAP LIVE EVENT:",
+                    {
+                        email:
+                            mailbox.email,
+
+                        count:
+                            event.count,
+
+                        previousCount:
+                            event.prevCount
+                    }
+                );
+
+
+                try {
+
+                    const lastUid =
+                        await getLastImapUid(
+                            mailbox.email
+                        );
+
+
+                    const mails =
+                        await importNewImapMessages(
+                            {
+                                provider:
+                                    "imap",
+
+                                email:
+                                    mailbox.email,
+
+                                username:
+                                    mailbox.username ||
+                                    mailbox.email,
+
+                                password,
+
+                                imap_host:
+                                    mailbox.imap_host,
+
+                                imap_port:
+                                    mailbox.imap_port,
+
+                                imap_secure:
+                                    mailbox.imap_secure,
+
+                                smtp_host:
+                                    mailbox.smtp_host,
+
+                                smtp_port:
+                                    mailbox.smtp_port,
+
+                                smtp_secure:
+                                    mailbox.smtp_secure
+                            },
+
+                            lastUid
+                        );
+
+
+                    if (!mails.length) {
+                        return;
+                    }
+
+
+                    const {
+                        savedCount
+                    } = await saveImportedImapMails({
+                        mailbox,
+                        mails
+                    });
+
+
+                    console.log(
+                        "✅ LIVE MAIL IMPORT:",
+                        {
+                            email:
+                                mailbox.email,
+
+                            fetched:
+                                mails.length,
+
+                            saved:
+                                savedCount
+                        }
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "LIVE MAIL IMPORT ERROR:",
+                        error
+                    );
+
+                }
+
+            }
+        );
+
+        client.on(
+            "close",
+            () => {
+
+                console.log(
+                    "📡 MAIL LIVE SYNC Verbindung geschlossen."
+                );
+
+                mailboxLiveSyncClient =
+                    null;
+
+                mailboxLiveSyncRunning =
+                    false;
+
+                setTimeout(() => {
+
+                    startMailboxLiveSync()
+                        .catch((error) => {
+
+                            console.error(
+                                "MAIL LIVE SYNC RESTART ERROR:",
+                                error
+                            );
+
+                        });
+
+                }, 5000);
+
+            }
+        );
+
+
+        await client.connect();
+
+        await client.mailboxOpen(
+            "INBOX"
+        );
+
+
+        console.log(
+            "📡 MAIL LIVE SYNC AKTIV:",
+            mailbox.email
+        );
+
+
+    } catch (error) {
+
+        mailboxLiveSyncClient =
+            null;
+
+        mailboxLiveSyncRunning =
+            false;
+
+
+        console.error(
+            "MAIL LIVE SYNC START ERROR:",
+            error
+        );
+
+        setTimeout(() => {
+
+            startMailboxLiveSync()
+                .catch((restartError) => {
+
+                    console.error(
+                        "MAIL LIVE SYNC RETRY ERROR:",
+                        restartError
+                    );
+
+                });
+
+        }, 10000);
+
+    }
+
+}
+
 app.use((req, res) => {
 console.log("404 ROUTE:", req.method, req.url);
 res.status(404).json({
@@ -4160,5 +4410,23 @@ path: req.url
 });
 
 app.listen(PORT, async () => {
-console.log(`WorkPilot läuft auf Port ${PORT}`);
+
+    console.log(
+        `WorkPilot läuft auf Port ${PORT}`
+    );
+
+
+    try {
+
+        await startMailboxLiveSync();
+
+    } catch (error) {
+
+        console.error(
+            "MAIL LIVE SYNC STARTUP ERROR:",
+            error
+        );
+
+    }
+
 });
