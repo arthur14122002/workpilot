@@ -457,6 +457,121 @@ throw new Error(result.error || "E-Mails konnten nicht geladen werden.");
 return result.messages || [];
 }
 
+function createMailSyncSignature(messages) {
+
+    if (!Array.isArray(messages)) {
+        return "";
+    }
+
+    return messages
+        .map((message) => {
+
+            return [
+                message.id || "",
+                message.message_status || "",
+                message.read_at || "",
+                message.updated_at || "",
+                message.received_at || "",
+                message.created_at || ""
+            ].join("|");
+
+        })
+        .join("||");
+}
+
+
+let mailFrontendSyncSignature = "";
+let mailFrontendSyncTimer = null;
+let mailFrontendSyncRunning = false;
+
+
+async function checkMailFrontendSync() {
+
+    if (mailFrontendSyncRunning) {
+        return;
+    }
+
+    mailFrontendSyncRunning = true;
+
+    try {
+
+        const messages =
+            await apiGetEmailMessages();
+
+        const newSignature =
+            createMailSyncSignature(messages);
+
+        if (!mailFrontendSyncSignature) {
+
+            mailFrontendSyncSignature =
+                newSignature;
+
+            return;
+        }
+
+        if (
+            newSignature ===
+            mailFrontendSyncSignature
+        ) {
+            return;
+        }
+
+        mailFrontendSyncSignature =
+            newSignature;
+
+
+        console.log(
+            "📨 FRONTEND MAIL UPDATE ERKANNT"
+        );
+
+
+        await renderEmails();
+
+
+        if (window.updateEmailCounter) {
+            await window.updateEmailCounter();
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "MAIL FRONTEND LIVE SYNC ERROR:",
+            error
+        );
+
+    } finally {
+
+        mailFrontendSyncRunning =
+            false;
+
+    }
+
+}
+
+
+function startMailFrontendLiveSync() {
+
+    if (mailFrontendSyncTimer) {
+        return;
+    }
+
+
+    console.log(
+        "📡 MAIL FRONTEND LIVE SYNC AKTIV"
+    );
+
+    checkMailFrontendSync();
+
+
+    mailFrontendSyncTimer =
+        setInterval(
+            checkMailFrontendSync,
+            3000
+        );
+
+}
+
 async function moveMessageToTrash(messageId) {
 const response = await fetch(`/api/email-messages/${messageId}/trash`, {
 method: "PUT"
@@ -1698,6 +1813,8 @@ bindFolders();
 
 renderEmails().then(async () => {
 await openEmailFromUrl();
+
+startMailFrontendLiveSync();
 });
 
 renderCommunicationInfo();
