@@ -233,6 +233,189 @@ async function importImapMailbox(connection) {
     }
 }
 
+async function importNewImapMessages(
+    connection,
+    lastUid = 0
+) {
+
+    const client =
+        createImapClient(connection);
+
+    try {
+
+        await client.connect();
+
+        const mailbox =
+            await client.mailboxOpen(
+                "INBOX"
+            );
+
+        if (!mailbox.exists) {
+
+            return [];
+
+        }
+
+
+        const startUid =
+            Number(lastUid || 0) + 1;
+
+
+        console.log(
+            "LIVE IMAP FETCH:",
+            {
+                email:
+                    connection.email,
+
+                lastUid:
+                    Number(lastUid || 0),
+
+                startUid
+            }
+        );
+
+
+        const mails = [];
+
+        for await (
+            const message
+            of client.fetch(
+                `${startUid}:*`,
+                {
+                    uid: true,
+                    envelope: true,
+                    flags: true,
+                    size: true,
+                    bodyStructure: true
+                },
+                {
+                    uid: true
+                }
+            )
+        ) {
+
+            if (
+                Number(message.uid) <=
+                Number(lastUid || 0)
+            ) {
+                continue;
+            }
+
+
+            const flags =
+                Array.from(
+                    message.flags || []
+                );
+
+            const bodyStructure =
+                message.bodyStructure ||
+                null;
+
+
+            mails.push({
+
+                provider:
+                    "imap",
+
+                externalId:
+                    `imap:${connection.email}:${message.uid}`,
+
+                uid:
+                    message.uid,
+
+                messageId:
+                    message.envelope?.messageId ||
+                    null,
+
+                inReplyTo:
+                    message.envelope?.inReplyTo ||
+                    null,
+
+                subject:
+                    message.envelope?.subject ||
+                    "",
+
+                from:
+                    message.envelope?.from ||
+                    [],
+
+                to:
+                    message.envelope?.to ||
+                    [],
+
+                cc:
+                    message.envelope?.cc ||
+                    [],
+
+                bcc:
+                    message.envelope?.bcc ||
+                    [],
+
+                date:
+                    message.envelope?.date ||
+                    null,
+
+                size:
+                    Number(
+                        message.size || 0
+                    ),
+
+                flags,
+
+                isRead:
+                    flags.includes(
+                        "\\Seen"
+                    ),
+
+                isStarred:
+                    flags.includes(
+                        "\\Flagged"
+                    ),
+
+                hasAttachments:
+                    bodyStructureHasAttachments(
+                        bodyStructure
+                    ),
+
+                text:
+                    null,
+
+                html:
+                    null,
+
+                contentLoaded:
+                    false
+
+            });
+
+        }
+
+
+        console.log(
+            "LIVE IMAP FETCH COMPLETE:",
+            {
+                email:
+                    connection.email,
+
+                newMessages:
+                    mails.length
+            }
+        );
+
+
+        return mails;
+
+
+    } finally {
+
+        await closeImapClient(
+            client
+        );
+
+    }
+
+}
+
 async function loadImapMessage(connection, uid) {
     const client = createImapClient(connection);
 
@@ -319,6 +502,7 @@ async function closeImapClient(client) {
 
 module.exports = {
     importMailbox,
+    importNewImapMessages,
     loadImapMessage,
     saveSentMailToImap
 };

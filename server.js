@@ -11,6 +11,7 @@ const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./public/mail/core/mailDiscovery");
 const {
     importMailbox,
+    importNewImapMessages,
     loadImapMessage,
     saveSentMailToImap
 } = require("./public/mail/core/mailImport");
@@ -296,6 +297,33 @@ function extractFirstEmail(addresses) {
     return addresses[0]?.address || null;
 }
 
+async function getLastImapUid(mailboxEmail) {
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("email_messages")
+        .select("imap_uid")
+        .eq("provider", "imap")
+        .eq("mailbox_email", mailboxEmail)
+        .not("imap_uid", "is", null)
+        .order("imap_uid", {
+            ascending: false
+        })
+        .limit(1)
+        .maybeSingle();
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    return Number(
+        data?.imap_uid || 0
+    );
+}
 
 async function saveImportedImapMails({
     mailbox,
@@ -950,6 +978,130 @@ return match[1].trim().toLowerCase();
 
 return value.trim().toLowerCase();
 }
+
+app.post("/api/mailbox/import-new", async (req, res) => {
+
+    try {
+
+        const mailbox =
+            await getActiveMailboxConnection();
+
+
+        if (
+            mailbox.provider !== "imap"
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Der Live-Import ist aktuell nur für IMAP verfügbar."
+            });
+
+        }
+
+
+        const password =
+            decryptMailPassword(
+                mailbox.encrypted_password
+            );
+
+
+        const lastUid =
+            await getLastImapUid(
+                mailbox.email
+            );
+
+
+        console.log(
+            "LIVE IMPORT CHECK:",
+            {
+                email:
+                    mailbox.email,
+
+                lastUid
+            }
+        );
+
+
+        const mails =
+            await importNewImapMessages(
+                {
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure,
+
+                    smtp_host:
+                        mailbox.smtp_host,
+
+                    smtp_port:
+                        mailbox.smtp_port,
+
+                    smtp_secure:
+                        mailbox.smtp_secure
+                },
+
+                lastUid
+            );
+
+
+        const {
+            savedCount
+        } = await saveImportedImapMails({
+            mailbox,
+            mails
+        });
+
+
+        return res.json({
+            success: true,
+
+            previousUid:
+                lastUid,
+
+            fetched:
+                mails.length,
+
+            saved:
+                savedCount
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "LIVE IMPORT TEST ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+            success: false,
+
+            message:
+                error.message ||
+                "Neue E-Mails konnten nicht geprüft werden."
+        });
+
+    }
+
+});
 
 app.post("/api/mailbox/google/import", async (req, res) => {
 const { range } = req.body;
