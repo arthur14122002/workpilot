@@ -28,6 +28,8 @@ let emailMessagesCache = [];
 let activeMessageId = null;
 let moveTargetMessageId = null;
 let selectedMoveFolder = null;
+let renderEmailsRunning = false;
+let renderEmailsPending = false;
 
 const folderLabels = {
 offer: "Angebote",
@@ -633,172 +635,386 @@ throw new Error(result.error || "E-Mail konnte nicht gelöscht werden.");
 }
 
 async function renderEmails() {
-emailThreadsList.innerHTML = "";
 
-try {
-emailMessagesCache = await apiGetEmailMessages();
-} catch (error) {
-showToast(error.message);
-return;
-}
+    if (renderEmailsRunning) {
+        renderEmailsPending = true;
+        return;
+    }
 
-updateFolderCounts();
+    renderEmailsRunning = true;
 
-currentFolderTitle.textContent = folderLabels[activeFolder];
-currentFolderSubtitle.textContent = folderSubtitles[activeFolder];
+    try {
 
-const visibleMessages = getVisibleMessages();
+        emailThreadsList.innerHTML = "";
 
-if (!visibleMessages.length) {
-emptyEmails.classList.remove("hidden");
-return;
-}
+        try {
+            emailMessagesCache =
+                await apiGetEmailMessages();
+        } catch (error) {
+            showToast(error.message);
+            return;
+        }
 
-emptyEmails.classList.add("hidden");
+        updateFolderCounts();
 
-visibleMessages.forEach((message) => {
-const item = document.createElement("div");
+        currentFolderTitle.textContent =
+            folderLabels[activeFolder];
 
-item.dataset.messageId = message.id;
-item.className = `emailThreadItem ${isUnread(message) ? "unread" : ""}`;
+        currentFolderSubtitle.textContent =
+            folderSubtitles[activeFolder];
 
-if (message.id === activeMessageId) {
-item.classList.add("selected");
-}
+        const visibleMessages =
+            getVisibleMessages();
 
-item.addEventListener("click", async () => {
-activeMessageId = message.id;
+        if (!visibleMessages.length) {
+            emptyEmails.classList.remove("hidden");
+            return;
+        }
 
-document.querySelectorAll(".emailThreadItem").forEach((entry) => {
-entry.classList.remove("selected");
-});
+        emptyEmails.classList.add("hidden");
 
-item.classList.add("selected");
-item.classList.remove("unread");
 
-if (isUnread(message)) {
-try {
-await markMessageAsRead(message.id);
-message.read_at = new Date().toISOString();
-updateFolderCounts();
-} catch (error) {
-console.error(error);
-}
-}
+        visibleMessages.forEach((message) => {
 
-if (window.updateEmailCounter) {
-await window.updateEmailCounter();
-}
+            const item =
+                document.createElement("div");
 
-await openMailDetail(message);
-});
+            item.dataset.messageId =
+                message.id;
 
-const subject =
-message.subject ||
-message.email_threads?.subject ||
-"Ohne Betreff";
+            item.className =
+                `emailThreadItem ${isUnread(message) ? "unread" : ""}`;
 
-item.innerHTML = `
-<div class="threadTop">
-<div class="threadSender">
-${message.direction === "outbound" ? message.recipient || "Unbekannt" : message.sender || "Unbekannt"}
-</div>
 
-<div class="threadDate">
-${new Date(
-    message.received_at || message.created_at
-).toLocaleDateString("de-DE")}
-</div>
-</div>
+            if (
+                message.id ===
+                activeMessageId
+            ) {
+                item.classList.add(
+                    "selected"
+                );
+            }
 
-<div class="threadSubject">
-${subject}
-</div>
 
-<div class="threadPreview">
-${stripHtml(message.body || "").slice(0, 120) || "Keine Vorschau verfügbar"}
-</div>
+            item.addEventListener(
+                "click",
+                async () => {
 
-<div class="mailRowActions">
+                    activeMessageId =
+                        message.id;
 
-${!["sent", "trash"].includes(activeFolder) ? `
-<button class="mailRowMoveBtn" data-move-message="${message.id}">↪</button>
-` : ""}
 
-${activeFolder === "trash" ? `
-<button class="mailRowRestoreBtn">↩</button>
-` : ""}
+                    document
+                        .querySelectorAll(
+                            ".emailThreadItem"
+                        )
+                        .forEach((entry) => {
+                            entry.classList.remove(
+                                "selected"
+                            );
+                        });
 
-<button class="mailRowDeleteBtn">🗑</button>
-</div>
-`;
 
-const deleteButton = item.querySelector(".mailRowDeleteBtn");
-const moveButton = item.querySelector(".mailRowMoveBtn");
+                    item.classList.add(
+                        "selected"
+                    );
 
-if (moveButton) {
-moveButton.addEventListener("click", (event) => {
-event.stopPropagation();
+                    item.classList.remove(
+                        "unread"
+                    );
 
-console.log("MOVE CLICK");
 
-moveTargetMessageId = message.id;
-selectedMoveFolder = null;
+                    if (isUnread(message)) {
 
-openMoveMailModal(message);
-});
-}
+                        try {
 
-deleteButton.addEventListener("click", async (event) => {
-event.stopPropagation();
+                            await markMessageAsRead(
+                                message.id
+                            );
 
-try {
+                            message.read_at =
+                                new Date()
+                                    .toISOString();
 
-if (activeFolder === "trash") {
-await deleteMessageForever(message.id);
-showToast("E-Mail wurde endgültig gelöscht.");
-} else {
-await moveMessageToTrash(message.id);
-showToast("E-Mail wurde in den Papierkorb verschoben.");
-}
+                            updateFolderCounts();
 
-await renderEmails();
+                        } catch (error) {
 
-if (window.updateEmailCounter) {
-await window.updateEmailCounter();
-}
+                            console.error(
+                                error
+                            );
 
-} catch (error) {
-showToast(error.message);
-}
-});
+                        }
 
-const restoreButton = item.querySelector(".mailRowRestoreBtn");
+                    }
 
-if (restoreButton) {
-restoreButton.addEventListener("click", async (event) => {
-event.stopPropagation();
 
-try {
+                    if (
+                        window.updateEmailCounter
+                    ) {
+                        await window
+                            .updateEmailCounter();
+                    }
 
-await restoreMessage(message.id);
 
-showToast("E-Mail wurde wiederhergestellt.");
+                    await openMailDetail(
+                        message
+                    );
 
-await renderEmails();
+                }
+            );
 
-if (window.updateEmailCounter) {
-await window.updateEmailCounter();
-}
 
-} catch (error) {
-showToast(error.message);
-}
-});
-}
+            const subject =
+                message.subject ||
+                message.email_threads
+                    ?.subject ||
+                "Ohne Betreff";
 
-emailThreadsList.appendChild(item);
-});
+
+            item.innerHTML = `
+                <div class="threadTop">
+
+                    <div class="threadSender">
+                        ${
+                            message.direction === "outbound"
+                                ? message.recipient || "Unbekannt"
+                                : message.sender || "Unbekannt"
+                        }
+                    </div>
+
+                    <div class="threadDate">
+                        ${
+                            new Date(
+                                message.received_at ||
+                                message.created_at
+                            )
+                                .toLocaleDateString(
+                                    "de-DE"
+                                )
+                        }
+                    </div>
+
+                </div>
+
+
+                <div class="threadSubject">
+                    ${subject}
+                </div>
+
+
+                <div class="threadPreview">
+                    ${
+                        stripHtml(
+                            message.body || ""
+                        ).slice(0, 120) ||
+                        "Keine Vorschau verfügbar"
+                    }
+                </div>
+
+
+                <div class="mailRowActions">
+
+                    ${
+                        !["sent", "trash"]
+                            .includes(activeFolder)
+                            ? `
+                                <button
+                                    class="mailRowMoveBtn"
+                                    data-move-message="${message.id}"
+                                >
+                                    ↪
+                                </button>
+                            `
+                            : ""
+                    }
+
+                    ${
+                        activeFolder === "trash"
+                            ? `
+                                <button
+                                    class="mailRowRestoreBtn"
+                                >
+                                    ↩
+                                </button>
+                            `
+                            : ""
+                    }
+
+                    <button
+                        class="mailRowDeleteBtn"
+                    >
+                        🗑
+                    </button>
+
+                </div>
+            `;
+
+
+            const deleteButton =
+                item.querySelector(
+                    ".mailRowDeleteBtn"
+                );
+
+            const moveButton =
+                item.querySelector(
+                    ".mailRowMoveBtn"
+                );
+
+
+            if (moveButton) {
+
+                moveButton.addEventListener(
+                    "click",
+                    (event) => {
+
+                        event.stopPropagation();
+
+                        moveTargetMessageId =
+                            message.id;
+
+                        selectedMoveFolder =
+                            null;
+
+                        openMoveMailModal(
+                            message
+                        );
+
+                    }
+                );
+
+            }
+
+
+            deleteButton.addEventListener(
+                "click",
+                async (event) => {
+
+                    event.stopPropagation();
+
+                    try {
+
+                        if (
+                            activeFolder ===
+                            "trash"
+                        ) {
+
+                            await deleteMessageForever(
+                                message.id
+                            );
+
+                            showToast(
+                                "E-Mail wurde endgültig gelöscht."
+                            );
+
+                        } else {
+
+                            await moveMessageToTrash(
+                                message.id
+                            );
+
+                            showToast(
+                                "E-Mail wurde in den Papierkorb verschoben."
+                            );
+
+                        }
+
+
+                        await renderEmails();
+
+
+                        if (
+                            window.updateEmailCounter
+                        ) {
+                            await window
+                                .updateEmailCounter();
+                        }
+
+
+                    } catch (error) {
+
+                        showToast(
+                            error.message
+                        );
+
+                    }
+
+                }
+            );
+
+
+            const restoreButton =
+                item.querySelector(
+                    ".mailRowRestoreBtn"
+                );
+
+
+            if (restoreButton) {
+
+                restoreButton.addEventListener(
+                    "click",
+                    async (event) => {
+
+                        event.stopPropagation();
+
+                        try {
+
+                            await restoreMessage(
+                                message.id
+                            );
+
+                            showToast(
+                                "E-Mail wurde wiederhergestellt."
+                            );
+
+
+                            await renderEmails();
+
+
+                            if (
+                                window.updateEmailCounter
+                            ) {
+                                await window
+                                    .updateEmailCounter();
+                            }
+
+
+                        } catch (error) {
+
+                            showToast(
+                                error.message
+                            );
+
+                        }
+
+                    }
+                );
+
+            }
+
+
+            emailThreadsList
+                .appendChild(item);
+
+        });
+
+
+    } finally {
+
+        renderEmailsRunning =
+            false;
+
+        if (renderEmailsPending) {
+
+            renderEmailsPending =
+                false;
+
+            await renderEmails();
+
+        }
+
+    }
+
 }
 
 function openMoveMailModal(message) {

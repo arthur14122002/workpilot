@@ -332,33 +332,234 @@ async function saveImportedImapMails({
 }) {
 
     let savedCount = 0;
+    let analyzedCount = 0;
+
+    const password =
+        decryptMailPassword(
+            mailbox.encrypted_password
+        );
+
 
     for (const mail of mails) {
 
+        const externalMessageId =
+            mail.messageId ||
+            `imap-${mail.uid}-${mailbox.email}`;
+
         const {
-            data,
-            error
+            data: existingMessage,
+            error: existingMessageError
         } = await supabase
             .from("email_messages")
-            .upsert(
+            .select("id")
+            .eq(
+                "external_message_id",
+                externalMessageId
+            )
+            .maybeSingle();
+
+
+        if (existingMessageError) {
+
+            console.error(
+                "EMAIL EXISTENCE CHECK ERROR:",
                 {
+                    uid:
+                        mail.uid,
+
+                    subject:
+                        mail.subject,
+
+                    error:
+                        existingMessageError
+                }
+            );
+
+            continue;
+        }
+
+        if (existingMessage) {
+
+            console.log(
+                "EMAIL ALREADY EXISTS:",
+                {
+                    uid:
+                        mail.uid,
+
+                    subject:
+                        mail.subject
+                }
+            );
+
+            continue;
+        }
+
+        const senderEmail =
+            extractFirstEmail(
+                mail.from
+            );
+
+        const recipientEmail =
+            extractFirstEmail(
+                mail.to
+            );
+
+
+        const matchedContact =
+            senderEmail
+                ? await findMatchingContact(
+                    senderEmail
+                )
+                : null;
+
+        let thread = null;
+
+
+        if (mail.inReplyTo) {
+
+            const {
+                data: parentMessage,
+                error: parentMessageError
+            } = await supabase
+                .from("email_messages")
+                .select(`
+                    thread_id
+                `)
+                .eq(
+                    "external_message_id",
+                    mail.inReplyTo
+                )
+                .maybeSingle();
+
+
+            if (parentMessageError) {
+
+                console.error(
+                    "PARENT MAIL LOOKUP ERROR:",
+                    parentMessageError
+                );
+
+            } else if (
+                parentMessage?.thread_id
+            ) {
+
+                const {
+                    data: existingThread,
+                    error: existingThreadError
+                } = await supabase
+                    .from("email_threads")
+                    .select("*")
+                    .eq(
+                        "id",
+                        parentMessage.thread_id
+                    )
+                    .maybeSingle();
+
+
+                if (
+                    !existingThreadError &&
+                    existingThread
+                ) {
+                    thread =
+                        existingThread;
+                }
+
+            }
+
+        }
+
+        if (!thread) {
+
+            const {
+                data: newThread,
+                error: threadError
+            } = await supabase
+                .from("email_threads")
+                .insert([
+                    {
+                        contact_id:
+                            matchedContact?.id ||
+                            null,
+
+                        related_type:
+                            "general",
+
+                        related_id:
+                            null,
+
+                        subject:
+                            mail.subject ||
+                            "Ohne Betreff",
+
+                        status:
+                            "open",
+
+                        ai_summary:
+                            null,
+
+                        ai_category:
+                            null
+                    }
+                ])
+                .select()
+                .single();
+
+
+            if (threadError) {
+
+                console.error(
+                    "EMAIL THREAD CREATE ERROR:",
+                    {
+                        uid:
+                            mail.uid,
+
+                        subject:
+                            mail.subject,
+
+                        error:
+                            threadError
+                    }
+                );
+
+                continue;
+            }
+
+
+            thread =
+                newThread;
+
+        }
+
+        const {
+            data: message,
+            error: messageError
+        } = await supabase
+            .from("email_messages")
+            .insert([
+                {
+                    thread_id:
+                        thread.id,
+
+                    contact_id:
+                        matchedContact?.id ||
+                        null,
+
                     direction:
                         "inbound",
 
                     sender:
-                        extractFirstEmail(
-                            mail.from
-                        ),
+                        senderEmail,
 
                     recipient:
-                        extractFirstEmail(
-                            mail.to
-                        ),
+                        recipientEmail,
 
                     subject:
                         mail.subject,
 
                     body:
+                        null,
+
+                    body_html:
                         null,
 
                     provider:
@@ -368,11 +569,11 @@ async function saveImportedImapMails({
                         mailbox.email,
 
                     external_message_id:
-                        mail.messageId ||
-                        `imap-${mail.uid}-${mailbox.email}`,
+                        externalMessageId,
 
                     external_thread_id:
-                        mail.inReplyTo || null,
+                        mail.inReplyTo ||
+                        null,
 
                     imap_uid:
                         mail.uid,
@@ -390,15 +591,13 @@ async function saveImportedImapMails({
                         mail.isRead
                             ? "read"
                             : "unread"
-                },
-                {
-                    onConflict:
-                        "external_message_id"
                 }
-            )
-            .select();
+            ])
+            .select()
+            .single();
 
-        if (error) {
+
+        if (messageError) {
 
             console.error(
                 "EMAIL SAVE ERROR:",
@@ -409,7 +608,8 @@ async function saveImportedImapMails({
                     subject:
                         mail.subject,
 
-                    error
+                    error:
+                        messageError
                 }
             );
 
@@ -418,6 +618,136 @@ async function saveImportedImapMails({
 
 
         savedCount++;
+
+        try {
+
+            const loaded =
+                await loadImapMessage(
+                    {
+                        provider:
+                            "imap",
+
+                        email:
+                            mailbox.email,
+
+                        username:
+                            mailbox.username ||
+                            mailbox.email,
+
+                        password,
+
+                        imap_host:
+                            mailbox.imap_host,
+
+                        imap_port:
+                            mailbox.imap_port,
+
+                        imap_secure:
+                            mailbox.imap_secure
+                    },
+
+                    mail.uid
+                );
+
+
+            if (!loaded?.raw) {
+
+                throw new Error(
+                    "E-Mail-Inhalt konnte nicht geladen werden."
+                );
+
+            }
+
+
+            const parsed =
+                await simpleParser(
+                    loaded.raw
+                );
+
+
+            const body =
+                parsed.text ||
+                "";
+
+
+            const bodyHtml =
+                parsed.html ||
+                "";
+
+            const {
+                error: contentUpdateError
+            } = await supabase
+                .from("email_messages")
+                .update({
+                    body,
+                    body_html:
+                        bodyHtml,
+
+                    content_loaded:
+                        true
+                })
+                .eq(
+                    "id",
+                    message.id
+                );
+
+
+            if (contentUpdateError) {
+                throw contentUpdateError;
+            }
+
+            const messageForAnalysis = {
+                ...message,
+                body,
+                body_html:
+                    bodyHtml
+            };
+
+
+            await analyzeInboundEmail(
+                messageForAnalysis,
+                thread
+            );
+
+
+            analyzedCount++;
+
+
+            console.log(
+                "🤖 EMAIL AI ANALYSIS COMPLETE:",
+                {
+                    uid:
+                        mail.uid,
+
+                    messageId:
+                        message.id,
+
+                    subject:
+                        mail.subject
+                }
+            );
+
+
+        } catch (analysisError) {
+
+            console.error(
+                "EMAIL AI PIPELINE ERROR:",
+                {
+                    uid:
+                        mail.uid,
+
+                    messageId:
+                        message.id,
+
+                    subject:
+                        mail.subject,
+
+                    error:
+                        analysisError
+                }
+            );
+
+        }
 
 
         console.log(
@@ -429,7 +759,11 @@ async function saveImportedImapMails({
                 subject:
                     mail.subject,
 
-                data
+                messageId:
+                    message.id,
+
+                threadId:
+                    thread.id
             }
         );
 
@@ -437,8 +771,10 @@ async function saveImportedImapMails({
 
 
     return {
-        savedCount
+        savedCount,
+        analyzedCount
     };
+
 }
 
 app.post("/api/mailbox/import", async (req, res) => {
