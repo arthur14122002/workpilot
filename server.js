@@ -3072,7 +3072,11 @@ Regeln:
 - calendarSuggestion.title soll ein kurzer sinnvoller Titel sein, z. B. "Vor-Ort-Termin Patrick Müller" oder "Besichtigung Terrasse".
 - calendarSuggestion.description soll Adresse, Kontext und Kundenwunsch kurz enthalten.
 - Uhrzeiten wie "gegen 14 Uhr" müssen als "14:00" erkannt werden.
-- suggestedReply ist Pflicht. Liefere immer einen professionellen deutschen Antwortvorschlag. suggestedReply darf niemals null oder leer sein.
+- suggestedReply ist Pflicht. Liefere immer einen professionellen deutschen Antwortvorschlag.
+- Beende suggestedReply immer mit "Mit freundlichen Grüßen".
+- Füge nach "Mit freundlichen Grüßen" keinen Firmennamen, keinen Personennamen und insbesondere niemals "Ihr WorkPilot-Team" hinzu.
+- Wenn ein zugeordneter Kontaktname bekannt ist, verwende diesen Namen in der Anrede.
+- Wenn kein Kontaktname bekannt ist, erfinde keinen Namen. Verwende dann eine neutrale professionelle Anrede.
 - Wenn im Betreff oder Text "Rechnung", "RE-", "Rechnungsnummer", "Zahlung", "Überweisung", "Mahnung" oder "Position" im Zusammenhang mit einer Rechnung vorkommt, setze category = "invoice" und intent = "invoice_question".
 - Wenn ein konkretes Datum, eine Uhrzeit, "Termin", "Vor-Ort", "Besichtigung", "Rückruf", "Telefonat" oder "vorbeikommen" vorkommt, setze category = "appointment" und intent = "appointment".
 - Wenn Angebot und Termin gleichzeitig vorkommen, entscheide category nach dem Hauptanliegen der Mail. Setze aber trotzdem intent = "appointment", wenn ein konkreter Termin erkennbar ist.

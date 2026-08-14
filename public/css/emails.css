@@ -906,3 +906,10 @@ gap: 10px;
 
     border-radius: 8px;
 }
+
+.aiSuggestedReplyText{
+    white-space:pre-wrap;
+    line-height:1.6;
+    font-size:14px;
+    color:#333;
+}

@@ -1551,8 +1551,8 @@ mailDetailView.innerHTML = `
 
                     </div>
 
-                    <div>
-                        ${message.ai_suggested_reply}
+                    <div class="aiSuggestedReplyText">
+                          ${escapeHtml(message.ai_suggested_reply)}
                     </div>
 
                 </div>
