@@ -1810,13 +1810,13 @@ return "📄";
 
 function getCalendarSuggestionFromMessage(message, subject) {
 
+const suggestion = message.calendar_suggestion || {};
+
 console.log(
     "CALENDAR SUGGESTION DEBUG:",
     message.calendar_suggestion,
     typeof message.calendar_suggestion
 );
-
-const suggestion = message.calendar_suggestion || {};
 
 return {
 title:
