@@ -919,3 +919,21 @@ gap: 10px;
     text-align:left;
     text-indent:0;
 }
+
+.mailPlainText {
+    margin: 0;
+    padding: 0;
+
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+
+    color: inherit;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: normal;
+
+    background: transparent;
+    border: 0;
+}
