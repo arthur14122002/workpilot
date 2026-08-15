@@ -1359,6 +1359,11 @@ message.direction === "outbound"
 ? message.recipient
 : message.sender;
 
+console.log(
+    "PLAIN TEXT BODY DEBUG:",
+    JSON.stringify(message.body)
+);
+
 const parsedBody =
     await parseMailBody(message);
 
