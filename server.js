@@ -696,12 +696,18 @@ async function saveImportedImapMails({
                 throw contentUpdateError;
             }
 
-            const messageForAnalysis = {
-                ...message,
-                body,
-                body_html:
-                    bodyHtml
-            };
+const messageForAnalysis = {
+    ...message,
+
+    body,
+
+    body_html:
+        bodyHtml,
+
+    contact_name:
+        matchedContact?.name ||
+        null
+};
 
 
             await analyzeInboundEmail(
@@ -3072,11 +3078,26 @@ Regeln:
 - calendarSuggestion.title soll ein kurzer sinnvoller Titel sein, z. B. "Vor-Ort-Termin Patrick Müller" oder "Besichtigung Terrasse".
 - calendarSuggestion.description soll Adresse, Kontext und Kundenwunsch kurz enthalten.
 - Uhrzeiten wie "gegen 14 Uhr" müssen als "14:00" erkannt werden.
-- suggestedReply ist Pflicht. Liefere immer einen professionellen deutschen Antwortvorschlag.
-- Beende suggestedReply immer mit "Mit freundlichen Grüßen".
-- Füge nach "Mit freundlichen Grüßen" keinen Firmennamen, keinen Personennamen und insbesondere niemals "Ihr WorkPilot-Team" hinzu.
-- Wenn ein zugeordneter Kontaktname bekannt ist, verwende diesen Namen in der Anrede.
-- Wenn kein Kontaktname bekannt ist, erfinde keinen Namen. Verwende dann eine neutrale professionelle Anrede.
+- Verwende für suggestedReply immer genau diese Struktur:
+
+Guten Tag [Kontaktname],
+
+[Antworttext]
+
+Mit freundlichen Grüßen
+
+- Wenn Kontaktname = "nicht bekannt", lautet die Anrede exakt:
+"Guten Tag,"
+
+- Wenn ein Kontaktname bekannt ist, lautet die Anrede exakt:
+"Guten Tag [Kontaktname],"
+
+- Verwende niemals "Sehr geehrte Damen und Herren".
+- Verwende niemals "Sehr geehrter Herr" oder "Sehr geehrte Frau".
+- Erfinde niemals einen Namen aus der E-Mail-Adresse.
+- Zwischen Anrede und Antworttext muss genau eine Leerzeile stehen.
+- Zwischen Antworttext und "Mit freundlichen Grüßen" muss genau eine Leerzeile stehen.
+- Nach "Mit freundlichen Grüßen" darf nichts mehr folgen.
 - Wenn im Betreff oder Text "Rechnung", "RE-", "Rechnungsnummer", "Zahlung", "Überweisung", "Mahnung" oder "Position" im Zusammenhang mit einer Rechnung vorkommt, setze category = "invoice" und intent = "invoice_question".
 - Wenn ein konkretes Datum, eine Uhrzeit, "Termin", "Vor-Ort", "Besichtigung", "Rückruf", "Telefonat" oder "vorbeikommen" vorkommt, setze category = "appointment" und intent = "appointment".
 - Wenn Angebot und Termin gleichzeitig vorkommen, entscheide category nach dem Hauptanliegen der Mail. Setze aber trotzdem intent = "appointment", wenn ein konkreter Termin erkennbar ist.
@@ -3105,6 +3126,7 @@ role: "user",
 content: `
 Von: ${message.sender}
 An: ${message.recipient}
+Kontaktname: ${message.contact_name || "nicht bekannt"}
 Betreff: ${message.subject}
 
 Nachricht:
@@ -3115,6 +3137,12 @@ ${message.body}
 });
 
 const analysis = JSON.parse(response.output_text);
+
+analysis.suggestedReply =
+    normalizeSuggestedReply(
+        analysis.suggestedReply,
+        message.contact_name
+    );
 
 const safeAnalysis = {
 ...getFallbackEmailAnalysis(message),
@@ -3139,6 +3167,47 @@ await saveEmailAnalysis(message, thread, fallbackAnalysis);
 
 return fallbackAnalysis;
 }
+}
+
+function normalizeSuggestedReply(
+    suggestedReply,
+    contactName = null
+) {
+
+    let text =
+        String(suggestedReply || "")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .trim();
+
+    text = text.replace(
+        /^(Sehr geehrte Damen und Herren,?|Sehr geehrter Herr[^,\n]*,?|Sehr geehrte Frau[^,\n]*,?|Guten Tag[^,\n]*,?)\s*/i,
+        ""
+    );
+
+    text = text.replace(
+        /\s*Mit freundlichen Grüßen(?:\s+Ihr WorkPilot-Team|\s+WorkPilot-Team)?\s*$/i,
+        ""
+    );
+
+    text = text
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+
+
+    const greeting =
+        contactName
+            ? `Guten Tag ${contactName},`
+            : "Guten Tag,";
+
+
+    return [
+        greeting,
+        "",
+        text,
+        "",
+        "Mit freundlichen Grüßen"
+    ].join("\n");
 }
 
 async function createOfferPdfBuffer(offerId, baseUrl) {
