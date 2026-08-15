@@ -237,28 +237,56 @@ gap: 14px;
 }
 
 .detailMessageItem {
-border: 1px solid var(--wp-border);
-border-radius: 16px;
-padding: 16px;
-background: #fff;
+    border: 1px solid var(--wp-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    background: #fff;
 }
 
 .detailMessageTop {
-display: flex;
-justify-content: space-between;
-gap: 18px;
-margin-bottom: 12px;
-font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+
+    margin-bottom: 8px;
+
+    font-size: 13px;
 }
 
 .detailMessageTop span {
-color: var(--wp-muted);
+    color: var(--wp-muted);
 }
 
 .detailMessageBody {
-font-size: 14px;
-line-height: 1.6;
-white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.6;
+
+    white-space: normal;
+
+    margin-top: 0;
+    padding-top: 0;
+
+    min-height: 0;
+    height: auto;
+
+    overflow: visible;
+}
+
+.mailPlainText {
+    margin: 0;
+    padding: 0;
+
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+
+    color: inherit;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+
+    min-height: 0;
+    height: auto;
 }
 
 .detailAiReply {
@@ -918,22 +946,4 @@ gap: 10px;
     padding:0;
     text-align:left;
     text-indent:0;
-}
-
-.mailPlainText {
-    margin: 0;
-    padding: 0;
-
-    font-family: inherit;
-    font-size: 14px;
-    line-height: 1.6;
-
-    color: inherit;
-
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: normal;
-
-    background: transparent;
-    border: 0;
 }
