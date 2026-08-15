@@ -1359,20 +1359,16 @@ message.direction === "outbound"
 ? message.recipient
 : message.sender;
 
-console.log(
-    "MAIL BODY DEBUG:",
-    {
-        body: JSON.stringify(message.body),
-        bodyHtml: message.body_html,
-        hasBodyHtml: Boolean(message.body_html)
-    }
-);
+const useFrame =
+    shouldRenderMailAsHtml(
+        message
+    );
+
 
 const parsedBody =
-    await parseMailBody(message);
-
-const useFrame =
-    Boolean(message.body_html);
+    useFrame
+        ? await parseMailBody(message)
+        : renderTextMail(message);
 
 mailDetailView.innerHTML = `
 
@@ -1728,6 +1724,52 @@ showToast(error.message);
 });
 
 });
+}
+
+function shouldRenderMailAsHtml(message) {
+
+    const html =
+        String(
+            message.body_html || ""
+        ).trim();
+
+    const text =
+        String(
+            message.body || ""
+        ).trim();
+
+
+    if (!html) {
+        return false;
+    }
+
+    const richHtmlPattern =
+        /<(img|table|picture|video|svg|iframe|button)\b|background-image\s*:|cid:/i;
+
+
+    if (
+        richHtmlPattern.test(html)
+    ) {
+        return true;
+    }
+
+    const linkCount =
+        (
+            html.match(
+                /<a\b/gi
+            ) || []
+        ).length;
+
+
+    if (linkCount >= 2) {
+        return true;
+    }
+
+    if (text) {
+        return false;
+    }
+
+    return true;
 }
 
 async function loadAttachmentPreview(img) {
