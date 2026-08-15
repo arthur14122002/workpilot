@@ -1,9 +1,7 @@
 function renderTextMail(parsedMail) {
 
-    return `
-<pre class="mailPlainText">
-${escapeHtml(parsedMail.body || "")}
-</pre>
-`;
+    return `<pre class="mailPlainText">${escapeHtml(
+        parsedMail.body || ""
+    )}</pre>`;
 
 }

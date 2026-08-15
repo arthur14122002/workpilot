@@ -3576,14 +3576,23 @@ const { data: message, error: messageError } = await supabase
 .from("email_messages")
 .insert([
 {
-thread_id: finalThreadId,
-contact_id: matchedContact?.id || null,
-direction: "outbound",
-sender: email.sender,
-recipient: to,
-subject,
-body: html,
-message_status: "sent"
+    thread_id: finalThreadId,
+    contact_id: matchedContact?.id || null,
+    direction: "outbound",
+    sender: email.sender,
+    recipient: to,
+    subject,
+
+    body: html
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .trim(),
+
+    body_html: html,
+
+    content_loaded: true,
+
+    message_status: "sent"
 }
 ])
 .select()
