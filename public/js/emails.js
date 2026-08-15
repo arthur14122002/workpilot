@@ -1975,7 +1975,7 @@ subject,
 message.sender
 );
 
-showToast("Antwort wurde gespeichert.");
+showToast("E-Mail wurde gesendet.");
 await renderEmails();
 
 if (window.updateEmailCounter) {
@@ -1988,33 +1988,69 @@ showToast(error.message);
 });
 }
 
-async function sendReply(threadId, body, subject, recipient) {
-const profileSettings = JSON.parse(
-localStorage.getItem("workpilot_company_settings") || "{}"
-);
+async function sendReply(
+    threadId,
+    body,
+    subject,
+    recipient
+) {
 
-const communicationEmail = profileSettings.personalEmail || "";
-const response = await fetch("/api/email-reply", {
-method: "POST",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify({
-threadId,
-body,
-subject,
-recipient,
-fromDisplayEmail: communicationEmail
-})
-});
+    const formData =
+        new FormData();
 
-const result = await response.json();
+    formData.append(
+        "to",
+        recipient
+    );
 
-if (!result.ok) {
-throw new Error(result.error || "Antwort konnte nicht gespeichert werden.");
-}
+    formData.append(
+        "subject",
+        subject
+            .toLowerCase()
+            .startsWith("re:")
+                ? subject
+                : `Re: ${subject}`
+    );
 
-return result.message;
+    formData.append(
+        "html",
+        body.replaceAll(
+            "\n",
+            "<br>"
+        )
+    );
+
+    if (threadId) {
+        formData.append(
+            "threadId",
+            threadId
+        );
+    }
+
+
+    const response =
+        await fetch(
+            "/api/send-email",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+
+    const result =
+        await response.json();
+
+
+    if (!result.ok) {
+        throw new Error(
+            result.error ||
+            "Antwort konnte nicht gesendet werden."
+        );
+    }
+
+
+    return result.message;
 }
 
 function bindFolders() {
