@@ -269,6 +269,7 @@ background: var(--wp-orange-soft);
 color: var(--wp-orange-dark);
 font-size: 13px;
 line-height: 1.5;
+ text-align:left;
 }
 
 .mailReplyBox {
@@ -912,4 +913,9 @@ gap: 10px;
     line-height:1.6;
     font-size:14px;
     color:#333;
+
+    margin:0;
+    padding:0;
+    text-align:left;
+    text-indent:0;
 }
