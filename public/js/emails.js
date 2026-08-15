@@ -1360,8 +1360,12 @@ message.direction === "outbound"
 : message.sender;
 
 console.log(
-    "PLAIN TEXT BODY DEBUG:",
-    JSON.stringify(message.body)
+    "MAIL BODY DEBUG:",
+    {
+        body: JSON.stringify(message.body),
+        bodyHtml: message.body_html,
+        hasBodyHtml: Boolean(message.body_html)
+    }
 );
 
 const parsedBody =
