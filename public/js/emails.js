@@ -1495,21 +1495,86 @@ mailDetailView.innerHTML = `
     data-file-name="${escapeHtml(attachment.file_name || "Anhang")}"
 >
 
-                                        <div class="mailAttachmentIcon">
-                                            ${icon}
-                                        </div>
+                                        ${(() => {
 
-                                        <div class="mailAttachmentInfo">
+    const mimeType =
+        attachment.mime_type || "";
 
-                                            <div class="mailAttachmentName">
-                                                ${attachment.file_name || "Anhang"}
-                                            </div>
+    const fileName =
+        attachment.file_name || "Anhang";
 
-                                            <div class="mailAttachmentSize">
-                                                ${size}
-                                            </div>
+    const isImage =
+        mimeType.startsWith("image/");
 
-                                        </div>
+    const isPdf =
+        mimeType === "application/pdf" ||
+        fileName
+            .toLowerCase()
+            .endsWith(".pdf");
+
+
+    if (isImage) {
+
+        return `
+            <div class="mailAttachmentPreview">
+
+                <img
+                    class="mailAttachmentLazyPreview"
+                    data-attachment-id="${attachment.id}"
+                    alt="${escapeHtml(fileName)}"
+                >
+
+            </div>
+        `;
+
+    }
+
+
+    if (isPdf) {
+
+        return `
+            <div
+                class="mailAttachmentPreview mailAttachmentPdfPreview"
+                data-attachment-id="${attachment.id}"
+            >
+
+                <div class="mailAttachmentPdfPlaceholder">
+                    PDF
+                </div>
+
+            </div>
+        `;
+
+    }
+
+
+    return `
+        <div class="mailAttachmentPreview mailAttachmentFilePreview">
+
+            <div class="mailAttachmentIcon">
+                ${icon}
+            </div>
+
+        </div>
+    `;
+
+})()}
+
+
+<div class="mailAttachmentInfo">
+
+    <div class="mailAttachmentName">
+        ${escapeHtml(
+            attachment.file_name ||
+            "Anhang"
+        )}
+    </div>
+
+    <div class="mailAttachmentSize">
+        ${size}
+    </div>
+
+</div>
 
                                     </div>
                                 `;
