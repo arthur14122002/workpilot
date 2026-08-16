@@ -1306,6 +1306,15 @@ attachments = await getMessageAttachments(message.id);
 console.error(error);
 }
 
+console.log(
+    "ATTACHMENT DEBUG:",
+    {
+        messageId: message.id,
+        hasAttachments: message.has_attachments,
+        attachments
+    }
+);
+
 let matchedContact = null;
 
 if (message.contact_id) {
