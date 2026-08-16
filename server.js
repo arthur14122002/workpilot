@@ -674,6 +674,186 @@ async function saveImportedImapMails({
                 parsed.html ||
                 "";
 
+const parsedAttachments =
+    parsed.attachments || [];
+
+
+for (
+    const attachment
+    of parsedAttachments
+) {
+
+    try {
+
+        const fileName =
+            attachment.filename ||
+            `attachment-${Date.now()}`;
+
+        const mimeType =
+            attachment.contentType ||
+            "application/octet-stream";
+
+        const disposition =
+            attachment.contentDisposition ||
+            "attachment";
+
+        const contentId =
+            attachment.cid
+                ? String(
+                    attachment.cid
+                ).replace(
+                    /^<|>$/g,
+                    ""
+                )
+                : null;
+
+        const isInline =
+            disposition === "inline" ||
+            Boolean(contentId);
+
+        const safeFileName =
+            fileName
+                .replace(
+                    /[^\p{L}\p{N}._-]+/gu,
+                    "_"
+                )
+                .slice(
+                    0,
+                    180
+                );
+
+
+        const filePath =
+            `${message.id}/${Date.now()}-${safeFileName}`;
+
+        const {
+            error: uploadError
+        } = await supabase.storage
+            .from(
+                "email-attachments"
+            )
+            .upload(
+                filePath,
+                attachment.content,
+                {
+                    contentType:
+                        mimeType,
+
+                    upsert:
+                        false
+                }
+            );
+
+
+        if (uploadError) {
+
+            console.error(
+                "INBOUND ATTACHMENT UPLOAD ERROR:",
+                {
+                    messageId:
+                        message.id,
+
+                    fileName,
+
+                    error:
+                        uploadError
+                }
+            );
+
+            continue;
+        }
+
+        const {
+            error: attachmentError
+        } = await supabase
+            .from(
+                "email_attachments"
+            )
+            .insert([
+                {
+                    message_id:
+                        message.id,
+
+                    file_name:
+                        fileName,
+
+                    file_size:
+                        attachment.size ||
+                        attachment.content?.length ||
+                        0,
+
+                    file_path:
+                        filePath,
+
+                    mime_type:
+                        mimeType,
+
+                    content_id:
+                        contentId,
+
+                    disposition:
+                        disposition,
+
+                    is_inline:
+                        isInline
+                }
+            ]);
+
+
+        if (attachmentError) {
+
+            console.error(
+                "INBOUND ATTACHMENT DB ERROR:",
+                {
+                    messageId:
+                        message.id,
+
+                    fileName,
+
+                    error:
+                        attachmentError
+                }
+            );
+
+            continue;
+        }
+
+
+        console.log(
+            "📎 INBOUND ATTACHMENT SAVED:",
+            {
+                messageId:
+                    message.id,
+
+                fileName,
+
+                mimeType,
+
+                isInline
+            }
+        );
+
+
+    } catch (attachmentImportError) {
+
+        console.error(
+            "INBOUND ATTACHMENT IMPORT ERROR:",
+            {
+                messageId:
+                    message.id,
+
+                subject:
+                    mail.subject,
+
+                error:
+                    attachmentImportError
+            }
+        );
+
+    }
+
+}
+
             const {
                 error: contentUpdateError
             } = await supabase
