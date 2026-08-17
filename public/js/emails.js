@@ -1714,6 +1714,14 @@ document
         loadAttachmentPreview(img);
     });
 
+    document
+    .querySelectorAll(".mailAttachmentPdfPreview")
+    .forEach((container) => {
+        loadPdfAttachmentPreview(
+            container
+        );
+    });
+
 if (useFrame) {
 
     const container =
@@ -1873,6 +1881,131 @@ async function loadAttachmentPreview(img) {
         );
 
     }
+}
+
+async function loadPdfAttachmentPreview(container) {
+
+    const attachmentId =
+        container.dataset.attachmentId;
+
+    if (!attachmentId) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/email-attachments/${attachmentId}/open`
+            );
+
+        const result =
+            await response.json();
+
+        if (!result.ok || !result.url) {
+            throw new Error(
+                result.error ||
+                "PDF-Vorschau konnte nicht geladen werden."
+            );
+        }
+
+
+        const loadingTask =
+            pdfjsLib.getDocument(
+                result.url
+            );
+
+
+        const pdf =
+            await loadingTask.promise;
+
+
+        const page =
+            await pdf.getPage(1);
+
+
+        const baseViewport =
+            page.getViewport({
+                scale: 1
+            });
+
+
+        const maxWidth =
+            container.clientWidth || 170;
+
+        const maxHeight =
+            container.clientHeight || 95;
+
+
+        const scale =
+            Math.min(
+                maxWidth /
+                    baseViewport.width,
+
+                maxHeight /
+                    baseViewport.height
+            );
+
+
+        const viewport =
+            page.getViewport({
+                scale
+            });
+
+
+        const canvas =
+            document.createElement(
+                "canvas"
+            );
+
+
+        const context =
+            canvas.getContext(
+                "2d"
+            );
+
+
+        canvas.width =
+            Math.ceil(
+                viewport.width
+            );
+
+        canvas.height =
+            Math.ceil(
+                viewport.height
+            );
+
+
+        canvas.className =
+            "mailAttachmentPdfCanvas";
+
+
+        container.innerHTML =
+            "";
+
+
+        container.appendChild(
+            canvas
+        );
+
+
+        await page.render({
+            canvasContext:
+                context,
+
+            viewport
+        }).promise;
+
+
+    } catch (error) {
+
+        console.error(
+            "PDF Preview Fehler:",
+            error
+        );
+
+    }
+
 }
 
 function formatAttachmentSize(bytes) {

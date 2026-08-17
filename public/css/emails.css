@@ -1036,3 +1036,20 @@ gap: 10px;
 
     color: var(--wp-muted);
 }
+
+.mailAttachmentPdfPreview {
+    padding: 6px;
+}
+
+.mailAttachmentPdfCanvas {
+    display: block;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    margin: auto;
+
+    border-radius: 4px;
+
+    background: #fff;
+}
