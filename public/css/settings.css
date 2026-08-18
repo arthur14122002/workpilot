@@ -237,3 +237,53 @@ justify-content: flex-end;
 gap: 12px;
 margin-top: 20px;
 }
+
+.mailboxConnectModal .formField {
+    margin-bottom: 18px;
+}
+
+.mailboxConnectModal .formField:last-of-type {
+    margin-bottom: 0;
+}
+
+.mailboxConnectModal label {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.mailboxConnectModal input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.mailboxModalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+
+    margin-top: 22px;
+}
+
+.mailboxModalActions .btn {
+    min-height: 40px;
+    padding: 0 16px;
+
+    border-radius: 10px;
+    border: 1px solid transparent;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.mailboxModalActions .btnSecondary {
+    background: #fff;
+    border-color: var(--wp-border);
+    color: #333;
+}
+
+.mailboxModalActions .btnPrimary {
+    background: var(--wp-orange);
+    color: #fff;
+}
