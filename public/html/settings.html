@@ -83,28 +83,35 @@ placeholder="Mustermann"
 </div>
 
 <div class="mailboxConnectBox">
-<div>
-<strong>Postfach</strong>
-<p id="mailboxConnectionText">
-Noch kein Postfach verbunden.
-</p>
-</div>
 
-<button
-type="button"
-class="btn btnSecondary"
-id="connectMailboxBtn"
->
-Postfach verbinden
-</button>
+    <div>
+        <strong>Postfach</strong>
 
-<button
-type="button"
-class="btn btnPrimary hidden"
-id="importMailboxBtn"
->
-E-Mails importieren
-</button>
+        <p id="mailboxConnectionText">
+            Noch kein Postfach verbunden.
+        </p>
+    </div>
+
+    <div class="mailboxConnectActions">
+
+        <button
+            type="button"
+            class="btn btnSecondary"
+            id="connectMailboxBtn"
+        >
+            Postfach verbinden
+        </button>
+
+        <button
+            type="button"
+            class="btn btnPrimary hidden"
+            id="importMailboxBtn"
+        >
+            E-Mails importieren
+        </button>
+
+    </div>
+
 </div>
 
 <div class="formField">
@@ -364,42 +371,56 @@ Von welchem Zeitraum sollen bestehende E-Mails importiert werden?
 
 <div class="mailImportOptions">
 
-<label class="mailImportOption">
-<input
-type="radio"
-name="mailImportRange"
-value="30"
-checked
-/>
-<span>Letzte 30 Tage</span>
-</label>
+<div class="mailImportOptions">
 
-<label class="mailImportOption">
-<input
-type="radio"
-name="mailImportRange"
-value="60"
-/>
-<span>Letzte 60 Tage</span>
-</label>
+    <label class="mailImportOption">
+        <span class="mailImportOptionText">
+            Letzte 30 Tage
+        </span>
 
-<label class="mailImportOption">
-<input
-type="radio"
-name="mailImportRange"
-value="90"
-/>
-<span>Letzte 90 Tage</span>
-</label>
+        <input
+            type="radio"
+            name="mailImportRange"
+            value="30"
+            checked
+        />
+    </label>
 
-<label class="mailImportOption">
-<input
-type="radio"
-name="mailImportRange"
-value="all"
-/>
-<span>Alle E-Mails</span>
-</label>
+    <label class="mailImportOption">
+        <span class="mailImportOptionText">
+            Letzte 60 Tage
+        </span>
+
+        <input
+            type="radio"
+            name="mailImportRange"
+            value="60"
+        />
+    </label>
+
+    <label class="mailImportOption">
+        <span class="mailImportOptionText">
+            Letzte 90 Tage
+        </span>
+
+        <input
+            type="radio"
+            name="mailImportRange"
+            value="90"
+        />
+    </label>
+
+    <label class="mailImportOption">
+        <span class="mailImportOptionText">
+            Alle E-Mails
+        </span>
+
+        <input
+            type="radio"
+            name="mailImportRange"
+            value="all"
+        />
+    </label>
 
 </div>
 

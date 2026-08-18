@@ -201,7 +201,7 @@ smtp: "Anderer Anbieter"
 }[data.mailProvider] || "Postfach";
 
 mailboxConnectionText.textContent =
-`${providerLabel} verbunden: ${data.mailboxEmail}`;
+`Postfach verbunden: ${data.mailboxEmail}`;
 
 if (connectMailboxBtn) {
 connectMailboxBtn.textContent = "Postfach entfernen";
