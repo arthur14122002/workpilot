@@ -256,20 +256,40 @@ margin-top: 20px;
     box-sizing: border-box;
 }
 
-.mailboxModalActions {
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.formGroup label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.formGroup input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.formHint {
+    margin: 6px 0 20px;
+    line-height: 1.5;
+}
+
+.modalActions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-
-    margin-top: 22px;
 }
 
-.mailboxModalActions .btn {
+.secondaryButton,
+.primaryButton {
     min-height: 40px;
     padding: 0 16px;
 
     border-radius: 10px;
-    border: 1px solid transparent;
 
     font-size: 14px;
     font-weight: 600;
@@ -277,13 +297,14 @@ margin-top: 20px;
     cursor: pointer;
 }
 
-.mailboxModalActions .btnSecondary {
+.secondaryButton {
     background: #fff;
-    border-color: var(--wp-border);
+    border: 1px solid var(--wp-border);
     color: #333;
 }
 
-.mailboxModalActions .btnPrimary {
+.primaryButton {
     background: var(--wp-orange);
+    border: 1px solid var(--wp-orange);
     color: #fff;
 }
