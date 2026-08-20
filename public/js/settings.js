@@ -643,11 +643,16 @@ range: selectedRange
 
 const result = await response.json();
 
-if (!result.ok) {
-throw new Error(result.error || "Import konnte nicht gestartet werden.");
+if (!result.success) {
+    throw new Error(
+        result.message ||
+        "Import konnte nicht gestartet werden."
+    );
 }
 
-showToast(`${result.count} E-Mails wurden gefunden.`);
+showToast(
+    `${result.imported || 0} E-Mails wurden importiert.`
+);
 
 emailImportModal.classList.add("hidden");
 } catch (error) {

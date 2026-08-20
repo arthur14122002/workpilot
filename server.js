@@ -328,11 +328,13 @@ async function getLastImapUid(mailboxEmail) {
 
 async function saveImportedImapMails({
     mailbox,
-    mails
+    mails,
+    onProgress
 }) {
 
-    let savedCount = 0;
-    let analyzedCount = 0;
+let savedCount = 0;
+let analyzedCount = 0;
+let processedCount = 0;
 
     const password =
         decryptMailPassword(
@@ -341,6 +343,8 @@ async function saveImportedImapMails({
 
 
     for (const mail of mails) {
+
+    processedCount++;
 
         const externalMessageId =
             mail.messageId ||
@@ -889,6 +893,21 @@ const messageForAnalysis = {
         null
 };
 
+if (onProgress) {
+
+    onProgress({
+        processed:
+            processedCount,
+
+        total:
+            mails.length,
+
+        saved:
+            savedCount
+    });
+
+}
+
 
             await analyzeInboundEmail(
                 messageForAnalysis,
@@ -964,91 +983,280 @@ const messageForAnalysis = {
 }
 
 app.post("/api/mailbox/import", async (req, res) => {
+
+    mailboxImportProgress = {
+        running: true,
+        total: 0,
+        processed: 0,
+        saved: 0,
+        finished: false,
+        error: null
+    };
+
     try {
-        const mailbox = await getActiveMailboxConnection();
 
-        console.log("MAILBOX IMPORT START:", {
-            provider: mailbox.provider,
-            providerName: mailbox.provider_name,
-            email: mailbox.email
-        });
+        const mailbox =
+            await getActiveMailboxConnection();
 
-        if (mailbox.provider === "imap") {
-            const password = decryptMailPassword(
-                mailbox.encrypted_password
+
+        console.log(
+            "MAILBOX IMPORT START:",
+            {
+                provider:
+                    mailbox.provider,
+
+                providerName:
+                    mailbox.provider_name,
+
+                email:
+                    mailbox.email
+            }
+        );
+
+        if (
+            mailbox.provider === "imap"
+        ) {
+
+            const password =
+                decryptMailPassword(
+                    mailbox.encrypted_password
+                );
+
+
+            const mails =
+                await importMailbox({
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure,
+
+                    smtp_host:
+                        mailbox.smtp_host,
+
+                    smtp_port:
+                        mailbox.smtp_port,
+
+                    smtp_secure:
+                        mailbox.smtp_secure
+                });
+
+            mailboxImportProgress.total =
+                mails.length;
+
+
+            const {
+                savedCount
+            } = await saveImportedImapMails({
+                mailbox,
+                mails,
+
+                onProgress: ({
+                    processed,
+                    total,
+                    saved
+                }) => {
+
+                    mailboxImportProgress.processed =
+                        processed;
+
+                    mailboxImportProgress.total =
+                        total;
+
+                    mailboxImportProgress.saved =
+                        saved;
+
+                }
+            });
+
+            mailboxImportProgress = {
+                running: false,
+
+                total:
+                    mails.length,
+
+                processed:
+                    mails.length,
+
+                saved:
+                    savedCount,
+
+                finished:
+                    true,
+
+                error:
+                    null
+            };
+
+
+            console.log(
+                "IMAP IMPORT SUCCESS:",
+                {
+                    email:
+                        mailbox.email,
+
+                    fetched:
+                        mails.length,
+
+                    saved:
+                        savedCount
+                }
             );
 
-const mails = await importMailbox({
-    provider: "imap",
 
-    email: mailbox.email,
-    username: mailbox.username || mailbox.email,
-    password,
+            return res.json({
+                success: true,
 
-    imap_host: mailbox.imap_host,
-    imap_port: mailbox.imap_port,
-    imap_secure: mailbox.imap_secure,
+                imported:
+                    mails.length,
 
-    smtp_host: mailbox.smtp_host,
-    smtp_port: mailbox.smtp_port,
-    smtp_secure: mailbox.smtp_secure
-});
+                saved:
+                    savedCount,
 
-const {
-    savedCount
-} = await saveImportedImapMails({
-    mailbox,
-    mails
-});
+                provider:
+                    "imap"
+            });
 
-console.log("IMAP IMPORT SUCCESS:", {
-    email: mailbox.email,
-    fetched: mails.length,
-    saved: savedCount
-});
-
-return res.json({
-    success: true,
-    imported: mails.length,
-    provider: "imap"
-});
         }
 
-        if (mailbox.provider === "google") {
+        if (
+            mailbox.provider === "google"
+        ) {
+
+            mailboxImportProgress = {
+                running: false,
+                total: 0,
+                processed: 0,
+                saved: 0,
+                finished: true,
+                error:
+                    "Der Google-Import wird später an die allgemeine Import-Route angeschlossen."
+            };
+
+
             return res.status(501).json({
                 success: false,
+
                 message:
                     "Der Google-Import wird später an die allgemeine Import-Route angeschlossen."
             });
+
         }
 
-        if (mailbox.provider === "microsoft") {
+        if (
+            mailbox.provider === "microsoft"
+        ) {
+
+            mailboxImportProgress = {
+                running: false,
+                total: 0,
+                processed: 0,
+                saved: 0,
+                finished: true,
+                error:
+                    "Der Microsoft-Import ist noch nicht implementiert."
+            };
+
+
             return res.status(501).json({
                 success: false,
+
                 message:
                     "Der Microsoft-Import ist noch nicht implementiert."
             });
+
         }
+
+        const providerError =
+            `Unbekannter Mail-Anbieter: ${mailbox.provider}`;
+
+
+        mailboxImportProgress = {
+            running: false,
+            total: 0,
+            processed: 0,
+            saved: 0,
+            finished: true,
+            error:
+                providerError
+        };
+
 
         return res.status(400).json({
             success: false,
-            message: `Unbekannter Mail-Anbieter: ${mailbox.provider}`
+            message:
+                providerError
         });
+
+
     } catch (error) {
-        console.error("MAILBOX IMPORT ERROR:", {
-            message: error.message,
-            code: error.code,
-            authenticationFailed: error.authenticationFailed
-        });
+
+        console.error(
+            "MAILBOX IMPORT ERROR:",
+            {
+                message:
+                    error.message,
+
+                code:
+                    error.code,
+
+                authenticationFailed:
+                    error.authenticationFailed
+            }
+        );
+
+
+        mailboxImportProgress.running =
+            false;
+
+        mailboxImportProgress.finished =
+            true;
+
+        mailboxImportProgress.error =
+            error.message ||
+            "Das Postfach konnte nicht importiert werden.";
+
 
         return res.status(500).json({
             success: false,
+
             message:
                 error.message ||
                 "Das Postfach konnte nicht importiert werden."
         });
+
     }
+
 });
+
+app.get(
+    "/api/mailbox/import-progress",
+    (req, res) => {
+
+        res.json({
+            success: true,
+
+            progress:
+                mailboxImportProgress
+        });
+
+    }
+);
 
 app.post("/api/mailbox/connect", async (req, res) => {
     const email = String(req.body?.email || "")
@@ -4751,6 +4959,15 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
 
 let mailboxLiveSyncClient = null;
 let mailboxLiveSyncRunning = false;
+
+let mailboxImportProgress = {
+    running: false,
+    total: 0,
+    processed: 0,
+    saved: 0,
+    finished: false,
+    error: null
+};
 
 
 async function startMailboxLiveSync() {
