@@ -63,6 +63,26 @@ document.getElementById("startImportBtn");
 const importMailboxBtn =
 document.getElementById("importMailboxBtn");
 
+const mailImportProgress =
+    document.getElementById(
+        "mailImportProgress"
+    );
+
+const mailImportProgressStatus =
+    document.getElementById(
+        "mailImportProgressStatus"
+    );
+
+const mailImportProgressCount =
+    document.getElementById(
+        "mailImportProgressCount"
+    );
+
+const mailImportProgressBar =
+    document.getElementById(
+        "mailImportProgressBar"
+    );
+
 function getSavedSettings() {
 try {
 return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -620,12 +640,278 @@ emailImportModal.classList.add("hidden");
 });
 }
 
+async function pollMailboxImportProgress() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/mailbox/import-progress"
+            );
+
+        const result =
+            await response.json();
+
+
+        if (
+            !result.success ||
+            !result.progress
+        ) {
+            return;
+        }
+
+
+        const progress =
+            result.progress;
+
+
+        const total =
+            Number(
+                progress.total || 0
+            );
+
+        const processed =
+            Number(
+                progress.processed || 0
+            );
+
+
+        if (mailImportProgressCount) {
+
+            mailImportProgressCount.textContent =
+                `${processed} / ${total}`;
+
+        }
+
+
+        const percent =
+            total > 0
+                ? Math.min(
+                    100,
+                    (
+                        processed /
+                        total
+                    ) * 100
+                )
+                : 0;
+
+
+        if (mailImportProgressBar) {
+
+            mailImportProgressBar.style.width =
+                `${percent}%`;
+
+        }
+
+
+        if (
+            progress.finished &&
+            !progress.error
+        ) {
+
+            if (mailImportProgressStatus) {
+
+                mailImportProgressStatus.textContent =
+                    "Import abgeschlossen";
+
+            }
+
+
+            if (mailImportProgressBar) {
+
+                mailImportProgressBar.style.width =
+                    "100%";
+
+            }
+
+            return;
+
+        }
+
+
+        if (progress.error) {
+
+            if (mailImportProgressStatus) {
+
+                mailImportProgressStatus.textContent =
+                    "Import fehlgeschlagen";
+
+            }
+
+            return;
+
+        }
+
+
+        if (progress.running) {
+
+            setTimeout(
+                pollMailboxImportProgress,
+                400
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "IMPORT PROGRESS ERROR:",
+            error
+        );
+
+    }
+
+}
+
 if (startImportBtn) {
-startImportBtn.addEventListener("click", async () => {
-const selectedRange =
-document.querySelector(
-'input[name="mailImportRange"]:checked'
-)?.value || "30";
+
+    startImportBtn.addEventListener(
+        "click",
+        async () => {
+
+            const selectedRange =
+                document.querySelector(
+                    'input[name="mailImportRange"]:checked'
+                )?.value || "30";
+
+
+            startImportBtn.disabled =
+                true;
+
+            startImportBtn.textContent =
+                "Import läuft...";
+
+
+            if (mailImportProgress) {
+
+                mailImportProgress
+                    .classList
+                    .remove("hidden");
+
+            }
+
+
+            if (mailImportProgressStatus) {
+
+                mailImportProgressStatus.textContent =
+                    "E-Mails werden importiert";
+
+            }
+
+
+            if (mailImportProgressCount) {
+
+                mailImportProgressCount.textContent =
+                    "0 / 0";
+
+            }
+
+
+            if (mailImportProgressBar) {
+
+                mailImportProgressBar.style.width =
+                    "0%";
+
+            }
+
+            pollMailboxImportProgress();
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/mailbox/import",
+                        {
+                            method:
+                                "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    range:
+                                        selectedRange
+                                })
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
+                if (!result.success) {
+
+                    throw new Error(
+                        result.message ||
+                        "Import konnte nicht gestartet werden."
+                    );
+
+                }
+
+
+                if (mailImportProgressStatus) {
+
+                    mailImportProgressStatus.textContent =
+                        "Import abgeschlossen";
+
+                }
+
+
+                if (mailImportProgressCount) {
+
+                    mailImportProgressCount.textContent =
+                        `${result.imported || 0} / ${result.imported || 0}`;
+
+                }
+
+
+                if (mailImportProgressBar) {
+
+                    mailImportProgressBar.style.width =
+                        "100%";
+
+                }
+
+
+                showToast(
+                    `${result.imported || 0} E-Mails wurden verarbeitet.`
+                );
+
+
+            } catch (error) {
+
+                if (mailImportProgressStatus) {
+
+                    mailImportProgressStatus.textContent =
+                        "Import fehlgeschlagen";
+
+                }
+
+
+                showToast(
+                    error.message
+                );
+
+
+            } finally {
+
+                startImportBtn.disabled =
+                    false;
+
+                startImportBtn.textContent =
+                    "Import starten";
+
+            }
+
+        }
+    );
+
+}?.value || "30";
 
 startImportBtn.disabled = true;
 startImportBtn.textContent = "Import läuft...";

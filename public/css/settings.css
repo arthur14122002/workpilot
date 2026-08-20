@@ -336,3 +336,39 @@ margin-top: 20px;
     margin: 0;
 }
 
+.mailImportProgress {
+    margin-top: 22px;
+}
+
+.mailImportProgressTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    margin-bottom: 8px;
+
+    font-size: 13px;
+    color: var(--wp-muted);
+}
+
+.mailImportProgressTrack {
+    width: 100%;
+    height: 8px;
+
+    background: #ececec;
+
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.mailImportProgressBar {
+    width: 0%;
+    height: 100%;
+
+    background: var(--wp-orange);
+
+    border-radius: inherit;
+
+    transition: width 0.25s ease;
+}
