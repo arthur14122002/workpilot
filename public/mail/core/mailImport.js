@@ -133,104 +133,255 @@ async function saveSentMailToImap({
     }
 }
 
-async function importMailbox(connection) {
+async function importMailbox(connection, range = "30") {
+
     switch (connection.provider) {
+
         case "google":
-            throw new Error("Google-Import noch nicht implementiert.");
+            throw new Error(
+                "Google-Import noch nicht implementiert."
+            );
 
         case "microsoft":
-            throw new Error("Microsoft-Import noch nicht implementiert.");
+            throw new Error(
+                "Microsoft-Import noch nicht implementiert."
+            );
 
         case "imap":
-            return importImapMailbox(connection);
+            return importImapMailbox(
+                connection,
+                range
+            );
 
         default:
             throw new Error(
                 `Unbekannter Provider: ${connection.provider}`
             );
+
     }
+
 }
 
-async function importImapMailbox(connection) {
-    const client = createImapClient(connection);
+async function importImapMailbox(
+    connection,
+    range = "30"
+) {
+
+    const client =
+        createImapClient(
+            connection
+        );
 
     try {
+
         await client.connect();
 
-        const mailbox = await client.mailboxOpen("INBOX");
+        const mailbox =
+            await client.mailboxOpen(
+                "INBOX"
+            );
 
-        console.log(`📥 ${mailbox.exists} Nachrichten gefunden.`);
+
+        console.log(
+            `📥 ${mailbox.exists} Nachrichten gefunden.`
+        );
+
 
         if (!mailbox.exists) {
             return [];
         }
 
+        let sinceDate =
+            null;
+
+
+        if (
+            range !== "all"
+        ) {
+
+            const days =
+                Number(range);
+
+
+            if (
+                Number.isFinite(days) &&
+                days > 0
+            ) {
+
+                sinceDate =
+                    new Date();
+
+                sinceDate.setDate(
+                    sinceDate.getDate() -
+                    days
+                );
+
+                sinceDate.setHours(
+                    0,
+                    0,
+                    0,
+                    0
+                );
+
+            }
+
+        }
+
+        let uids = [];
+
+
+        if (sinceDate) {
+
+            uids =
+                await client.search({
+                    since:
+                        sinceDate
+                });
+
+        } else {
+
+            uids =
+                await client.search({
+                    all: true
+                });
+
+        }
+
+
+        console.log(
+            "📥 IMAP IMPORT RANGE:",
+            {
+                range,
+                sinceDate,
+                found:
+                    uids.length
+            }
+        );
+
+
+        if (!uids.length) {
+            return [];
+        }
+
         const mails = [];
 
-        for await (const message of client.fetch("1:*", {
-            uid: true,
-            envelope: true,
-            flags: true,
-            size: true,
-            bodyStructure: true
-        })) {
-            const flags = Array.from(message.flags || []);
-            const bodyStructure = message.bodyStructure || null;
+
+        for await (
+            const message
+            of client.fetch(
+                uids,
+                {
+                    uid: true,
+                    envelope: true,
+                    flags: true,
+                    size: true,
+                    bodyStructure: true
+                },
+                {
+                    uid: true
+                }
+            )
+        ) {
+
+            const flags =
+                Array.from(
+                    message.flags || []
+                );
+
+
+            const bodyStructure =
+                message.bodyStructure ||
+                null;
+
 
             mails.push({
-                provider: "imap",
+                provider:
+                    "imap",
 
-                externalId: `imap:${connection.email}:${message.uid}`,
-                uid: message.uid,
+                externalId:
+                    `imap:${connection.email}:${message.uid}`,
+
+                uid:
+                    message.uid,
 
                 messageId:
-                    message.envelope?.messageId || null,
+                    message.envelope?.messageId ||
+                    null,
 
                 inReplyTo:
-                    message.envelope?.inReplyTo || null,
+                    message.envelope?.inReplyTo ||
+                    null,
 
                 subject:
-                    message.envelope?.subject || "",
+                    message.envelope?.subject ||
+                    "",
 
                 from:
-                    message.envelope?.from || [],
+                    message.envelope?.from ||
+                    [],
 
                 to:
-                    message.envelope?.to || [],
+                    message.envelope?.to ||
+                    [],
 
                 cc:
-                    message.envelope?.cc || [],
+                    message.envelope?.cc ||
+                    [],
 
                 bcc:
-                    message.envelope?.bcc || [],
+                    message.envelope?.bcc ||
+                    [],
 
                 date:
-                    message.envelope?.date || null,
+                    message.envelope?.date ||
+                    null,
 
                 size:
-                    Number(message.size || 0),
+                    Number(
+                        message.size || 0
+                    ),
 
                 flags,
 
                 isRead:
-                    flags.includes("\\Seen"),
+                    flags.includes(
+                        "\\Seen"
+                    ),
 
                 isStarred:
-                    flags.includes("\\Flagged"),
+                    flags.includes(
+                        "\\Flagged"
+                    ),
 
                 hasAttachments:
-                    bodyStructureHasAttachments(bodyStructure),
+                    bodyStructureHasAttachments(
+                        bodyStructure
+                    ),
 
-                text: null,
-                html: null,
-                contentLoaded: false
+                text:
+                    null,
+
+                html:
+                    null,
+
+                contentLoaded:
+                    false
             });
+
         }
 
+
         return mails;
+
+
     } finally {
-        await closeImapClient(client);
+
+        await closeImapClient(
+            client
+        );
+
     }
+
 }
 
 async function importNewImapMessages(

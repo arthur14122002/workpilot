@@ -83,6 +83,26 @@ const mailImportProgressBar =
         "mailImportProgressBar"
     );
 
+const disconnectMailboxModal =
+    document.getElementById(
+        "disconnectMailboxModal"
+    );
+
+const closeDisconnectMailboxModal =
+    document.getElementById(
+        "closeDisconnectMailboxModal"
+    );
+
+const cancelDisconnectMailboxBtn =
+    document.getElementById(
+        "cancelDisconnectMailboxBtn"
+    );
+
+const confirmDisconnectMailboxBtn =
+    document.getElementById(
+        "confirmDisconnectMailboxBtn"
+    );
+
 function getSavedSettings() {
 try {
 return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -380,16 +400,11 @@ mailboxConnectModal.classList.remove("hidden");
 return;
 }
 
-const confirmed = confirm(
-"Postfach wirklich entfernen?\n\nDabei werden die Verbindung, alle E-Mails, E-Mail-Verläufe und Anhänge aus WorkPilot gelöscht."
-);
-
-if (!confirmed) {
-return;
+if (disconnectMailboxModal) {
+    disconnectMailboxModal.classList.remove("hidden");
 }
 
-connectMailboxBtn.disabled = true;
-connectMailboxBtn.textContent = "Wird entfernt...";
+return;
 
 try {
 const response = await fetch("/api/mailbox/disconnect", {

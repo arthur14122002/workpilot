@@ -474,6 +474,75 @@ Import starten
 
 </div>
 
+<div
+    id="disconnectMailboxModal"
+    class="modalOverlay hidden"
+>
+
+    <div class="modalCard mailboxModalCard">
+
+        <div class="modalHeader">
+
+            <h2>
+                Postfach entfernen
+            </h2>
+
+            <button
+                id="closeDisconnectMailboxModal"
+                class="iconButton"
+                type="button"
+            >
+                ✕
+            </button>
+
+        </div>
+
+
+        <p class="modalText">
+            Möchtest du dieses Postfach wirklich entfernen?
+        </p>
+
+
+        <div class="mailboxDeleteWarning">
+
+            <strong>
+                Dabei werden aus WorkPilot gelöscht:
+            </strong>
+
+            <ul>
+                <li>alle importierten E-Mails</li>
+                <li>alle E-Mail-Verläufe</li>
+                <li>alle E-Mail-Anhänge</li>
+                <li>die gespeicherte Postfach-Verbindung</li>
+            </ul>
+
+        </div>
+
+
+        <div class="modalFooter">
+
+            <button
+                type="button"
+                class="btn btnSecondary"
+                id="cancelDisconnectMailboxBtn"
+            >
+                Abbrechen
+            </button>
+
+            <button
+                type="button"
+                class="btn btnDanger"
+                id="confirmDisconnectMailboxBtn"
+            >
+                Postfach entfernen
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
 <script src="/js/app-layout.js"></script>
 <script src="/js/settings.js"></script>
 </body>

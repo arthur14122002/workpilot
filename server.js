@@ -1023,38 +1023,7 @@ app.post("/api/mailbox/import", async (req, res) => {
                 );
 
 
-            const mails =
-                await importMailbox({
-                    provider:
-                        "imap",
-
-                    email:
-                        mailbox.email,
-
-                    username:
-                        mailbox.username ||
-                        mailbox.email,
-
-                    password,
-
-                    imap_host:
-                        mailbox.imap_host,
-
-                    imap_port:
-                        mailbox.imap_port,
-
-                    imap_secure:
-                        mailbox.imap_secure,
-
-                    smtp_host:
-                        mailbox.smtp_host,
-
-                    smtp_port:
-                        mailbox.smtp_port,
-
-                    smtp_secure:
-                        mailbox.smtp_secure
-                });
+             await importMailbox({
 
             mailboxImportProgress.total =
                 mails.length;
