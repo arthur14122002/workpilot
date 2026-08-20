@@ -1023,17 +1023,70 @@ app.post("/api/mailbox/import", async (req, res) => {
                 );
 
 
-             await importMailbox({
+            const mails =
+    await importMailbox(
+        {
+            provider:
+                "imap",
 
-            mailboxImportProgress.total =
-                mails.length;
+            email:
+                mailbox.email,
+
+            username:
+                mailbox.username ||
+                mailbox.email,
+
+            password,
+
+            imap_host:
+                mailbox.imap_host,
+
+            imap_port:
+                mailbox.imap_port,
+
+            imap_secure:
+                mailbox.imap_secure,
+
+            smtp_host:
+                mailbox.smtp_host,
+
+            smtp_port:
+                mailbox.smtp_port,
+
+            smtp_secure:
+                mailbox.smtp_secure
+        },
+
+        range
+    );
 
 
-            const {
-                savedCount
-            } = await saveImportedImapMails({
-                mailbox,
-                mails,
+mailboxImportProgress.total =
+    mails.length;
+
+
+const {
+    savedCount
+} = await saveImportedImapMails({
+    mailbox,
+    mails,
+
+    onProgress: ({
+        processed,
+        total,
+        saved
+    }) => {
+
+        mailboxImportProgress.processed =
+            processed;
+
+        mailboxImportProgress.total =
+            total;
+
+        mailboxImportProgress.saved =
+            saved;
+    }
+});
 
                 onProgress: ({
                     processed,
