@@ -49,27 +49,6 @@ sent: "Von WorkPilot gesendete E-Mails.",
 trash: "Gelöschte E-Mails werden später nach 30 Tagen entfernt."
 };
 
-function renderCommunicationInfo() {
-
-const profileSettings = JSON.parse(
-localStorage.getItem("workpilot_company_settings") || "{}"
-);
-
-const communicationEmail =
-profileSettings.personalEmail || "";
-
-if (!communicationEmail) {
-
-activeCommunicationInfo.textContent =
-
-
-return;
-}
-
-activeCommunicationInfo.textContent =
-`Aktive Kommunikations-E-Mail: ${communicationEmail}`;
-}
-
 function formatFileSize(bytes){
 if(bytes < 1024){
 return bytes + " B";
