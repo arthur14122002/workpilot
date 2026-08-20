@@ -913,41 +913,4 @@ if (startImportBtn) {
 
 }
 
-startImportBtn.disabled = true;
-startImportBtn.textContent = "Import läuft...";
-
-try {
-const response = await fetch("/api/mailbox/import", {
-method: "POST",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify({
-range: selectedRange
-})
-});
-
-const result = await response.json();
-
-if (!result.success) {
-    throw new Error(
-        result.message ||
-        "Import konnte nicht gestartet werden."
-    );
-}
-
-showToast(
-    `${result.imported || 0} E-Mails wurden importiert.`
-);
-
-emailImportModal.classList.add("hidden");
-} catch (error) {
-showToast(error.message);
-} finally {
-startImportBtn.disabled = false;
-startImportBtn.textContent = "Import starten";
-}
-});
-}
-
 window.getCommunicationSettings = getCommunicationSettings;
