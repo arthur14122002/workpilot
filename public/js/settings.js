@@ -911,7 +911,7 @@ if (startImportBtn) {
         }
     );
 
-}?.value || "30";
+}
 
 startImportBtn.disabled = true;
 startImportBtn.textContent = "Import läuft...";
