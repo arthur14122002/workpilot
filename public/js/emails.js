@@ -61,7 +61,7 @@ profileSettings.personalEmail || "";
 if (!communicationEmail) {
 
 activeCommunicationInfo.textContent =
-"Keine Kommunikations-E-Mail verbunden.";
+
 
 return;
 }
