@@ -1088,24 +1088,6 @@ const {
     }
 });
 
-                onProgress: ({
-                    processed,
-                    total,
-                    saved
-                }) => {
-
-                    mailboxImportProgress.processed =
-                        processed;
-
-                    mailboxImportProgress.total =
-                        total;
-
-                    mailboxImportProgress.saved =
-                        saved;
-
-                }
-            });
-
             mailboxImportProgress = {
                 running: false,
 
