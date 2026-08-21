@@ -392,24 +392,37 @@ showToast("Telefon-Verifizierung wird für den Telefonagenten vorbereitet.");
 }
 
 if (connectMailboxBtn) {
-connectMailboxBtn.addEventListener("click", async () => {
-const data = getSavedSettings();
 
-if (!data.mailboxConnected) {
-mailboxConnectModal.classList.remove("hidden");
-return;
+    connectMailboxBtn.addEventListener(
+        "click",
+        () => {
+
+            const data =
+                getSavedSettings();
+
+            if (!data.mailboxConnected) {
+
+                if (mailboxConnectModal) {
+                    mailboxConnectModal
+                        .classList
+                        .remove("hidden");
+                }
+
+                return;
+            }
+
+            if (disconnectMailboxModal) {
+
+                disconnectMailboxModal
+                    .classList
+                    .remove("hidden");
+
+            }
+
+        }
+    );
+
 }
-
-if (disconnectMailboxModal) {
-    disconnectMailboxModal.classList.remove("hidden");
-}
-
-return;
-
-try {
-const response = await fetch("/api/mailbox/disconnect", {
-method: "DELETE"
-});
 
 const result = await response.json();
 
