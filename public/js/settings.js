@@ -632,6 +632,37 @@ emailImportModal.classList.add("hidden");
 });
 }
 
+if (closeDisconnectMailboxModal) {
+
+    closeDisconnectMailboxModal.addEventListener(
+        "click",
+        () => {
+
+            disconnectMailboxModal
+                ?.classList
+                .add("hidden");
+
+        }
+    );
+
+}
+
+
+if (cancelDisconnectMailboxBtn) {
+
+    cancelDisconnectMailboxBtn.addEventListener(
+        "click",
+        () => {
+
+            disconnectMailboxModal
+                ?.classList
+                .add("hidden");
+
+        }
+    );
+
+}
+
 async function pollMailboxImportProgress() {
 
     try {
