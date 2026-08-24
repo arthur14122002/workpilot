@@ -984,6 +984,10 @@ if (onProgress) {
 
 app.post("/api/mailbox/import", async (req, res) => {
 
+const {
+    range = "30"
+} = req.body || {};
+
     mailboxImportProgress = {
         running: true,
         total: 0,
