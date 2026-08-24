@@ -424,42 +424,6 @@ if (connectMailboxBtn) {
 
 }
 
-const result = await response.json();
-
-if (!result.ok) {
-throw new Error(
-result.error ||
-"Das Postfach konnte nicht entfernt werden."
-);
-}
-
-data.mailProvider = null;
-data.mailboxConnected = false;
-data.mailboxEmail = "";
-
-localStorage.setItem(
-STORAGE_KEY,
-JSON.stringify(data)
-);
-
-updateMailboxUi(data);
-
-showToast(
-"Postfach und zugehörige E-Mails wurden entfernt."
-);
-
-} catch (error) {
-showToast(error.message);
-
-} finally {
-connectMailboxBtn.disabled = false;
-
-const updatedData = getSavedSettings();
-updateMailboxUi(updatedData);
-}
-});
-}
-
 if (importMailboxBtn) {
 importMailboxBtn.addEventListener("click", () => {
 emailImportModal.classList.remove("hidden");
