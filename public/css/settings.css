@@ -372,3 +372,19 @@ margin-top: 20px;
 
     transition: width 0.25s ease;
 }
+
+.btnDanger {
+    background: #d94a3f;
+    border: 1px solid #d94a3f;
+    color: #fff;
+}
+
+.btnDanger:hover {
+    background: #c94137;
+    border-color: #c94137;
+}
+
+.btnDanger:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
