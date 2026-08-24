@@ -70,7 +70,6 @@ anbei erhalten Sie unser Angebot.
 Bei Fragen können Sie sich jederzeit gerne melden.
 
 Mit freundlichen Grüßen
-${offer.companyName || "WorkPilot"}
 `;
 
 offerMailModal.classList.remove("hidden");
