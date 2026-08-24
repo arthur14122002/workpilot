@@ -663,6 +663,89 @@ if (cancelDisconnectMailboxBtn) {
 
 }
 
+if (confirmDisconnectMailboxBtn) {
+
+    confirmDisconnectMailboxBtn.addEventListener(
+        "click",
+        async () => {
+
+            const data =
+                getSavedSettings();
+
+            confirmDisconnectMailboxBtn.disabled =
+                true;
+
+            confirmDisconnectMailboxBtn.textContent =
+                "Wird entfernt...";
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/mailbox/disconnect",
+                        {
+                            method: "DELETE"
+                        }
+                    );
+
+                const result =
+                    await response.json();
+
+                if (!result.ok) {
+                    throw new Error(
+                        result.error ||
+                        "Das Postfach konnte nicht entfernt werden."
+                    );
+                }
+
+                data.mailProvider =
+                    null;
+
+                data.mailProviderName =
+                    null;
+
+                data.mailboxConnected =
+                    false;
+
+                data.mailboxEmail =
+                    "";
+
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(data)
+                );
+
+                updateMailboxUi(data);
+
+                disconnectMailboxModal
+                    ?.classList
+                    .add("hidden");
+
+                showToast(
+                    "Postfach und zugehörige E-Mails wurden entfernt."
+                );
+
+            } catch (error) {
+
+                showToast(
+                    error.message
+                );
+
+            } finally {
+
+                confirmDisconnectMailboxBtn.disabled =
+                    false;
+
+                confirmDisconnectMailboxBtn.textContent =
+                    "Postfach entfernen";
+
+            }
+
+        }
+    );
+
+}
+
 async function pollMailboxImportProgress() {
 
     try {
