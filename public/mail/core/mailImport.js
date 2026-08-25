@@ -232,18 +232,28 @@ async function importImapMailbox(
 
         if (sinceDate) {
 
-            uids =
-                await client.search({
-                    since:
-                        sinceDate
-                });
+uids =
+    await client.search(
+        {
+            since:
+                sinceDate
+        },
+        {
+            uid: true
+        }
+    );
 
         } else {
 
-            uids =
-                await client.search({
-                    all: true
-                });
+uids =
+    await client.search(
+        {
+            all: true
+        },
+        {
+            uid: true
+        }
+    );
 
         }
 
