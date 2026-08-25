@@ -2310,8 +2310,6 @@ await openEmailFromUrl();
 startMailFrontendLiveSync();
 });
 
-renderCommunicationInfo();
-
 addAttachmentBtn.addEventListener("click", () => {
 mailAttachmentInput.click();
 });
