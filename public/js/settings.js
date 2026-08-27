@@ -117,8 +117,19 @@ const existingSettings = getSavedSettings();
 return {
 firstName: document.getElementById("firstName").value.trim(),
 lastName: document.getElementById("lastName").value.trim(),
-personalEmail: document.getElementById("personalEmail").value.trim(),
-personalPhone: document.getElementById("personalPhone").value.trim(),
+personalEmail:
+    document.getElementById("personalEmail")
+        ?.value
+        .trim() ||
+    existingSettings.personalEmail ||
+    "",
+
+personalPhone:
+    document.getElementById("personalPhone")
+        ?.value
+        .trim() ||
+    existingSettings.personalPhone ||
+    "",
 communicationEmailVerified: existingSettings.communicationEmailVerified || false,
 communicationPhoneVerified: existingSettings.communicationPhoneVerified || false,
 mailProvider: existingSettings.mailProvider || null,
