@@ -48,21 +48,6 @@ async function renderMailFrame(container, html) {
         iframe
     );
 
-const insecureMatches =
-    String(html || "")
-        .match(
-            /http:\/\/[^"'()\s<>]+/gi
-        ) || [];
-
-console.log(
-    "MAIL INSECURE URLS:",
-    [
-        ...new Set(
-            insecureMatches
-        )
-    ]
-);
-
     iframe.srcdoc =
         html;
 
@@ -70,6 +55,43 @@ console.log(
     iframe.onload = () => {
 
         try {
+
+        const insecureElements = [];
+
+iframe.contentDocument
+    .querySelectorAll("*")
+    .forEach((element) => {
+
+        for (const attribute of element.attributes) {
+
+            const value =
+                String(attribute.value || "");
+
+            if (
+                value.includes("http://") &&
+                value !== "http://www.w3.org/1999/xhtml"
+            ) {
+
+                insecureElements.push({
+                    tag:
+                        element.tagName,
+
+                    attribute:
+                        attribute.name,
+
+                    value
+                });
+
+            }
+
+        }
+
+    });
+
+console.log(
+    "MAIL INSECURE ELEMENTS:",
+    insecureElements
+);
 
             const frameDocument =
                 iframe.contentDocument;
