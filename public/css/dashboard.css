@@ -416,8 +416,8 @@ flex-wrap: wrap;
 }
 
 .notificationsCard {
-    height: 580px;
-    min-height: 580px;
+    height: 600px;
+    min-height: 600px;
 
     display: flex;
     flex-direction: column;
