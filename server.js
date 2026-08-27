@@ -1319,28 +1319,192 @@ const {
         }
 
         if (
-            mailbox.provider === "google"
-        ) {
+    mailbox.provider === "google"
+) {
 
-            mailboxImportProgress = {
-                running: false,
-                total: 0,
-                processed: 0,
-                saved: 0,
-                finished: true,
-                error:
-                    "Der Google-Import wird später an die allgemeine Import-Route angeschlossen."
-            };
+    const allowedRanges = [
+        "30",
+        "60",
+        "90",
+        "all"
+    ];
 
 
-            return res.status(501).json({
-                success: false,
+    if (
+        !allowedRanges.includes(
+            String(range)
+        )
+    ) {
 
-                message:
-                    "Der Google-Import wird später an die allgemeine Import-Route angeschlossen."
+        throw new Error(
+            "Ungültiger Importzeitraum."
+        );
+
+    }
+
+
+    const {
+        auth
+    } =
+        await getActiveGoogleMailboxAuth();
+
+
+    const gmail =
+        google.gmail({
+            version: "v1",
+            auth
+        });
+
+
+    const query =
+        String(range) === "all"
+            ? ""
+            : `newer_than:${Number(range)}d`;
+
+    const gmailMessages = [];
+
+    let pageToken = null;
+
+
+    do {
+
+        const listResponse =
+            await gmail.users.messages.list({
+                userId: "me",
+
+                maxResults: 500,
+
+                q: query,
+
+                pageToken:
+                    pageToken ||
+                    undefined
             });
 
+
+        gmailMessages.push(
+            ...(
+                listResponse
+                    .data
+                    .messages ||
+                []
+            )
+        );
+
+
+        pageToken =
+            listResponse
+                .data
+                .nextPageToken ||
+            null;
+
+
+    } while (pageToken);
+
+
+    mailboxImportProgress.total =
+        gmailMessages.length;
+
+
+    let processedCount = 0;
+    let savedCount = 0;
+    let skippedCount = 0;
+
+
+    for (
+        const gmailMessage
+        of gmailMessages
+    ) {
+
+        const importedMessage =
+            await importSingleGoogleMessage(
+                gmail,
+                gmailMessage.id,
+                {
+                    createDashboardNotificationEntry:
+                        false
+                }
+            );
+
+
+        processedCount++;
+
+
+        if (importedMessage) {
+
+            savedCount++;
+
+        } else {
+
+            skippedCount++;
+
         }
+
+
+        mailboxImportProgress.processed =
+            processedCount;
+
+        mailboxImportProgress.saved =
+            savedCount;
+
+    }
+
+
+    mailboxImportProgress = {
+        running: false,
+
+        total:
+            gmailMessages.length,
+
+        processed:
+            processedCount,
+
+        saved:
+            savedCount,
+
+        finished:
+            true,
+
+        error:
+            null
+    };
+
+
+    console.log(
+        "GOOGLE IMPORT SUCCESS:",
+        {
+            email:
+                mailbox.email,
+
+            fetched:
+                gmailMessages.length,
+
+            saved:
+                savedCount,
+
+            skipped:
+                skippedCount
+        }
+    );
+
+
+    return res.json({
+        success: true,
+
+        imported:
+            gmailMessages.length,
+
+        saved:
+            savedCount,
+
+        skipped:
+            skippedCount,
+
+        provider:
+            "google"
+    });
+
+}
 
         if (
             mailbox.provider === "microsoft"
@@ -4430,7 +4594,13 @@ error: "Inbound-E-Mail konnte nicht verarbeitet werden."
 }
 });
 
-async function importSingleGoogleMessage(gmail, gmailMessageId) {
+async function importSingleGoogleMessage(
+    gmail,
+    gmailMessageId,
+    {
+        createDashboardNotificationEntry = true
+    } = {}
+) {
 const detailResponse = await gmail.users.messages.get({
 userId: "me",
 id: gmailMessageId,
@@ -4523,7 +4693,13 @@ created_at: createdAt
 
 if (messageError) throw messageError;
 
-await analyzeInboundEmail(message, thread);
+await analyzeInboundEmail(
+    message,
+    thread,
+    {
+        createDashboardNotificationEntry
+    }
+);
 
 return message;
 }
