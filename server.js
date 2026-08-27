@@ -329,7 +329,8 @@ async function getLastImapUid(mailboxEmail) {
 async function saveImportedImapMails({
     mailbox,
     mails,
-    onProgress
+    onProgress,
+    createDashboardNotificationEntry = true
 }) {
 
 let savedCount = 0;
@@ -909,10 +910,13 @@ if (onProgress) {
 }
 
 
-            await analyzeInboundEmail(
-                messageForAnalysis,
-                thread
-            );
+await analyzeInboundEmail(
+    messageForAnalysis,
+    thread,
+    {
+        createDashboardNotificationEntry
+    }
+);
 
 
             analyzedCount++;
@@ -1074,6 +1078,7 @@ const {
 } = await saveImportedImapMails({
     mailbox,
     mails,
+    createDashboardNotificationEntry: false,
 
     onProgress: ({
         processed,
@@ -3370,62 +3375,161 @@ calendarSuggestion: null
 };
 }
 
-async function saveEmailAnalysis(message, thread, analysis) {
-await supabase
-.from("email_messages")
-.update({
-ai_detected_intent: analysis.intent,
-ai_summary: analysis.summary,
-ai_suggested_reply: analysis.suggestedReply,
-calendar_suggestion: analysis.calendarSuggestion
-})
-.eq("id", message.id);
+async function saveEmailAnalysis(
+    message,
+    thread,
+    analysis,
+    {
+        createDashboardNotificationEntry = true
+    } = {}
+) {
 
-await supabase
-.from("email_threads")
-.update({
-related_type: analysis.category,
-ai_category: analysis.category,
-ai_summary: analysis.summary
-})
-.eq("id", thread.id);
+    await supabase
+        .from("email_messages")
+        .update({
+            ai_detected_intent:
+                analysis.intent,
 
-const dashboardEvent = await createDashboardEvent({
-type: "email_ai_analysis",
-title: analysis.dashboardTitle || "E-Mail analysiert",
-description: analysis.dashboardMessage || analysis.summary || "",
-relatedType: "email",
-relatedId: message.id,
-priority: analysis.priority || "normal",
-actionType: analysis.actionTarget || "open_email_thread",
-metadata: {
-threadId: thread.id,
-messageId: message.id,
-category: analysis.category || "other",
-intent: analysis.intent || "other",
-calendarSuggestion: analysis.calendarSuggestion || null
-}
-});
+            ai_summary:
+                analysis.summary,
 
-if (dashboardEvent) {
-await createDashboardNotification({
-eventId: dashboardEvent.id,
-title: analysis.dashboardTitle || "Neue E-Mail erkannt",
-message: analysis.dashboardMessage || "Eine neue E-Mail wurde analysiert.",
-type: "email",
-priority: analysis.priority || "normal",
-metadata: {
-threadId: thread.id,
-messageId: message.id,
-actionLabel: analysis.actionLabel || "E-Mail öffnen",
-actionTarget: analysis.actionTarget || "open_email_thread",
-calendarSuggestion: analysis.calendarSuggestion || null
-}
-});
-}
+            ai_suggested_reply:
+                analysis.suggestedReply,
+
+            calendar_suggestion:
+                analysis.calendarSuggestion
+        })
+        .eq(
+            "id",
+            message.id
+        );
+
+
+    await supabase
+        .from("email_threads")
+        .update({
+            related_type:
+                analysis.category,
+
+            ai_category:
+                analysis.category,
+
+            ai_summary:
+                analysis.summary
+        })
+        .eq(
+            "id",
+            thread.id
+        );
+
+    if (!createDashboardNotificationEntry) {
+        return;
+    }
+
+
+    const dashboardEvent =
+        await createDashboardEvent({
+            type:
+                "email_ai_analysis",
+
+            title:
+                analysis.dashboardTitle ||
+                "E-Mail analysiert",
+
+            description:
+                analysis.dashboardMessage ||
+                analysis.summary ||
+                "",
+
+            relatedType:
+                "email",
+
+            relatedId:
+                message.id,
+
+            priority:
+                analysis.priority ||
+                "normal",
+
+            actionType:
+                analysis.actionTarget ||
+                "open_email_thread",
+
+            metadata: {
+                threadId:
+                    thread.id,
+
+                messageId:
+                    message.id,
+
+                category:
+                    analysis.category ||
+                    "other",
+
+                intent:
+                    analysis.intent ||
+                    "other",
+
+                calendarSuggestion:
+                    analysis.calendarSuggestion ||
+                    null
+            }
+        });
+
+
+    if (dashboardEvent) {
+
+        await createDashboardNotification({
+            eventId:
+                dashboardEvent.id,
+
+            title:
+                analysis.dashboardTitle ||
+                "Neue E-Mail erkannt",
+
+            message:
+                analysis.dashboardMessage ||
+                "Eine neue E-Mail wurde analysiert.",
+
+            type:
+                "email",
+
+            priority:
+                analysis.priority ||
+                "normal",
+
+            metadata: {
+                threadId:
+                    thread.id,
+
+                messageId:
+                    message.id,
+
+                actionLabel:
+                    analysis.actionLabel ||
+                    "E-Mail öffnen",
+
+                actionTarget:
+                    analysis.actionTarget ||
+                    "open_email_thread",
+
+                calendarSuggestion:
+                    analysis.calendarSuggestion ||
+                    null
+            }
+        });
+
+    }
+
 }
 
-async function analyzeInboundEmail(message, thread) {
+async function analyzeInboundEmail(
+    message,
+    thread,
+    {
+        createDashboardNotificationEntry = true
+    } = {}
+) {
 let response;
 
 try {
@@ -3549,7 +3653,14 @@ calendarSuggestion: analysis.calendarSuggestion || null
 console.log("EMAIL AI RAW:", response.output_text);
 console.log("EMAIL AI PARSED:", safeAnalysis);
 
-await saveEmailAnalysis(message, thread, safeAnalysis);
+await saveEmailAnalysis(
+    message,
+    thread,
+    safeAnalysis,
+    {
+        createDashboardNotificationEntry
+    }
+);
 
 return safeAnalysis;
 
@@ -3559,7 +3670,14 @@ console.error("EMAIL AI RAW FAILED:", response?.output_text);
 
 const fallbackAnalysis = getFallbackEmailAnalysis(message);
 
-await saveEmailAnalysis(message, thread, fallbackAnalysis);
+await saveEmailAnalysis(
+    message,
+    thread,
+    fallbackAnalysis,
+    {
+        createDashboardNotificationEntry
+    }
+);
 
 return fallbackAnalysis;
 }
