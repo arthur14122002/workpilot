@@ -57,9 +57,18 @@ color: var(--wp-muted);
 }
 
 .notificationsList {
-display: flex;
-flex-direction: column;
-gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    flex: 1;
+
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding-right: 6px;
 }
 
 .notificationItem {
@@ -405,3 +414,12 @@ gap: 12px;
 align-items: center;
 flex-wrap: wrap;
 }
+
+.notificationsCard {
+    height: 560px;
+    min-height: 560px;
+
+    display: flex;
+    flex-direction: column;
+}
+
