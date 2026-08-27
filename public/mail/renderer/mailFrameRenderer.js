@@ -48,6 +48,20 @@ async function renderMailFrame(container, html) {
         iframe
     );
 
+const insecureMatches =
+    String(html || "")
+        .match(
+            /http:\/\/[^"'()\s<>]+/gi
+        ) || [];
+
+console.log(
+    "MAIL INSECURE URLS:",
+    [
+        ...new Set(
+            insecureMatches
+        )
+    ]
+);
 
     iframe.srcdoc =
         html;
