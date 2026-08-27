@@ -1483,22 +1483,6 @@ console.log("IMAP MAILBOX SAVED:", {
     }
 });
 
-app.get("/api/mailbox/google/start", (req, res) => {
-const authUrl = googleOAuthClient.generateAuthUrl({
-access_type: "offline",
-prompt: "consent",
-scope: [
-"https://www.googleapis.com/auth/gmail.send",
-"https://www.googleapis.com/auth/gmail.readonly"
-]
-});
-
-res.json({
-ok: true,
-url: authUrl
-});
-});
-
 app.post("/api/profile/send-email-verification", async (req, res) => {
 const { email } = req.body;
 
