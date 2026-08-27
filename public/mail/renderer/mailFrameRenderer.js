@@ -48,8 +48,34 @@ async function renderMailFrame(container, html) {
         iframe
     );
 
-    iframe.srcdoc =
-        html;
+    const responsiveMailCss = `
+<style>
+    html,
+    body {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    table {
+        max-width: 100% !important;
+    }
+
+    img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    div,
+    section,
+    main {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+</style>
+`;
+
+iframe.srcdoc =
+    responsiveMailCss + html;
 
 
     iframe.onload = () => {
@@ -87,28 +113,6 @@ iframe.contentDocument
         }
 
     });
-
-console.log(
-    "MAIL INSECURE ELEMENTS:",
-    insecureElements
-);
-
-const resourceEntries =
-    iframe.contentWindow
-        ?.performance
-        ?.getEntriesByType("resource") || [];
-
-const insecureResources =
-    resourceEntries
-        .map((entry) => entry.name)
-        .filter((url) =>
-            String(url).startsWith("http://")
-        );
-
-console.log(
-    "MAIL INSECURE RESOURCES:",
-    insecureResources
-);
 
             const frameDocument =
                 iframe.contentDocument;
