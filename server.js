@@ -37,11 +37,6 @@ const {
 const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const googleOAuthClient = new google.auth.OAuth2(
-process.env.GOOGLE_CLIENT_ID,
-process.env.GOOGLE_CLIENT_SECRET,
-process.env.GOOGLE_REDIRECT_URI
-);
 
 const emailVerificationCodes = new Map();
 
@@ -52,6 +47,11 @@ const supabase = createClient(
 process.env.SUPABASE_URL,
 process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+const {
+    createGoogleAuthUrl,
+    exchangeGoogleCode
+} = require("./google/googleMail");
 
 let connectedGoogleTokens = null;
 
@@ -133,6 +133,100 @@ async function verifySmtpConnection({
 
     await transporter.verify();
 }
+
+app.get(
+    "/api/mailbox/google/start",
+    (req, res) => {
+
+        try {
+
+            const url =
+                createGoogleAuthUrl();
+
+            res.json({
+                ok: true,
+                url
+            });
+
+        } catch (error) {
+
+            console.error(
+                "GOOGLE AUTH START ERROR:",
+                error
+            );
+
+            res.status(500).json({
+                ok: false,
+                error:
+                    "Google-Verbindung konnte nicht gestartet werden."
+            });
+
+        }
+
+    }
+);
+
+app.get(
+    "/api/mailbox/google/callback",
+    async (req, res) => {
+
+        const code =
+            req.query.code;
+
+        if (!code) {
+
+            return res.redirect(
+                "/settings?google=error"
+            );
+
+        }
+
+        try {
+
+            const {
+                email,
+                tokens
+            } =
+                await exchangeGoogleCode(
+                    code
+                );
+
+
+            if (!email) {
+
+                throw new Error(
+                    "Google hat keine E-Mail-Adresse zurückgegeben."
+                );
+
+            }
+
+
+            console.log(
+                "GOOGLE MAILBOX CONNECTED:",
+                email
+            );
+
+            res.redirect(
+                `/settings?google=connected&email=${encodeURIComponent(email)}`
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "GOOGLE AUTH CALLBACK ERROR:",
+                error
+            );
+
+
+            res.redirect(
+                "/settings?google=error"
+            );
+
+        }
+
+    }
+);
 
 async function sendEmailFromActiveMailbox({
     to,
