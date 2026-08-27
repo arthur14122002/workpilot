@@ -201,10 +201,75 @@ app.get(
             }
 
 
+            const {
+                error: mailboxError
+            } = await supabase
+                .from(
+                    "mailbox_connections"
+                )
+                .upsert(
+                    [
+                        {
+                            provider:
+                                "google",
+
+                            provider_name:
+                                "Google",
+
+                            email,
+
+                            auth_method:
+                                "oauth",
+
+                            access_token:
+                                tokens.access_token ||
+                                null,
+
+                            refresh_token:
+                                tokens.refresh_token ||
+                                null,
+
+                            scope:
+                                tokens.scope ||
+                                null,
+
+                            token_type:
+                                tokens.token_type ||
+                                null,
+
+                            expiry_date:
+                                tokens.expiry_date ||
+                                null,
+
+                            is_active:
+                                true,
+
+                            updated_at:
+                                new Date()
+                                    .toISOString()
+                        }
+                    ],
+                    {
+                        onConflict:
+                            "provider,email"
+                    }
+                );
+
+
+            if (mailboxError) {
+                throw mailboxError;
+            }
+
+
             console.log(
-                "GOOGLE MAILBOX CONNECTED:",
-                email
+                "GOOGLE MAILBOX SAVED:",
+                {
+                    email,
+                    provider:
+                        "google"
+                }
             );
+
 
             res.redirect(
                 `/settings?google=connected&email=${encodeURIComponent(email)}`
@@ -215,7 +280,19 @@ app.get(
 
             console.error(
                 "GOOGLE AUTH CALLBACK ERROR:",
-                error
+                {
+                    message:
+                        error.message,
+
+                    details:
+                        error.details,
+
+                    hint:
+                        error.hint,
+
+                    code:
+                        error.code
+                }
             );
 
 
@@ -1585,74 +1662,6 @@ return res.status(500).json({ ok: false, error: error.message });
 }
 
 res.json({ ok: true, data });
-});
-
-app.get("/auth/google/callback", async (req, res) => {
-const { code } = req.query;
-
-if (!code) {
-return res.redirect("/settings?google=error");
-}
-
-try {
-const { tokens } = await googleOAuthClient.getToken(code);
-
-googleOAuthClient.setCredentials(tokens);
-
-const gmail = google.gmail({
-version: "v1",
-auth: googleOAuthClient
-});
-
-const { data: profile } = await gmail.users.getProfile({
-userId: "me"
-});
-
-const connectedEmail = profile.emailAddress || "";
-
-connectedGoogleTokens = tokens;
-
-const { error: mailboxError } = await supabase
-.from("mailbox_connections")
-.upsert(
-[
-{
-provider: "google",
-email: connectedEmail,
-access_token: tokens.access_token || null,
-refresh_token: tokens.refresh_token || null,
-scope: tokens.scope || null,
-token_type: tokens.token_type || null,
-expiry_date: tokens.expiry_date || null,
-is_active: true,
-updated_at: new Date().toISOString()
-}
-],
-{
-onConflict: "provider,email"
-}
-);
-
-if (mailboxError) {
-throw mailboxError;
-}
-
-console.log("GOOGLE MAILBOX CONNECTED:", {
-email: connectedEmail
-});
-
-res.redirect(
-`/settings?google=connected&email=${encodeURIComponent(connectedEmail)}`
-);
-
-} catch (error) {
-console.error("GOOGLE CALLBACK ERROR");
-console.error("MESSAGE:", error.message);
-console.error("DATA:", JSON.stringify(error.response?.data, null, 2));
-console.error("CAUSE:", error.cause);
-
-res.redirect("/settings?google=error");
-}
 });
 
 async function getActiveGoogleMailboxAuth() {
