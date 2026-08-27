@@ -34,6 +34,11 @@ red: "#ef4444",
 yellow: "#facc15"
 };
 
+const clearNotificationsBtn =
+    document.getElementById(
+        "clearNotificationsBtn"
+    );
+
 let selectedCalendarDateKey = null;
 let calendarEventsCache = [];
 
@@ -523,6 +528,68 @@ bindNotificationActions(notifications);
 }
 
 function bindNotificationActions(notifications) {
+
+if (clearNotificationsBtn) {
+
+    clearNotificationsBtn.addEventListener(
+        "click",
+        async () => {
+
+            clearNotificationsBtn.disabled =
+                true;
+
+            try {
+
+                const notifications =
+                    await apiGetNotifications();
+
+                if (!notifications.length) {
+                    showToast(
+                        "Keine Benachrichtigungen vorhanden."
+                    );
+
+                    return;
+                }
+
+                await Promise.all(
+                    notifications.map(
+                        (notification) =>
+                            dismissNotification(
+                                notification.id
+                            )
+                    )
+                );
+
+                showToast(
+                    "Alle Benachrichtigungen wurden gelöscht."
+                );
+
+                await renderDashboard();
+
+            } catch (error) {
+
+                console.error(
+                    "CLEAR NOTIFICATIONS ERROR:",
+                    error
+                );
+
+                showToast(
+                    error.message ||
+                    "Benachrichtigungen konnten nicht gelöscht werden."
+                );
+
+            } finally {
+
+                clearNotificationsBtn.disabled =
+                    false;
+
+            }
+
+        }
+    );
+
+}
+
 document.querySelectorAll("[data-open]").forEach((button) => {
 button.addEventListener("click", async () => {
 const notification = notifications.find((entry) => entry.id === button.dataset.open);
@@ -547,8 +614,6 @@ if (threadId) {
 window.location.href = `/emails?thread=${threadId}`;
 return;
 }
-
-await renderDashboard();
 
 await renderDashboard();
 });

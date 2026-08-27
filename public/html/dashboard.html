@@ -87,9 +87,27 @@ Deine Übersicht für Kunden, E-Mails, Aufgaben und wichtige Hinweise.
 <p>Neue Hinweise aus E-Mails, Kontakten und später Telefonaten.</p>
 </div>
 
-<button class="btn btnSecondary" id="refreshDashboardBtn">
-Aktualisieren
-</button>
+<div class="dashboardHeaderActions">
+
+    <button
+        class="btn btnSecondary"
+        id="refreshDashboardBtn"
+        type="button"
+    >
+        Aktualisieren
+    </button>
+
+    <button
+        class="dashboardTrashBtn"
+        id="clearNotificationsBtn"
+        type="button"
+        title="Alle Benachrichtigungen löschen"
+        aria-label="Alle Benachrichtigungen löschen"
+    >
+        🗑
+    </button>
+
+</div>
 </div>
 
 <div id="notificationsList" class="notificationsList"></div>

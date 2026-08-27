@@ -423,3 +423,43 @@ flex-wrap: wrap;
     flex-direction: column;
 }
 
+.dashboardHeaderActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dashboardTrashBtn {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--wp-border);
+    border-radius: 10px;
+
+    background: #fff;
+    color: var(--wp-muted);
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.dashboardTrashBtn:hover {
+    background: #fff7f6;
+    border-color: #f1b8b2;
+    color: #d94a3f;
+}
+
+.dashboardTrashBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
