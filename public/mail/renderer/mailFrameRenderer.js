@@ -48,71 +48,12 @@ async function renderMailFrame(container, html) {
         iframe
     );
 
-    const responsiveMailCss = `
-<style>
-    html,
-    body {
-        max-width: 100% !important;
-        overflow-x: hidden !important;
-    }
-
-    table {
-        max-width: 100% !important;
-    }
-
-    img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-
-    div,
-    section,
-    main {
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-</style>
-`;
-
-iframe.srcdoc =
-    responsiveMailCss + html;
-
+iframe.srcdoc = html;
 
     iframe.onload = () => {
 
         try {
 
-        const insecureElements = [];
-
-iframe.contentDocument
-    .querySelectorAll("*")
-    .forEach((element) => {
-
-        for (const attribute of element.attributes) {
-
-            const value =
-                String(attribute.value || "");
-
-            if (
-                value.includes("http://") &&
-                value !== "http://www.w3.org/1999/xhtml"
-            ) {
-
-                insecureElements.push({
-                    tag:
-                        element.tagName,
-
-                    attribute:
-                        attribute.name,
-
-                    value
-                });
-
-            }
-
-        }
-
-    });
 
             const frameDocument =
                 iframe.contentDocument;
@@ -123,54 +64,111 @@ iframe.contentDocument
 
             const updateFrameHeight = () => {
 
-                try {
+    try {
 
-                    const body =
-                        frameDocument.body;
+        const body =
+            frameDocument.body;
 
-                    const htmlElement =
-                        frameDocument.documentElement;
-
-
-                    if (
-                        !body ||
-                        !htmlElement
-                    ) {
-                        return;
-                    }
-
-                    iframe.style.height =
-                        "1px";
+        const htmlElement =
+            frameDocument.documentElement;
 
 
-                    const height =
-                        Math.max(
+        if (
+            !body ||
+            !htmlElement
+        ) {
+            return;
+        }
 
-                            body.scrollHeight,
-                            body.offsetHeight,
+        body.style.transform =
+            "";
 
-                            htmlElement.scrollHeight,
-                            htmlElement.offsetHeight,
+        body.style.transformOrigin =
+            "";
 
-                            htmlElement.clientHeight
-
-                        );
-
-
-                    iframe.style.height =
-                        `${height}px`;
+        body.style.width =
+            "";
 
 
-                } catch (error) {
+        const availableWidth =
+            iframe.clientWidth;
 
-                    console.error(
-                        "MAIL FRAME RESIZE ERROR:",
-                        error
-                    );
 
+        const contentWidth =
+            Math.max(
+                body.scrollWidth,
+                body.offsetWidth,
+                htmlElement.scrollWidth,
+                htmlElement.offsetWidth
+            );
+
+
+        let scale =
+            1;
+
+        if (
+            contentWidth >
+                availableWidth &&
+            availableWidth > 0
+        ) {
+
+            scale =
+                availableWidth /
+                contentWidth;
+
+
+            body.style.transformOrigin =
+                "top left";
+
+            body.style.transform =
+                `scale(${scale})`;
+
+            body.style.width =
+                `${100 / scale}%`;
+
+
+            console.log(
+                "MAIL AUTO SCALE:",
+                {
+                    contentWidth,
+                    availableWidth,
+                    scale
                 }
+            );
 
-            };
+        }
+
+
+        iframe.style.height =
+            "1px";
+
+
+        const height =
+            Math.max(
+                body.scrollHeight,
+                body.offsetHeight,
+                htmlElement.scrollHeight,
+                htmlElement.offsetHeight,
+                htmlElement.clientHeight
+            );
+
+
+        iframe.style.height =
+            `${Math.ceil(
+                height * scale
+            )}px`;
+
+
+    } catch (error) {
+
+        console.error(
+            "MAIL FRAME RESIZE ERROR:",
+            error
+        );
+
+    }
+
+};
 
             frameDocument
                 .querySelectorAll("a")
