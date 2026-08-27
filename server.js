@@ -3898,32 +3898,60 @@ Gesendet über WorkPilot
 </div>
 `;
 
-const email = await resend.emails.send({
-from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
-to,
-subject,
-html,
-attachments: [
-{
-filename: `Rechnung-${invoice.invoiceNumber || invoice.id}.pdf`,
-content: Buffer.from(pdfBuffer).toString("base64")
-}
-]
-});
+const email =
+    await sendEmailFromActiveMailbox({
+        to,
+        subject,
+        html,
+
+        attachments: [
+            {
+                originalname:
+                    `Rechnung-${invoice.invoiceNumber || invoice.id}.pdf`,
+
+                mimetype:
+                    "application/pdf",
+
+                size:
+                    pdfBuffer.length,
+
+                buffer:
+                    Buffer.from(pdfBuffer)
+            }
+        ]
+    });
 
 await supabase
-.from("email_messages")
-.insert([
-{
-thread_id: thread.id,
-direction: "outbound",
-sender: process.env.RESEND_FROM_EMAIL,
-recipient: to,
-subject,
-body: html,
-message_status: "sent"
-}
-]);
+    .from("email_messages")
+    .insert([
+        {
+            thread_id:
+                thread.id,
+
+            direction:
+                "outbound",
+
+            sender:
+                email.sender,
+
+            recipient:
+                to,
+
+            subject,
+
+            body:
+                message,
+
+            body_html:
+                html,
+
+            content_loaded:
+                true,
+
+            message_status:
+                "sent"
+        }
+    ]);
 
 await createDashboardEvent({
 type: "invoice_email_sent",
