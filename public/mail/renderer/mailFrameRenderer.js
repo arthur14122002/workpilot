@@ -93,6 +93,23 @@ console.log(
     insecureElements
 );
 
+const resourceEntries =
+    iframe.contentWindow
+        ?.performance
+        ?.getEntriesByType("resource") || [];
+
+const insecureResources =
+    resourceEntries
+        .map((entry) => entry.name)
+        .filter((url) =>
+            String(url).startsWith("http://")
+        );
+
+console.log(
+    "MAIL INSECURE RESOURCES:",
+    insecureResources
+);
+
             const frameDocument =
                 iframe.contentDocument;
 
