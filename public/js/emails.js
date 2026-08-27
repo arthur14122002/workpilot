@@ -49,6 +49,11 @@ sent: "Von WorkPilot gesendete E-Mails.",
 trash: "Gelöschte E-Mails werden später nach 30 Tagen entfernt."
 };
 
+const activeCommunicationInfo =
+    document.getElementById(
+        "activeCommunicationInfo"
+    );
+
 function formatFileSize(bytes){
 if(bytes < 1024){
 return bytes + " B";
@@ -59,6 +64,34 @@ return (bytes / 1024).toFixed(1) + " KB";
 }
 
 return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function renderActiveMailboxInfo() {
+
+    if (!activeCommunicationInfo) {
+        return;
+    }
+
+    const settings =
+        JSON.parse(
+            localStorage.getItem(
+                "workpilot_company_settings"
+            ) || "{}"
+        );
+
+    if (
+        settings.mailboxConnected &&
+        settings.mailboxEmail
+    ) {
+
+        activeCommunicationInfo.textContent =
+            `Postfach verbunden: ${settings.mailboxEmail}`;
+
+        return;
+    }
+
+    activeCommunicationInfo.textContent =
+        "Keine E-Mail verbunden.";
 }
 
 async function getMessageAttachments(messageId) {
@@ -2303,6 +2336,8 @@ renderEmails();
 
 document.addEventListener("DOMContentLoaded", () => {
 bindFolders();
+
+renderActiveMailboxInfo();
 
 renderEmails().then(async () => {
 await openEmailFromUrl();
