@@ -497,6 +497,27 @@ async function getLastImapUid(mailboxEmail) {
     );
 }
 
+function reportImapProgress(
+    onProgress,
+    processed,
+    total,
+    saved
+) {
+
+    if (
+        typeof onProgress !== "function"
+    ) {
+        return;
+    }
+
+    onProgress({
+        processed,
+        total,
+        saved
+    });
+
+}
+
 async function saveImportedImapMails({
     mailbox,
     mails,
