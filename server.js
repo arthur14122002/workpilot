@@ -551,6 +551,13 @@ let processedCount = 0;
                 }
             );
 
+        reportImapProgress(
+        onProgress,
+        processedCount,
+        mails.length,
+        savedCount
+    );
+
             continue;
         }
 
@@ -566,6 +573,14 @@ let processedCount = 0;
                         mail.subject
                 }
             );
+
+        reportImapProgress(
+        onProgress,
+        processedCount,
+        mails.length,
+        savedCount
+    );
+
 
             continue;
         }
@@ -697,6 +712,14 @@ let processedCount = 0;
                     }
                 );
 
+        reportImapProgress(
+        onProgress,
+        processedCount,
+        mails.length,
+        savedCount
+    );
+
+
                 continue;
             }
 
@@ -788,6 +811,14 @@ let processedCount = 0;
                         messageError
                 }
             );
+
+        reportImapProgress(
+        onProgress,
+        processedCount,
+        mails.length,
+        savedCount
+    );
+
 
             continue;
         }
@@ -1065,21 +1096,12 @@ const messageForAnalysis = {
         null
 };
 
-if (onProgress) {
-
-    onProgress({
-        processed:
-            processedCount,
-
-        total:
-            mails.length,
-
-        saved:
-            savedCount
-    });
-
-}
-
+reportImapProgress(
+    onProgress,
+    processedCount,
+    mails.length,
+    savedCount
+);
 
 await analyzeInboundEmail(
     messageForAnalysis,

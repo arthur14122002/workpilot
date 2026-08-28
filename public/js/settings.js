@@ -757,6 +757,24 @@ if (confirmDisconnectMailboxBtn) {
 
 }
 
+function reportImapProgress(
+    onProgress,
+    processed,
+    total,
+    saved
+) {
+
+    if (!onProgress) {
+        return;
+    }
+
+    onProgress({
+        processed,
+        total,
+        saved
+    });
+}
+
 async function pollMailboxImportProgress() {
 
     try {
