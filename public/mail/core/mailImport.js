@@ -399,12 +399,39 @@ async function importNewImapMessages(
     lastUid = 0
 ) {
 
+console.log(
+    "🔄 IMAP LIVE SYNC START:",
+    {
+        email: connection.email,
+        lastUid
+    }
+);
+
     const client =
         createImapClient(connection);
 
     try {
 
         await client.connect();
+
+        console.log(
+    "📥 IMAP LIVE INBOX OPEN:",
+    {
+        email: connection.email,
+        lastUid
+    }
+);
+
+        const sentMailbox =
+    await findImapSentMailbox(client);
+
+console.log(
+    "📤 IMAP SENT MAILBOX:",
+    {
+        email: connection.email,
+        sentMailbox
+    }
+);
 
         const mailbox =
             await client.mailboxOpen(
@@ -420,6 +447,15 @@ async function importNewImapMessages(
 
         const startUid =
             Number(lastUid || 0) + 1;
+
+            console.log(
+    "🔢 IMAP LIVE UID RANGE:",
+    {
+        email: connection.email,
+        lastUid,
+        startUid
+    }
+);
 
 
         console.log(
@@ -575,6 +611,38 @@ async function importNewImapMessages(
 
     }
 
+}
+
+async function findImapSentMailbox(client) {
+    const mailboxes = await client.list();
+
+    const sentBySpecialUse = mailboxes.find(
+        mailbox =>
+            mailbox.specialUse === "\\Sent"
+    );
+
+    if (sentBySpecialUse) {
+        return sentBySpecialUse.path;
+    }
+
+    const fallbackNames = [
+        "sent",
+        "sent items",
+        "sent messages",
+        "gesendet",
+        "gesendete elemente"
+    ];
+
+    const sentByName = mailboxes.find(
+        mailbox =>
+            fallbackNames.includes(
+                String(mailbox.path || "")
+                    .trim()
+                    .toLowerCase()
+            )
+    );
+
+    return sentByName?.path || null;
 }
 
 async function loadImapMessage(
