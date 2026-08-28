@@ -469,7 +469,10 @@ function extractFirstEmail(addresses) {
     return addresses[0]?.address || null;
 }
 
-async function getLastImapUid(mailboxEmail) {
+async function getLastImapUid(
+    mailboxEmail,
+    mailboxPath = "INBOX"
+) {
 
     const {
         data,
@@ -477,12 +480,29 @@ async function getLastImapUid(mailboxEmail) {
     } = await supabase
         .from("email_messages")
         .select("imap_uid")
-        .eq("provider", "imap")
-        .eq("mailbox_email", mailboxEmail)
-        .not("imap_uid", "is", null)
-        .order("imap_uid", {
-            ascending: false
-        })
+        .eq(
+            "provider",
+            "imap"
+        )
+        .eq(
+            "mailbox_email",
+            mailboxEmail
+        )
+        .eq(
+            "imap_mailbox",
+            mailboxPath
+        )
+        .not(
+            "imap_uid",
+            "is",
+            null
+        )
+        .order(
+            "imap_uid",
+            {
+                ascending: false
+            }
+        )
         .limit(1)
         .maybeSingle();
 
@@ -5222,31 +5242,35 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
             );
 
         const loaded =
-            await loadImapMessage(
-                {
-                    provider: "imap",
+    await loadImapMessage(
+        {
+            provider:
+                "imap",
 
-                    email:
-                        mailbox.email,
+            email:
+                mailbox.email,
 
-                    username:
-                        mailbox.username ||
-                        mailbox.email,
+            username:
+                mailbox.username ||
+                mailbox.email,
 
-                    password,
+            password,
 
-                    imap_host:
-                        mailbox.imap_host,
+            imap_host:
+                mailbox.imap_host,
 
-                    imap_port:
-                        mailbox.imap_port,
+            imap_port:
+                mailbox.imap_port,
 
-                    imap_secure:
-                        mailbox.imap_secure
-                },
+            imap_secure:
+                mailbox.imap_secure
+        },
 
-                message.imap_uid
-            );
+        message.imap_uid,
+
+        message.imap_mailbox ||
+            "INBOX"
+    );
 
 
         if (!loaded?.raw) {

@@ -577,12 +577,19 @@ async function importNewImapMessages(
 
 }
 
-async function loadImapMessage(connection, uid) {
+async function loadImapMessage(
+    connection,
+    uid,
+    mailboxPath = "INBOX"
+) {
     const client = createImapClient(connection);
 
     try {
         await client.connect();
-        await client.mailboxOpen("INBOX");
+
+        await client.mailboxOpen(
+            mailboxPath
+        );
 
         const message = await client.fetchOne(
             String(uid),
@@ -600,7 +607,7 @@ async function loadImapMessage(connection, uid) {
 
         if (!message) {
             throw new Error(
-                `Die IMAP-Nachricht mit UID ${uid} wurde nicht gefunden.`
+                `Die IMAP-Nachricht mit UID ${uid} wurde in ${mailboxPath} nicht gefunden.`
             );
         }
 
@@ -611,7 +618,9 @@ async function loadImapMessage(connection, uid) {
                 message.envelope || null,
 
             flags:
-                Array.from(message.flags || []),
+                Array.from(
+                    message.flags || []
+                ),
 
             bodyStructure:
                 message.bodyStructure || null,
