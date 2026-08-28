@@ -399,14 +399,6 @@ async function importNewImapMessages(
     lastUid = 0
 ) {
 
-console.log(
-    "🔄 IMAP LIVE SYNC START:",
-    {
-        email: connection.email,
-        lastUid
-    }
-);
-
     const client =
         createImapClient(connection);
 
@@ -414,15 +406,7 @@ console.log(
 
         await client.connect();
 
-        console.log(
-    "📥 IMAP LIVE INBOX OPEN:",
-    {
-        email: connection.email,
-        lastUid
-    }
-);
-
-        const sentMailbox =
+const sentMailbox =
     await findImapSentMailbox(client);
 
 console.log(
@@ -432,6 +416,9 @@ console.log(
         sentMailbox
     }
 );
+
+        const sentMailbox =
+    await findImapSentMailbox(client);
 
         const mailbox =
             await client.mailboxOpen(
@@ -447,16 +434,6 @@ console.log(
 
         const startUid =
             Number(lastUid || 0) + 1;
-
-            console.log(
-    "🔢 IMAP LIVE UID RANGE:",
-    {
-        email: connection.email,
-        lastUid,
-        startUid
-    }
-);
-
 
         console.log(
             "LIVE IMAP FETCH:",
