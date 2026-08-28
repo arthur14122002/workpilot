@@ -196,7 +196,7 @@ const providerRegistry = new Map([
             }
         }
     ]
-];
+];)
 
 const mxProviderRules = [
     {
