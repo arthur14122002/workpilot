@@ -1926,19 +1926,34 @@ mailbox
 }
 
 async function getActiveMailboxConnection() {
-    const { data: mailbox, error } = await supabase
+
+    const { data: mailboxes, error } = await supabase
         .from("mailbox_connections")
         .select("*")
         .eq("is_active", true)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .single();
+        .order("updated_at", {
+            ascending: false
+        });
 
-    if (error || !mailbox) {
+    if (error) {
+        throw error;
+    }
+
+    if (!mailboxes || mailboxes.length === 0) {
         throw new Error("Bitte verbinde zuerst ein Postfach.");
     }
 
-    return mailbox;
+    if (mailboxes.length > 1) {
+
+        console.warn(
+            "⚠️ Mehrere aktive Mailboxen gefunden:",
+            mailboxes.map(mailbox => mailbox.email)
+        );
+
+        return mailboxes[0];
+    }
+
+    return mailboxes[0];
 }
 
 async function startGoogleMailboxWatch() {
