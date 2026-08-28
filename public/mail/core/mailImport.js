@@ -406,7 +406,7 @@ async function importNewImapMessages(
 
         await client.connect();
 
-const sentMailbox =
+                const sentMailbox =
     await findImapSentMailbox(client);
 
 console.log(
@@ -416,9 +416,6 @@ console.log(
         sentMailbox
     }
 );
-
-        const sentMailbox =
-    await findImapSentMailbox(client);
 
         const mailbox =
             await client.mailboxOpen(
