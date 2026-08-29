@@ -2060,17 +2060,104 @@ app.post("/api/mailbox/import-new", async (req, res) => {
             await getActiveMailboxConnection();
 
 
-        if (
-            mailbox.provider !== "imap"
-        ) {
+if (
+    mailbox.provider === "google"
+) {
 
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Der Live-Import ist aktuell nur für IMAP verfügbar."
-            });
+    const {
+        auth
+    } =
+        await getActiveGoogleMailboxAuth();
+
+
+    const gmail =
+        google.gmail({
+            version: "v1",
+            auth
+        });
+
+
+    const listResponse =
+        await gmail.users.messages.list({
+            userId: "me",
+
+            maxResults: 50,
+
+            q: "newer_than:1d"
+        });
+
+
+    const gmailMessages =
+        listResponse
+            .data
+            .messages ||
+        [];
+
+
+    let savedCount = 0;
+    let skippedCount = 0;
+
+
+    for (
+        const gmailMessage
+        of gmailMessages
+    ) {
+
+        const importedMessage =
+            await importSingleGoogleMessage(
+                gmail,
+                gmailMessage.id,
+                {
+                    createDashboardNotificationEntry:
+                        false
+                }
+            );
+
+
+        if (importedMessage) {
+
+            savedCount++;
+
+        } else {
+
+            skippedCount++;
 
         }
+
+    }
+
+
+    return res.json({
+        success: true,
+
+        fetched:
+            gmailMessages.length,
+
+        saved:
+            savedCount,
+
+        skipped:
+            skippedCount,
+
+        provider:
+            "google"
+    });
+
+}
+
+
+if (
+    mailbox.provider !== "imap"
+) {
+
+    return res.status(400).json({
+        success: false,
+
+        message:
+            "Für dieses Postfach ist noch kein Live-Sync verfügbar."
+    });
+
+}
 
 
         const password =
