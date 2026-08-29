@@ -568,9 +568,16 @@ const direction =
         ? "outbound"
         : "inbound";
 
-        const externalMessageId =
-            mail.messageId ||
-            `imap-${mail.uid}-${mailbox.email}`;
+        const mailboxPath =
+    mail.mailboxPath ||
+    "INBOX";
+
+const externalMessageId =
+    `imap:${mailbox.email}:${mailboxPath}:${mail.uid}`;
+
+const rfcMessageId =
+    mail.messageId ||
+    null;
 
         const {
             data: existingMessage,
@@ -822,12 +829,15 @@ const matchedContact =
                     mailbox_email:
                         mailbox.email,
 
-                    external_message_id:
-                        externalMessageId,
+external_message_id:
+    externalMessageId,
 
-                    external_thread_id:
-                        mail.inReplyTo ||
-                        null,
+rfc_message_id:
+    rfcMessageId,
+
+external_thread_id:
+    mail.inReplyTo ||
+    null,
 
                     imap_uid:
                         mail.uid,
