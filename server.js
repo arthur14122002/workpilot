@@ -559,6 +559,15 @@ let processedCount = 0;
 
     processedCount++;
 
+    const mailboxPath =
+    mail.mailboxPath ||
+    "INBOX";
+
+const direction =
+    mail.mailboxRole === "sent"
+        ? "outbound"
+        : "inbound";
+
         const externalMessageId =
             mail.messageId ||
             `imap-${mail.uid}-${mailbox.email}`;
@@ -637,12 +646,17 @@ let processedCount = 0;
             );
 
 
-        const matchedContact =
-            senderEmail
-                ? await findMatchingContact(
-                    senderEmail
-                )
-                : null;
+const contactEmail =
+    direction === "outbound"
+        ? recipientEmail
+        : senderEmail;
+
+const matchedContact =
+    contactEmail
+        ? await findMatchingContact(
+            contactEmail
+        )
+        : null;
 
         let thread = null;
 
@@ -785,7 +799,7 @@ let processedCount = 0;
                         null,
 
                     direction:
-                        "inbound",
+                       direction,
 
                     sender:
                         senderEmail,
@@ -817,6 +831,9 @@ let processedCount = 0;
 
                     imap_uid:
                         mail.uid,
+
+                    imap_mailbox:
+                        mailboxPath,
 
                     has_attachments:
                         mail.hasAttachments,
