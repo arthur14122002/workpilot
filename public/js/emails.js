@@ -504,6 +504,24 @@ async function checkMailFrontendSync() {
 
     try {
 
+        try {
+
+            await fetch(
+                "/api/mailbox/import-new",
+                {
+                    method: "POST"
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "MAIL PROVIDER SYNC ERROR:",
+                error
+            );
+
+        }
+
         const messages =
             await apiGetEmailMessages();
 
