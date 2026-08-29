@@ -573,6 +573,56 @@ console.log(
             }
         );
 
+if (sentMailbox) {
+
+console.log(
+    "🧪 SENT DEBUG BEFORE OPEN:",
+    {
+        email: connection.email,
+        sentMailbox
+    }
+);
+
+    await client.mailboxOpen(
+        sentMailbox
+    );
+
+    console.log(
+    "🧪 SENT DEBUG OPENED:",
+    {
+        email: connection.email,
+        sentMailbox
+    }
+);
+
+    const sentUids =
+        await client.search(
+            {
+                all: true
+            },
+            {
+                uid: true
+            }
+        );
+
+    console.log(
+        "📤 IMAP SENT CHECK:",
+        {
+            email:
+                connection.email,
+
+            mailbox:
+                sentMailbox,
+
+            total:
+                sentUids.length,
+
+            latestUids:
+                sentUids.slice(-5)
+        }
+    );
+
+}
 
         return mails;
 
