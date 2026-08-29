@@ -1943,6 +1943,18 @@ async function getActiveMailboxConnection() {
         throw new Error("Bitte verbinde zuerst ein Postfach.");
     }
 
+    console.log(
+    "🔎 ACTIVE MAILBOX FROM DATABASE:",
+    {
+        id: mailbox.id,
+        email: mailbox.email,
+        provider: mailbox.provider,
+        providerName: mailbox.provider_name,
+        imapHost: mailbox.imap_host,
+        updatedAt: mailbox.updated_at
+    }
+);
+
     if (mailboxes.length > 1) {
 
         console.warn(
