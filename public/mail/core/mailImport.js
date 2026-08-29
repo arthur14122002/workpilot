@@ -575,25 +575,9 @@ console.log(
 
 if (sentMailbox) {
 
-console.log(
-    "🧪 SENT DEBUG BEFORE OPEN:",
-    {
-        email: connection.email,
-        sentMailbox
-    }
-);
-
     await client.mailboxOpen(
         sentMailbox
     );
-
-    console.log(
-    "🧪 SENT DEBUG OPENED:",
-    {
-        email: connection.email,
-        sentMailbox
-    }
-);
 
     const sentUids =
         await client.search(
@@ -605,8 +589,56 @@ console.log(
             }
         );
 
+    const latestSentUids =
+        sentUids.slice(-5);
+
+    const sentMessages = [];
+
+    if (latestSentUids.length > 0) {
+
+        for await (
+            const message
+            of client.fetch(
+                latestSentUids,
+                {
+                    uid: true,
+                    envelope: true,
+                    flags: true,
+                    size: true
+                },
+                {
+                    uid: true
+                }
+            )
+        ) {
+
+            sentMessages.push({
+                uid:
+                    message.uid,
+
+                subject:
+                    message.envelope?.subject ||
+                    "",
+
+                from:
+                    message.envelope?.from ||
+                    [],
+
+                to:
+                    message.envelope?.to ||
+                    [],
+
+                date:
+                    message.envelope?.date ||
+                    null
+            });
+
+        }
+
+    }
+
     console.log(
-        "📤 IMAP SENT CHECK:",
+        "📤 IMAP SENT MESSAGES:",
         {
             email:
                 connection.email,
@@ -614,11 +646,8 @@ console.log(
             mailbox:
                 sentMailbox,
 
-            total:
-                sentUids.length,
-
-            latestUids:
-                sentUids.slice(-5)
+            messages:
+                sentMessages
         }
     );
 
