@@ -394,6 +394,165 @@ uids =
 
 }
 
+async function importImapFolder(
+    connection,
+    folderPath
+) {
+
+    const client =
+        createImapClient(
+            connection
+        );
+
+    try {
+
+        await client.connect();
+
+        const mailbox =
+            await client.mailboxOpen(
+                folderPath
+            );
+
+        if (!mailbox.exists) {
+            return [];
+        }
+
+        const uids =
+            await client.search(
+                {
+                    all: true
+                },
+                {
+                    uid: true
+                }
+            );
+
+        if (!uids.length) {
+            return [];
+        }
+
+        const mails = [];
+
+        for await (
+            const message
+            of client.fetch(
+                uids,
+                {
+                    uid: true,
+                    envelope: true,
+                    flags: true,
+                    size: true,
+                    bodyStructure: true
+                },
+                {
+                    uid: true
+                }
+            )
+        ) {
+
+            const flags =
+                Array.from(
+                    message.flags || []
+                );
+
+            const bodyStructure =
+                message.bodyStructure ||
+                null;
+
+            mails.push({
+                provider:
+                    "imap",
+
+                mailboxPath:
+                    folderPath,
+
+                mailboxRole:
+                    "custom",
+
+                externalId:
+                    `imap:${connection.email}:${folderPath}:${message.uid}`,
+
+                uid:
+                    message.uid,
+
+                messageId:
+                    message.envelope?.messageId ||
+                    null,
+
+                inReplyTo:
+                    message.envelope?.inReplyTo ||
+                    null,
+
+                subject:
+                    message.envelope?.subject ||
+                    "",
+
+                from:
+                    message.envelope?.from ||
+                    [],
+
+                to:
+                    message.envelope?.to ||
+                    [],
+
+                cc:
+                    message.envelope?.cc ||
+                    [],
+
+                bcc:
+                    message.envelope?.bcc ||
+                    [],
+
+                date:
+                    message.envelope?.date ||
+                    null,
+
+                size:
+                    Number(
+                        message.size || 0
+                    ),
+
+                flags,
+
+                isRead:
+                    flags.includes(
+                        "\\Seen"
+                    ),
+
+                isStarred:
+                    flags.includes(
+                        "\\Flagged"
+                    ),
+
+                hasAttachments:
+                    bodyStructureHasAttachments(
+                        bodyStructure
+                    ),
+
+                text:
+                    null,
+
+                html:
+                    null,
+
+                contentLoaded:
+                    false
+            });
+
+        }
+
+        return mails;
+
+    } finally {
+
+        await closeImapClient(
+            client
+        );
+
+    }
+
+}
+
 async function importNewImapMessages(
     connection,
     lastUid = 0
@@ -975,6 +1134,7 @@ async function closeImapClient(client) {
 }
 
 module.exports = {
+    importImapFolder,
     discoverImapFolders,
     createImapClient,
     importMailbox,
