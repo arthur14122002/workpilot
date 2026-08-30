@@ -436,9 +436,20 @@ if (connectMailboxBtn) {
 }
 
 if (importMailboxBtn) {
-importMailboxBtn.addEventListener("click", () => {
-emailImportModal.classList.remove("hidden");
-});
+
+    importMailboxBtn.addEventListener(
+        "click",
+        async () => {
+
+            emailImportModal
+                .classList
+                .remove("hidden");
+
+            await loadMailboxImportFolders();
+
+        }
+    );
+
 }
 
 if (closeMailboxModal) {
@@ -533,6 +544,132 @@ submitSmtpConnectionBtn.textContent =
 "Postfach verbinden";
 }
 });
+}
+
+async function loadMailboxImportFolders() {
+
+    const foldersSection =
+        document.getElementById(
+            "mailImportFoldersSection"
+        );
+
+    const foldersContainer =
+        document.getElementById(
+            "mailImportFolders"
+        );
+
+    if (
+        !foldersSection ||
+        !foldersContainer
+    ) {
+        return;
+    }
+
+    foldersSection.classList.add(
+        "hidden"
+    );
+
+    foldersContainer.innerHTML =
+        "";
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/mailbox/folders"
+            );
+
+        const result =
+            await response.json();
+
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Ordner konnten nicht geladen werden."
+            );
+
+        }
+
+        const customFolders =
+            Array.isArray(
+                result.customFolders
+            )
+                ? result.customFolders
+                : [];
+
+        if (!customFolders.length) {
+            return;
+        }
+
+        for (
+            const folder
+            of customFolders
+        ) {
+
+            const label =
+                document.createElement(
+                    "label"
+                );
+
+            label.className =
+                "mailImportOption";
+
+            const text =
+                document.createElement(
+                    "span"
+                );
+
+            text.className =
+                "mailImportOptionText";
+
+            text.textContent =
+                folder.name;
+
+            const checkbox =
+                document.createElement(
+                    "input"
+                );
+
+            checkbox.type =
+                "checkbox";
+
+            checkbox.name =
+                "mailImportFolder";
+
+            checkbox.value =
+                folder.path;
+
+            label.appendChild(
+                text
+            );
+
+            label.appendChild(
+                checkbox
+            );
+
+            foldersContainer.appendChild(
+                label
+            );
+
+        }
+
+        foldersSection.classList.remove(
+            "hidden"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "MAILBOX FOLDER LOAD ERROR:",
+            error
+        );
+
+    }
+
 }
 
 function closeSmtpConnectionModal() {
