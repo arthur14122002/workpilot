@@ -1459,10 +1459,10 @@ const {
         });
 
 
-    const query =
-        String(range) === "all"
-            ? ""
-            : `newer_than:${Number(range)}d`;
+const query =
+    String(range) === "all"
+        ? "in:inbox"
+        : `in:inbox newer_than:${Number(range)}d`;
 
     const gmailMessages = [];
 
