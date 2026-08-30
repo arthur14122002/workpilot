@@ -1169,17 +1169,22 @@ reportImapProgress(
     savedCount
 );
 
-await analyzeInboundEmail(
-    messageForAnalysis,
-    thread,
-    {
-        createDashboardNotificationEntry
-    }
-);
+if (
+    mail.mailboxRole !== "custom" &&
+    direction === "inbound"
+) {
 
+    await analyzeInboundEmail(
+        messageForAnalysis,
+        thread,
+        {
+            createDashboardNotificationEntry
+        }
+    );
 
-            analyzedCount++;
+    analyzedCount++;
 
+}
 
             console.log(
                 "🤖 EMAIL AI ANALYSIS COMPLETE:",
