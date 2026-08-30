@@ -455,6 +455,250 @@ return getMessageFolder(message) === activeFolder;
 });
 }
 
+function renderOriginalMailboxFolders() {
+
+    const section =
+        document.getElementById(
+            "mailOriginalFoldersSection"
+        );
+
+    const container =
+        document.getElementById(
+            "mailOriginalFoldersList"
+        );
+
+    if (
+        !section ||
+        !container
+    ) {
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    const folderCounts =
+        new Map();
+
+
+    for (
+        const message
+        of emailMessagesCache
+    ) {
+
+        if (
+            message.provider !== "imap" ||
+            !message.imap_mailbox ||
+            String(
+                message.imap_mailbox
+            ).toUpperCase() === "INBOX" ||
+            message.direction === "outbound" ||
+            message.deleted_at
+        ) {
+            continue;
+        }
+
+
+        const folderName =
+            message.imap_mailbox;
+
+
+        folderCounts.set(
+            folderName,
+            (
+                folderCounts.get(
+                    folderName
+                ) || 0
+            ) + 1
+        );
+    }
+
+
+    if (!folderCounts.size) {
+
+        section.classList.add(
+            "hidden"
+        );
+
+        return;
+    }
+
+
+    const sortedFolders =
+        Array.from(
+            folderCounts.entries()
+        ).sort(
+            ([nameA], [nameB]) =>
+                nameA.localeCompare(
+                    nameB,
+                    "de"
+                )
+        );
+
+
+    for (
+        const [
+            folderName,
+            count
+        ]
+        of sortedFolders
+    ) {
+
+        folderLabels[folderName] =
+            folderName;
+
+        folderSubtitles[folderName] =
+            "Originalordner aus deinem verbundenen Postfach.";
+
+
+        const button =
+            document.createElement(
+                "button"
+            );
+
+        button.type =
+            "button";
+
+        button.className =
+            "mailFolder mailOriginalFolder";
+
+        button.dataset.folder =
+            folderName;
+
+
+        if (
+            activeFolder ===
+            folderName
+        ) {
+            button.classList.add(
+                "active"
+            );
+        }
+
+
+        const left =
+            document.createElement(
+                "span"
+            );
+
+        left.className =
+            "mailOriginalFolderLeft";
+
+
+        const icon =
+            document.createElement(
+                "span"
+            );
+
+        icon.className =
+            "mailOriginalFolderIcon";
+
+        icon.textContent =
+            "📁";
+
+
+        const name =
+            document.createElement(
+                "span"
+            );
+
+        name.className =
+            "mailOriginalFolderName";
+
+        name.textContent =
+            folderName;
+
+
+        const counter =
+            document.createElement(
+                "strong"
+            );
+
+        counter.className =
+            "mailOriginalFolderCount";
+
+        counter.textContent =
+            String(count);
+
+
+        left.appendChild(
+            icon
+        );
+
+        left.appendChild(
+            name
+        );
+
+        button.appendChild(
+            left
+        );
+
+        button.appendChild(
+            counter
+        );
+
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                activeFolder =
+                    folderName;
+
+
+                document
+                    .querySelectorAll(
+                        ".mailFolder"
+                    )
+                    .forEach(
+                        entry => {
+
+                            entry.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
+
+
+                button.classList.add(
+                    "active"
+                );
+
+
+                activeMessageId =
+                    null;
+
+                mailDetailView
+                    .classList
+                    .add(
+                        "hidden"
+                    );
+
+                emptyMailState
+                    .classList
+                    .remove(
+                        "hidden"
+                    );
+
+
+                renderEmails();
+            }
+        );
+
+
+        container.appendChild(
+            button
+        );
+    }
+
+
+    section.classList.remove(
+        "hidden"
+    );
+}
+
 function updateFolderCounts() {
 const counts = {
 offer: 0,
@@ -698,18 +942,23 @@ async function renderEmails() {
 
         emailThreadsList.innerHTML = "";
 
-        try {
-            emailMessagesCache =
-                await apiGetEmailMessages();
-        } catch (error) {
-            showToast(error.message);
-            return;
-        }
+try {
+    emailMessagesCache =
+        await apiGetEmailMessages();
+} catch (error) {
+    showToast(error.message);
+    return;
+}
 
-        updateFolderCounts();
+renderOriginalMailboxFolders();
 
-        currentFolderTitle.textContent =
-            folderLabels[activeFolder];
+updateFolderCounts();
+
+currentFolderTitle.textContent =
+    folderLabels[activeFolder];
+
+currentFolderSubtitle.textContent =
+    folderSubtitles[activeFolder];
 
         currentFolderSubtitle.textContent =
             folderSubtitles[activeFolder];
