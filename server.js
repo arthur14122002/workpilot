@@ -401,17 +401,20 @@ async function sendEmailFromActiveMailbox({
 
     };
 
-    const result =
-        await transporter.sendMail(
+const result =
+    await transporter.sendMail(
+        mailOptions
+    );
+
+mailOptions.messageId =
+    result.messageId;
+
+try {
+
+    const rawMessage =
+        await new MailComposer(
             mailOptions
-        );
-
-    try {
-
-        const rawMessage =
-            await new MailComposer(
-                mailOptions
-            )
+        )
                 .compile()
                 .build();
 
@@ -577,57 +580,145 @@ const rfcMessageId =
     mail.messageId ||
     null;
 
-        const {
-            data: existingMessage,
-            error: existingMessageError
-        } = await supabase
-            .from("email_messages")
-            .select("id")
-            .eq(
-                "external_message_id",
-                externalMessageId
-            )
-            .maybeSingle();
+const {
+    data: existingMessage,
+    error: existingMessageError
+} = await supabase
+    .from("email_messages")
+    .select("id")
+    .eq(
+        "external_message_id",
+        externalMessageId
+    )
+    .maybeSingle();
 
 
-        if (existingMessageError) {
+if (existingMessageError) {
 
-            console.error(
-                "EMAIL EXISTENCE CHECK ERROR:",
-                {
-                    uid:
-                        mail.uid,
+    console.error(
+        "EMAIL EXISTENCE CHECK ERROR:",
+        {
+            uid:
+                mail.uid,
 
-                    subject:
-                        mail.subject,
+            subject:
+                mail.subject,
 
-                    error:
-                        existingMessageError
-                }
-            );
+            error:
+                existingMessageError
+        }
+    );
 
-        reportImapProgress(
+    reportImapProgress(
         onProgress,
         processedCount,
         mails.length,
         savedCount
     );
 
-            continue;
+    continue;
+}
+
+
+if (existingMessage) {
+
+    console.log(
+        "EMAIL ALREADY EXISTS:",
+        {
+            uid:
+                mail.uid,
+
+            subject:
+                mail.subject,
+
+            reason:
+                "external_message_id"
         }
+    );
 
-        if (existingMessage) {
+    reportImapProgress(
+        onProgress,
+        processedCount,
+        mails.length,
+        savedCount
+    );
 
-            console.log(
-                "EMAIL ALREADY EXISTS:",
-                {
-                    uid:
-                        mail.uid,
+    continue;
+}
 
-                    subject:
-                        mail.subject
-                }
-            );
+if (rfcMessageId) {
+
+    const {
+        data: existingRfcMessage,
+        error: existingRfcMessageError
+    } = await supabase
+        .from("email_messages")
+        .select("id")
+        .eq(
+            "rfc_message_id",
+            rfcMessageId
+        )
+        .maybeSingle();
+
+
+    if (existingRfcMessageError) {
+
+        console.error(
+            "RFC MESSAGE EXISTENCE CHECK ERROR:",
+            {
+                uid:
+                    mail.uid,
+
+                subject:
+                    mail.subject,
+
+                rfcMessageId,
+
+                error:
+                    existingRfcMessageError
+            }
+        );
+
+        reportImapProgress(
+            onProgress,
+            processedCount,
+            mails.length,
+            savedCount
+        );
+
+        continue;
+    }
+
+
+    if (existingRfcMessage) {
+
+        console.log(
+            "EMAIL ALREADY EXISTS:",
+            {
+                uid:
+                    mail.uid,
+
+                subject:
+                    mail.subject,
+
+                rfcMessageId,
+
+                reason:
+                    "rfc_message_id"
+            }
+        );
+
+        reportImapProgress(
+            onProgress,
+            processedCount,
+            mails.length,
+            savedCount
+        );
+
+        continue;
+    }
+
+}
 
         reportImapProgress(
         onProgress,
@@ -5025,7 +5116,10 @@ const { data: message, error: messageError } = await supabase
 
     content_loaded: true,
 
-    message_status: "sent"
+    message_status: "sent",
+
+    rfc_message_id:
+    email.messageId || null
 }
 ])
 .select()
