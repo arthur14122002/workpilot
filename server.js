@@ -690,7 +690,74 @@ if (rfcMessageId) {
     }
 
 
-    if (existingRfcMessage) {
+if (existingRfcMessage) {
+
+    if (mail.mailboxRole === "trash") {
+
+        const {
+            error: trashUpdateError
+        } = await supabase
+            .from("email_messages")
+            .update({
+                deleted_at:
+                    new Date().toISOString(),
+
+                imap_mailbox:
+                    mailboxPath,
+
+                imap_uid:
+                    mail.uid,
+
+                mailbox_email:
+                    mailbox.email,
+
+                provider:
+                    "imap"
+            })
+            .eq(
+                "id",
+                existingRfcMessage.id
+            );
+
+
+        if (trashUpdateError) {
+
+            console.error(
+                "TRASH SYNC UPDATE ERROR:",
+                {
+                    messageId:
+                        existingRfcMessage.id,
+
+                    uid:
+                        mail.uid,
+
+                    subject:
+                        mail.subject,
+
+                    error:
+                        trashUpdateError
+                }
+            );
+
+        } else {
+
+            console.log(
+                "🗑️ EMAIL MOVED TO TRASH:",
+                {
+                    messageId:
+                        existingRfcMessage.id,
+
+                    subject:
+                        mail.subject,
+
+                    mailbox:
+                        mailboxPath
+                }
+            );
+
+        }
+
+    } else {
 
         console.log(
             "EMAIL ALREADY EXISTS:",
@@ -708,15 +775,18 @@ if (rfcMessageId) {
             }
         );
 
-        reportImapProgress(
-            onProgress,
-            processedCount,
-            mails.length,
-            savedCount
-        );
-
-        continue;
     }
+
+
+    reportImapProgress(
+        onProgress,
+        processedCount,
+        mails.length,
+        savedCount
+    );
+
+    continue;
+}
 
 }
 
