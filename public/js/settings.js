@@ -1047,6 +1047,15 @@ if (startImportBtn) {
                     'input[name="mailImportRange"]:checked'
                 )?.value || "30";
 
+            const selectedFolders =
+    Array.from(
+        document.querySelectorAll(
+            'input[name="mailImportFolder"]:checked'
+        )
+    ).map(
+        checkbox =>
+            checkbox.value
+    );
 
             startImportBtn.disabled =
                 true;
@@ -1104,11 +1113,14 @@ if (startImportBtn) {
                                     "application/json"
                             },
 
-                            body:
-                                JSON.stringify({
-                                    range:
-                                        selectedRange
-                                })
+body:
+    JSON.stringify({
+        range:
+            selectedRange,
+
+        selectedFolders:
+            selectedFolders
+    })
                         }
                     );
 
