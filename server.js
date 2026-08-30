@@ -2088,19 +2088,175 @@ app.get(
             const mailbox =
                 await getActiveMailboxConnection();
 
-            if (
-                mailbox.provider !== "imap"
-            ) {
+if (
+    mailbox.provider === "google"
+) {
 
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Die Ordner-Erkennung ist aktuell nur für IMAP aktiviert."
-                    });
+    const {
+        auth
+    } =
+        await getActiveGoogleMailboxAuth();
 
-            }
+    const gmail =
+        google.gmail({
+            version: "v1",
+            auth
+        });
+
+    const labelsResponse =
+        await gmail.users.labels.list({
+            userId: "me"
+        });
+
+    const labels =
+        labelsResponse
+            .data
+            .labels ||
+        [];
+
+    const systemFolders = [];
+    const customFolders = [];
+
+    const systemRoleMap = {
+        INBOX:
+            "inbox",
+
+        SENT:
+            "sent",
+
+        TRASH:
+            "trash",
+
+        DRAFT:
+            "drafts",
+
+        DRAFTS:
+            "drafts",
+
+        SPAM:
+            "junk",
+
+        STARRED:
+            "flagged",
+
+        IMPORTANT:
+            "important",
+
+        ALL:
+            "all",
+
+        ALL_MAIL:
+            "all"
+    };
+
+    for (
+        const label
+        of labels
+    ) {
+
+        const labelType =
+            String(
+                label.type ||
+                ""
+            ).toLowerCase();
+
+        if (
+            labelType === "user"
+        ) {
+
+            customFolders.push({
+                id:
+                    label.id,
+
+                name:
+                    label.name ||
+                    label.id,
+
+                path:
+                    label.id,
+
+                role:
+                    null,
+
+                selectable:
+                    true,
+
+                providerType:
+                    "google",
+
+                specialUse:
+                    null
+            });
+
+            continue;
+        }
+
+        const role =
+            systemRoleMap[
+                String(
+                    label.id ||
+                    label.name ||
+                    ""
+                ).toUpperCase()
+            ] ||
+            null;
+
+        systemFolders.push({
+            id:
+                label.id,
+
+            name:
+                label.name ||
+                label.id,
+
+            path:
+                label.id,
+
+            role:
+                role,
+
+            selectable:
+                false,
+
+            providerType:
+                "google",
+
+            specialUse:
+                label.id ||
+                null
+        });
+
+    }
+
+    return res.json({
+        success: true,
+
+        provider:
+            "google",
+
+        email:
+            mailbox.email,
+
+        systemFolders,
+
+        customFolders
+    });
+
+}
+
+if (
+    mailbox.provider !== "imap"
+) {
+
+    return res
+        .status(400)
+        .json({
+            success: false,
+            message:
+                "Für diesen Anbieter ist die Ordner-Erkennung noch nicht aktiviert."
+        });
+
+}
 
             const password =
                 decryptMailPassword(
