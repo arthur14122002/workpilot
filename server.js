@@ -11,6 +11,7 @@ const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./public/mail/core/mailDiscovery");
 const {
     createImapClient,
+    discoverImapFolders,
     importMailbox,
     importNewImapMessages,
     loadImapMessage,
@@ -2075,6 +2076,118 @@ return match[1].trim().toLowerCase();
 
 return value.trim().toLowerCase();
 }
+
+app.get(
+    "/api/mailbox/folders",
+    async (req, res) => {
+
+        let client = null;
+
+        try {
+
+            const mailbox =
+                await getActiveMailboxConnection();
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Die Ordner-Erkennung ist aktuell nur für IMAP aktiviert."
+                    });
+
+            }
+
+            const password =
+                decryptMailPassword(
+                    mailbox.encrypted_password
+                );
+
+            client =
+                createImapClient({
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure
+                });
+
+            await client.connect();
+
+            const folders =
+                await discoverImapFolders(
+                    client
+                );
+
+            return res.json({
+                success: true,
+
+                provider:
+                    "imap",
+
+                email:
+                    mailbox.email,
+
+                systemFolders:
+                    folders.systemFolders,
+
+                customFolders:
+                    folders.customFolders
+            });
+
+        } catch (error) {
+
+            console.error(
+                "MAILBOX FOLDER DISCOVERY ERROR:",
+                error
+            );
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        error.message ||
+                        "Die Postfachordner konnten nicht geladen werden."
+                });
+
+        } finally {
+
+            if (client) {
+
+                try {
+
+                    await client.logout();
+
+                } catch (error) {
+
+                }
+
+            }
+
+        }
+
+    }
+);
 
 app.post("/api/mailbox/import-new", async (req, res) => {
 
