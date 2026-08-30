@@ -1053,3 +1053,130 @@ gap: 10px;
 
     background: #fff;
 }
+
+.mailOriginalFoldersSection {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--wp-border);
+}
+
+.mailOriginalFoldersTitle {
+    margin: 0 10px 8px;
+
+    font-size: 12px;
+    font-weight: 750;
+
+    color: var(--wp-muted);
+
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.mailOriginalFoldersList {
+    display: flex;
+    flex-direction: column;
+
+    max-height: 180px;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding-right: 4px;
+}
+
+.mailOriginalFolder {
+    width: 100%;
+
+    border: none;
+    background: transparent;
+
+    border-radius: 14px;
+
+    padding: 10px 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 8px;
+
+    cursor: pointer;
+
+    font: inherit;
+    color: var(--wp-text);
+
+    flex-shrink: 0;
+}
+
+.mailOriginalFolder:hover,
+.mailOriginalFolder.active {
+    background: var(--wp-orange-soft);
+    color: var(--wp-orange-dark);
+}
+
+.mailOriginalFolderLeft {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+}
+
+.mailOriginalFolderIcon {
+    flex-shrink: 0;
+
+    font-size: 14px;
+    line-height: 1;
+}
+
+.mailOriginalFolderName {
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    text-align: left;
+}
+
+.mailOriginalFolderCount {
+    min-width: 24px;
+    height: 24px;
+
+    flex-shrink: 0;
+
+    border-radius: 999px;
+
+    background: #f3f4f6;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.mailOriginalFolder.active
+.mailOriginalFolderCount {
+    background: #fff;
+    color: var(--wp-orange-dark);
+}
+
+.mailOriginalFoldersList::-webkit-scrollbar {
+    width: 5px;
+}
+
+.mailOriginalFoldersList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.mailOriginalFoldersList::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 999px;
+}
+
+.mailOriginalFoldersList::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
