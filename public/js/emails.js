@@ -487,17 +487,50 @@ function renderOriginalMailboxFolders() {
         of emailMessagesCache
     ) {
 
-        if (
-            message.provider !== "imap" ||
-            !message.imap_mailbox ||
-            String(
-                message.imap_mailbox
-            ).toUpperCase() === "INBOX" ||
-            message.direction === "outbound" ||
-            message.deleted_at
-        ) {
-            continue;
-        }
+const normalizedMailbox =
+    String(
+        message.imap_mailbox || ""
+    )
+        .trim()
+        .toLowerCase();
+
+const systemMailboxes =
+    new Set([
+        "inbox",
+        "sent",
+        "sent items",
+        "sent messages",
+        "gesendet",
+        "gesendete elemente",
+        "trash",
+        "deleted",
+        "deleted items",
+        "deleted messages",
+        "gelöscht",
+        "gelöschte elemente",
+        "papierkorb",
+        "spam",
+        "junk",
+        "junk e-mail",
+        "junk email",
+        "spamverdacht",
+        "drafts",
+        "entwürfe",
+        "archive",
+        "archiv"
+    ]);
+
+if (
+    message.provider !== "imap" ||
+    !message.imap_mailbox ||
+    systemMailboxes.has(
+        normalizedMailbox
+    ) ||
+    message.direction === "outbound" ||
+    message.deleted_at
+) {
+    continue;
+}
 
 
         const folderName =
