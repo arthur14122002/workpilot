@@ -374,13 +374,39 @@ mailAttachmentsList.appendChild(item);
 }
 
 function getMessageFolder(message) {
-const relatedType = message.email_threads?.related_type;
-const manualFolder = message.email_threads?.manual_folder;
-const aiCategory = message.email_threads?.ai_category;
-const intent = message.ai_detected_intent;
 
-if (message.deleted_at) return "trash";
-if (message.direction === "outbound") return "sent";
+const relatedType =
+    message.email_threads?.related_type;
+
+const manualFolder =
+    message.email_threads?.manual_folder;
+
+const aiCategory =
+    message.email_threads?.ai_category;
+
+const intent =
+    message.ai_detected_intent;
+
+const imapMailbox =
+    message.imap_mailbox;
+
+
+if (message.deleted_at) {
+    return "trash";
+}
+
+if (message.direction === "outbound") {
+    return "sent";
+}
+
+if (
+    message.provider === "imap" &&
+    imapMailbox &&
+    String(imapMailbox).toUpperCase() !== "INBOX"
+) {
+    return imapMailbox;
+}
+
 
 if (manualFolder) {
 if (manualFolder === "inbox") {
