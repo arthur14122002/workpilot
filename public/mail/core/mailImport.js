@@ -1082,6 +1082,68 @@ async function findImapTrashMailbox(client) {
     return trashByName?.path || null;
 }
 
+async function moveImapMessageToTrash(
+    connection,
+    mailboxPath,
+    uid
+) {
+
+    const client =
+        createImapClient(connection);
+
+    try {
+
+        await client.connect();
+
+        const trashMailbox =
+            await findImapTrashMailbox(
+                client
+            );
+
+        if (!trashMailbox) {
+            throw new Error(
+                "Kein Papierkorb im Postfach gefunden."
+            );
+        }
+
+        const sourceMailbox =
+            mailboxPath || "INBOX";
+
+        if (
+            String(sourceMailbox) ===
+            String(trashMailbox)
+        ) {
+            return {
+                trashMailbox
+            };
+        }
+
+        await client.mailboxOpen(
+            sourceMailbox
+        );
+
+        await client.messageMove(
+            Number(uid),
+            trashMailbox,
+            {
+                uid: true
+            }
+        );
+
+        return {
+            trashMailbox
+        };
+
+    } finally {
+
+        await closeImapClient(
+            client
+        );
+
+    }
+
+}
+
 async function discoverImapFolders(
     client
 ) {
@@ -1307,6 +1369,7 @@ async function closeImapClient(client) {
 
 module.exports = {
     importImapFolder,
+    moveImapMessageToTrash,
     findImapTrashMailbox,
     discoverImapFolders,
     createImapClient,

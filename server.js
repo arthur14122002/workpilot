@@ -11,6 +11,7 @@ const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./public/mail/core/mailDiscovery");
 const {
     createImapClient,
+    moveImapMessageToTrash,
     discoverImapFolders,
     importMailbox,
     importImapFolder,
@@ -3608,30 +3609,184 @@ message: data
 });
 });
 
-app.put("/api/email-messages/:id/trash", async (req, res) => {
-const { id } = req.params;
+app.put(
+    "/api/email-messages/:id/trash",
+    async (req, res) => {
 
-const { data, error } = await supabase
-.from("email_messages")
-.update({
-deleted_at: new Date().toISOString()
-})
-.eq("id", id)
-.select()
-.single();
+        const { id } =
+            req.params;
 
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
+        try {
 
-res.json({
-ok: true,
-message: data
-});
-});
+            const {
+                data: message,
+                error: messageLoadError
+            } = await supabase
+                .from("email_messages")
+                .select(`
+                    id,
+                    provider,
+                    mailbox_email,
+                    imap_uid,
+                    imap_mailbox
+                `)
+                .eq(
+                    "id",
+                    id
+                )
+                .single();
+
+
+            if (messageLoadError) {
+
+                return res
+                    .status(500)
+                    .json({
+                        ok: false,
+                        error:
+                            messageLoadError.message
+                    });
+
+            }
+
+
+            let providerTrashMailbox =
+                message.imap_mailbox ||
+                null;
+
+            if (
+                message.provider === "imap" &&
+                message.imap_uid
+            ) {
+
+                const mailbox =
+                    await getActiveMailboxConnection();
+
+
+                if (
+                    message.mailbox_email &&
+                    mailbox.email !==
+                        message.mailbox_email
+                ) {
+
+                    throw new Error(
+                        "Die Mail gehört nicht zum aktuell verbundenen Postfach."
+                    );
+
+                }
+
+
+                const password =
+                    decryptMailPassword(
+                        mailbox.encrypted_password
+                    );
+
+
+                const connection = {
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure,
+
+                    smtp_host:
+                        mailbox.smtp_host,
+
+                    smtp_port:
+                        mailbox.smtp_port,
+
+                    smtp_secure:
+                        mailbox.smtp_secure
+                };
+
+
+                const moveResult =
+                    await moveImapMessageToTrash(
+                        connection,
+                        message.imap_mailbox ||
+                            "INBOX",
+                        message.imap_uid
+                    );
+
+
+                providerTrashMailbox =
+                    moveResult.trashMailbox;
+
+            }
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from("email_messages")
+                .update({
+                    deleted_at:
+                        new Date().toISOString(),
+
+                    imap_mailbox:
+                        providerTrashMailbox
+                })
+                .eq(
+                    "id",
+                    id
+                )
+                .select()
+                .single();
+
+
+            if (error) {
+
+                return res
+                    .status(500)
+                    .json({
+                        ok: false,
+                        error:
+                            error.message
+                    });
+
+            }
+
+
+            res.json({
+                ok: true,
+                message:
+                    data
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "EMAIL TRASH MOVE ERROR:",
+                error
+            );
+
+            res.status(500).json({
+                ok: false,
+                error:
+                    error.message
+            });
+
+        }
+
+    }
+);
 
 app.post("/api/email-messages/:id/restore", async (req, res) => {
 const { id } = req.params;
