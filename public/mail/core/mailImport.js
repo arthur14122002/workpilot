@@ -592,8 +592,6 @@ if (sentMailbox) {
     const latestSentUids =
         sentUids.slice(-5);
 
-    const sentMessages = [];
-
     if (latestSentUids.length > 0) {
 
         for await (
@@ -604,7 +602,8 @@ if (sentMailbox) {
                     uid: true,
                     envelope: true,
                     flags: true,
-                    size: true
+                    size: true,
+                    bodyStructure: true
                 },
                 {
                     uid: true
@@ -612,9 +611,39 @@ if (sentMailbox) {
             )
         ) {
 
-            sentMessages.push({
+            const flags =
+                Array.from(
+                    message.flags || []
+                );
+
+            const bodyStructure =
+                message.bodyStructure ||
+                null;
+
+            mails.push({
+
+                provider:
+                    "imap",
+
+                mailboxRole:
+                    "sent",
+
+                mailboxPath:
+                    sentMailbox,
+
+                externalId:
+                    `imap:${connection.email}:${sentMailbox}:${message.uid}`,
+
                 uid:
                     message.uid,
+
+                messageId:
+                    message.envelope?.messageId ||
+                    null,
+
+                inReplyTo:
+                    message.envelope?.inReplyTo ||
+                    null,
 
                 subject:
                     message.envelope?.subject ||
@@ -628,28 +657,52 @@ if (sentMailbox) {
                     message.envelope?.to ||
                     [],
 
+                cc:
+                    message.envelope?.cc ||
+                    [],
+
+                bcc:
+                    message.envelope?.bcc ||
+                    [],
+
                 date:
                     message.envelope?.date ||
-                    null
+                    null,
+
+                size:
+                    Number(
+                        message.size || 0
+                    ),
+
+                flags,
+
+                isRead:
+                    true,
+
+                isStarred:
+                    flags.includes(
+                        "\\Flagged"
+                    ),
+
+                hasAttachments:
+                    bodyStructureHasAttachments(
+                        bodyStructure
+                    ),
+
+                text:
+                    null,
+
+                html:
+                    null,
+
+                contentLoaded:
+                    false
+
             });
 
         }
 
     }
-
-    console.log(
-        "📤 IMAP SENT MESSAGES:",
-        {
-            email:
-                connection.email,
-
-            mailbox:
-                sentMailbox,
-
-            messages:
-                sentMessages
-        }
-    );
 
 }
 
@@ -696,6 +749,136 @@ async function findImapSentMailbox(client) {
     );
 
     return sentByName?.path || null;
+}
+
+async function discoverImapFolders(
+    client
+) {
+
+    const mailboxes =
+        await client.list();
+
+    const systemFolders = [];
+    const customFolders = [];
+
+    const getSystemRole = mailbox => {
+
+        const specialUse =
+            String(
+                mailbox.specialUse ||
+                ""
+            ).toLowerCase();
+
+        if (
+            String(mailbox.path)
+                .toUpperCase() ===
+            "INBOX"
+        ) {
+            return "inbox";
+        }
+
+        if (
+            specialUse === "\\sent"
+        ) {
+            return "sent";
+        }
+
+        if (
+            specialUse === "\\trash"
+        ) {
+            return "trash";
+        }
+
+        if (
+            specialUse === "\\drafts"
+        ) {
+            return "drafts";
+        }
+
+        if (
+            specialUse === "\\junk"
+        ) {
+            return "junk";
+        }
+
+        if (
+            specialUse === "\\archive"
+        ) {
+            return "archive";
+        }
+
+        if (
+            specialUse === "\\all"
+        ) {
+            return "all";
+        }
+
+        if (
+            specialUse === "\\flagged"
+        ) {
+            return "flagged";
+        }
+
+        return null;
+    };
+
+    for (
+        const mailbox
+        of mailboxes
+    ) {
+
+        const role =
+            getSystemRole(
+                mailbox
+            );
+
+        const folder = {
+
+            id:
+                mailbox.path,
+
+            name:
+                mailbox.name ||
+                mailbox.path,
+
+            path:
+                mailbox.path,
+
+            role:
+                role,
+
+            selectable:
+                role === null,
+
+            providerType:
+                "imap",
+
+            specialUse:
+                mailbox.specialUse ||
+                null
+
+        };
+
+        if (role) {
+
+            systemFolders.push(
+                folder
+            );
+
+        } else {
+
+            customFolders.push(
+                folder
+            );
+
+        }
+
+    }
+
+    return {
+        systemFolders,
+        customFolders
+    };
 }
 
 async function loadImapMessage(
@@ -792,6 +975,7 @@ async function closeImapClient(client) {
 }
 
 module.exports = {
+    discoverImapFolders,
     createImapClient,
     importMailbox,
     importNewImapMessages,
