@@ -720,17 +720,6 @@ if (rfcMessageId) {
 
 }
 
-        reportImapProgress(
-        onProgress,
-        processedCount,
-        mails.length,
-        savedCount
-    );
-
-
-            continue;
-        }
-
         const senderEmail =
             extractFirstEmail(
                 mail.from
