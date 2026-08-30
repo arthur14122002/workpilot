@@ -667,18 +667,18 @@ const matchedContact =
         if (mail.inReplyTo) {
 
             const {
-                data: parentMessage,
-                error: parentMessageError
-            } = await supabase
-                .from("email_messages")
-                .select(`
-                    thread_id
-                `)
-                .eq(
-                    "external_message_id",
-                    mail.inReplyTo
-                )
-                .maybeSingle();
+    data: parentMessage,
+    error: parentMessageError
+} = await supabase
+    .from("email_messages")
+    .select(`
+        thread_id
+    `)
+    .eq(
+        "rfc_message_id",
+        mail.inReplyTo
+    )
+    .maybeSingle();
 
 
             if (parentMessageError) {
@@ -917,7 +917,8 @@ external_thread_id:
                             mailbox.imap_secure
                     },
 
-                    mail.uid
+                    mail.uid,
+                    mailboxPath
                 );
 
 
