@@ -565,19 +565,11 @@ async function importNewImapMessages(
 
         await client.connect();
 
-                const sentMailbox =
-    await findImapSentMailbox(client);
-
-const trashMailbox =
+        const trashMailbox =
     await findImapTrashMailbox(client);
 
-console.log(
-    "🗑️ IMAP TRASH MAILBOX:",
-    {
-        email: connection.email,
-        trashMailbox
-    }
-);
+                const sentMailbox =
+    await findImapSentMailbox(client);
 
 console.log(
     "📤 IMAP SENT MAILBOX:",
@@ -848,6 +840,141 @@ if (sentMailbox) {
 
                 isRead:
                     true,
+
+                isStarred:
+                    flags.includes(
+                        "\\Flagged"
+                    ),
+
+                hasAttachments:
+                    bodyStructureHasAttachments(
+                        bodyStructure
+                    ),
+
+                text:
+                    null,
+
+                html:
+                    null,
+
+                contentLoaded:
+                    false
+
+            });
+
+        }
+
+    }
+
+}
+
+if (trashMailbox) {
+
+    await client.mailboxOpen(
+        trashMailbox
+    );
+
+    const trashUids =
+        await client.search(
+            {
+                all: true
+            },
+            {
+                uid: true
+            }
+        );
+
+    const latestTrashUids =
+        trashUids.slice(-5);
+
+    if (latestTrashUids.length > 0) {
+
+        for await (
+            const message
+            of client.fetch(
+                latestTrashUids,
+                {
+                    uid: true,
+                    envelope: true,
+                    flags: true,
+                    size: true,
+                    bodyStructure: true
+                },
+                {
+                    uid: true
+                }
+            )
+        ) {
+
+            const flags =
+                Array.from(
+                    message.flags || []
+                );
+
+            const bodyStructure =
+                message.bodyStructure ||
+                null;
+
+            mails.push({
+
+                provider:
+                    "imap",
+
+                mailboxRole:
+                    "trash",
+
+                mailboxPath:
+                    trashMailbox,
+
+                externalId:
+                    `imap:${connection.email}:${trashMailbox}:${message.uid}`,
+
+                uid:
+                    message.uid,
+
+                messageId:
+                    message.envelope?.messageId ||
+                    null,
+
+                inReplyTo:
+                    message.envelope?.inReplyTo ||
+                    null,
+
+                subject:
+                    message.envelope?.subject ||
+                    "",
+
+                from:
+                    message.envelope?.from ||
+                    [],
+
+                to:
+                    message.envelope?.to ||
+                    [],
+
+                cc:
+                    message.envelope?.cc ||
+                    [],
+
+                bcc:
+                    message.envelope?.bcc ||
+                    [],
+
+                date:
+                    message.envelope?.date ||
+                    null,
+
+                size:
+                    Number(
+                        message.size || 0
+                    ),
+
+                flags,
+
+                isRead:
+                    flags.includes(
+                        "\\Seen"
+                    ),
 
                 isStarred:
                     flags.includes(
