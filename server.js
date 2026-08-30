@@ -1248,8 +1248,23 @@ await analyzeInboundEmail(
 app.post("/api/mailbox/import", async (req, res) => {
 
 const {
-    range = "30"
+    range = "30",
+    selectedFolders = []
 } = req.body || {};
+
+if (
+    !Array.isArray(
+        selectedFolders
+    )
+) {
+
+    return res.status(400).json({
+        success: false,
+        message:
+            "selectedFolders muss eine Liste von Ordnern sein."
+    });
+
+}
 
     mailboxImportProgress = {
         running: true,
@@ -2075,6 +2090,115 @@ return match[1].trim().toLowerCase();
 }
 
 return value.trim().toLowerCase();
+}
+
+function normalizeMicrosoftFolders(
+    folders
+) {
+
+    const systemFolders = [];
+    const customFolders = [];
+
+    const roleMap = {
+        inbox:
+            "inbox",
+
+        sentitems:
+            "sent",
+
+        drafts:
+            "drafts",
+
+        deleteditems:
+            "trash",
+
+        junkemail:
+            "junk",
+
+        archive:
+            "archive",
+
+        outbox:
+            "outbox"
+    };
+
+    for (
+        const folder
+        of folders
+    ) {
+
+        const wellKnownName =
+            folder.wellKnownName
+                ? String(
+                    folder.wellKnownName
+                ).toLowerCase()
+                : null;
+
+        const role =
+            wellKnownName
+                ? (
+                    roleMap[
+                        wellKnownName
+                    ] ||
+                    null
+                )
+                : null;
+
+        const normalizedFolder = {
+
+            id:
+                folder.id,
+
+            name:
+                folder.displayName ||
+                folder.id,
+
+            path:
+                folder.id,
+
+            role,
+
+            selectable:
+                !wellKnownName,
+
+            providerType:
+                "microsoft",
+
+            specialUse:
+                wellKnownName,
+
+            parentId:
+                folder.parentFolderId ||
+                null,
+
+            childFolderCount:
+                Number(
+                    folder.childFolderCount ||
+                    0
+                )
+
+        };
+
+        if (wellKnownName) {
+
+            systemFolders.push(
+                normalizedFolder
+            );
+
+        } else {
+
+            customFolders.push(
+                normalizedFolder
+            );
+
+        }
+
+    }
+
+    return {
+        systemFolders,
+        customFolders
+    };
 }
 
 app.get(
