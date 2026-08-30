@@ -568,10 +568,6 @@ const direction =
         ? "outbound"
         : "inbound";
 
-        const mailboxPath =
-    mail.mailboxPath ||
-    "INBOX";
-
 const externalMessageId =
     `imap:${mailbox.email}:${mailboxPath}:${mail.uid}`;
 
