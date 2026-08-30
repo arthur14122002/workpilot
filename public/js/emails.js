@@ -745,14 +745,16 @@ function createMailSyncSignature(messages) {
     return messages
         .map((message) => {
 
-            return [
-                message.id || "",
-                message.message_status || "",
-                message.read_at || "",
-                message.updated_at || "",
-                message.received_at || "",
-                message.created_at || ""
-            ].join("|");
+return [
+    message.id || "",
+    message.message_status || "",
+    message.read_at || "",
+    message.deleted_at || "",
+    message.imap_mailbox || "",
+    message.updated_at || "",
+    message.received_at || "",
+    message.created_at || ""
+].join("|");
 
         })
         .join("||");
