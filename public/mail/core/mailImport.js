@@ -396,7 +396,8 @@ uids =
 
 async function importImapFolder(
     connection,
-    folderPath
+    folderPath,
+    mailboxRole = "custom"
 ) {
 
     const client =
@@ -467,7 +468,7 @@ async function importImapFolder(
                     folderPath,
 
                 mailboxRole:
-                    "custom",
+                    mailboxRole,
 
                 externalId:
                     `imap:${connection.email}:${folderPath}:${message.uid}`,
