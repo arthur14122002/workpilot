@@ -1015,6 +1015,116 @@ if (trashMailbox) {
 
 }
 
+if (spamMailbox) {
+
+    await client.mailboxOpen(
+        spamMailbox
+    );
+
+    const spamUids =
+        await client.search(
+            { all: true },
+            { uid: true }
+        );
+
+    const latestSpamUids =
+        spamUids.slice(-5);
+
+    if (latestSpamUids.length > 0) {
+
+        for await (
+            const message
+            of client.fetch(
+                latestSpamUids,
+                {
+                    uid: true,
+                    envelope: true,
+                    flags: true,
+                    size: true,
+                    bodyStructure: true
+                },
+                {
+                    uid: true
+                }
+            )
+        ) {
+
+            const envelope =
+                message.envelope || {};
+
+            mails.push({
+                provider: "imap",
+
+                mailboxRole: "spam",
+
+                mailboxPath:
+                    spamMailbox,
+
+                externalId:
+                    `imap:${connection.email}:${spamMailbox}:${message.uid}`,
+
+                uid:
+                    message.uid,
+
+                messageId:
+                    envelope.messageId || null,
+
+                inReplyTo:
+                    envelope.inReplyTo || null,
+
+                subject:
+                    envelope.subject || "",
+
+                from:
+                    envelope.from || [],
+
+                to:
+                    envelope.to || [],
+
+                cc:
+                    envelope.cc || [],
+
+                bcc:
+                    envelope.bcc || [],
+
+                date:
+                    envelope.date || null,
+
+                size:
+                    message.size || 0,
+
+                flags:
+                    Array.from(
+                        message.flags || []
+                    ),
+
+                isRead:
+                    message.flags?.has("\\Seen") || false,
+
+                isStarred:
+                    message.flags?.has("\\Flagged") || false,
+
+                hasAttachments:
+                    bodyStructureHasAttachments(
+                        message.bodyStructure
+                    ),
+
+                text:
+                    "",
+
+                html:
+                    "",
+
+                contentLoaded:
+                    false
+            });
+
+        }
+
+    }
+
+}
+
         return mails;
 
 
