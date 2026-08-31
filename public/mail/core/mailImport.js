@@ -1369,6 +1369,7 @@ async function closeImapClient(client) {
 }
 
 module.exports = {
+    findImapSentMailbox,
     importImapFolder,
     moveImapMessageToTrash,
     findImapTrashMailbox,
