@@ -1093,6 +1093,8 @@ async function findImapTrashMailbox(client) {
 
     return trashByName?.path || null;
 
+}
+
 async function findImapSpamMailbox(client) {
     const mailboxes = await client.list();
 
