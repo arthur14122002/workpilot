@@ -572,6 +572,17 @@ async function importNewImapMessages(
                 const sentMailbox =
     await findImapSentMailbox(client);
 
+    const spamMailbox =
+    await findImapSpamMailbox(client);
+
+console.log(
+    "🚫 IMAP SPAM MAILBOX:",
+    {
+        email: connection.email,
+        spamMailbox
+    }
+);
+
 console.log(
     "📤 IMAP SENT MAILBOX:",
     {
@@ -1081,6 +1092,39 @@ async function findImapTrashMailbox(client) {
     );
 
     return trashByName?.path || null;
+
+async function findImapSpamMailbox(client) {
+    const mailboxes = await client.list();
+
+    const spamBySpecialUse = mailboxes.find(
+        mailbox =>
+            mailbox.specialUse === "\\Junk"
+    );
+
+    if (spamBySpecialUse) {
+        return spamBySpecialUse.path;
+    }
+
+    const fallbackNames = [
+        "spam",
+        "junk",
+        "junk e-mail",
+        "junk email",
+        "spamverdacht",
+        "unerwünscht",
+        "bulk mail"
+    ];
+
+    const spamByName = mailboxes.find(
+        mailbox =>
+            fallbackNames.includes(
+                String(mailbox.path || "")
+                    .trim()
+                    .toLowerCase()
+            )
+    );
+
+    return spamByName?.path || null;
 }
 
 async function moveImapMessageToTrash(
@@ -1369,6 +1413,7 @@ async function closeImapClient(client) {
 }
 
 module.exports = {
+    findImapSpamMailbox,
     findImapSentMailbox,
     importImapFolder,
     moveImapMessageToTrash,
