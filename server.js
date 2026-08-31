@@ -996,6 +996,11 @@ external_thread_id:
                     imap_mailbox:
                         mailboxPath,
 
+                    deleted_at:
+    mail.mailboxRole === "trash"
+        ? new Date().toISOString()
+        : null,
+
                     has_attachments:
                         mail.hasAttachments,
 
