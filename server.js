@@ -17,6 +17,8 @@ const {
     importImapFolder,
     importNewImapMessages,
     loadImapMessage,
+    findImapSentMailbox,
+    findImapTrashMailbox,
     saveSentMailToImap
 } = require("./public/mail/core/mailImport");
 const { simpleParser } = require("mailparser");
@@ -1500,12 +1502,80 @@ const inboxMails =
         range
     );
 
+const discoveryClient =
+    createImapClient(
+        connection
+    );
+
+let sentMailbox =
+    null;
+
+let trashMailbox =
+    null;
+
+try {
+
+    await discoveryClient.connect();
+
+    sentMailbox =
+        await findImapSentMailbox(
+            discoveryClient
+        );
+
+    trashMailbox =
+        await findImapTrashMailbox(
+            discoveryClient
+        );
+
+} finally {
+
+    try {
+
+        await discoveryClient.logout();
+
+    } catch (error) {
+
+        console.error(
+            "IMAP DISCOVERY LOGOUT ERROR:",
+            error
+        );
+
+    }
+
+}
+
+const sentMails =
+    sentMailbox
+        ? await importImapFolder(
+            connection,
+            sentMailbox,
+            "sent"
+        )
+        : [];
+
+const trashMails =
+    trashMailbox
+        ? await importImapFolder(
+            connection,
+            trashMailbox,
+            "trash"
+        )
+        : [];
+
 const folderMails = [];
 
 for (
     const folderPath
     of selectedFolders
 ) {
+
+    if (
+        folderPath === sentMailbox ||
+        folderPath === trashMailbox
+    ) {
+        continue;
+    }
+
 
     const importedFolderMails =
         await importImapFolder(
@@ -1521,6 +1591,8 @@ for (
 
 const mails = [
     ...inboxMails,
+    ...sentMails,
+    ...trashMails,
     ...folderMails
 ];
 
