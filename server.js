@@ -695,15 +695,20 @@ if (rfcMessageId) {
 
 if (existingRfcMessage) {
 
-    if (mail.mailboxRole === "trash") {
+    if (
+        mail.mailboxRole === "trash" ||
+        mail.mailboxRole === "spam"
+    ) {
 
         const {
-            error: trashUpdateError
+            error: folderUpdateError
         } = await supabase
             .from("email_messages")
             .update({
                 deleted_at:
-                    new Date().toISOString(),
+                    mail.mailboxRole === "trash"
+                        ? new Date().toISOString()
+                        : null,
 
                 imap_mailbox:
                     mailboxPath,
@@ -723,10 +728,10 @@ if (existingRfcMessage) {
             );
 
 
-        if (trashUpdateError) {
+        if (folderUpdateError) {
 
             console.error(
-                "TRASH SYNC UPDATE ERROR:",
+                "SYSTEM FOLDER SYNC UPDATE ERROR:",
                 {
                     messageId:
                         existingRfcMessage.id,
@@ -737,21 +742,27 @@ if (existingRfcMessage) {
                     subject:
                         mail.subject,
 
+                    mailboxRole:
+                        mail.mailboxRole,
+
                     error:
-                        trashUpdateError
+                        folderUpdateError
                 }
             );
 
         } else {
 
             console.log(
-                "🗑️ EMAIL MOVED TO TRASH:",
+                "📁 EMAIL SYSTEM FOLDER UPDATED:",
                 {
                     messageId:
                         existingRfcMessage.id,
 
                     subject:
                         mail.subject,
+
+                    mailboxRole:
+                        mail.mailboxRole,
 
                     mailbox:
                         mailboxPath
