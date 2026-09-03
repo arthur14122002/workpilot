@@ -1341,6 +1341,8 @@ reportImapProgress(
 
 if (
     mail.mailboxRole !== "custom" &&
+    mail.mailboxRole !== "spam" &&
+    mail.mailboxRole !== "trash" &&
     direction === "inbound"
 ) {
 
