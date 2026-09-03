@@ -3942,6 +3942,232 @@ app.put(
     }
 );
 
+app.put(
+    "/api/email-messages/:id/move-folder",
+    async (req, res) => {
+
+        const { id } =
+            req.params;
+
+        const {
+            folder
+        } = req.body || {};
+
+        if (
+            !folder ||
+            typeof folder !== "string"
+        ) {
+
+            return res
+                .status(400)
+                .json({
+                    ok: false,
+                    error:
+                        "Ungültiger Zielordner."
+                });
+
+        }
+
+        try {
+
+            const {
+                data: message,
+                error: messageLoadError
+            } = await supabase
+                .from("email_messages")
+                .select(`
+                    id,
+                    provider,
+                    mailbox_email,
+                    imap_uid,
+                    imap_mailbox
+                `)
+                .eq(
+                    "id",
+                    id
+                )
+                .single();
+
+
+            if (messageLoadError) {
+
+                return res
+                    .status(500)
+                    .json({
+                        ok: false,
+                        error:
+                            messageLoadError.message
+                    });
+
+            }
+
+
+            if (
+                message.provider !== "imap" ||
+                !message.imap_uid
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        ok: false,
+                        error:
+                            "Diese E-Mail kann aktuell nicht providerseitig verschoben werden."
+                    });
+
+            }
+
+
+            const mailbox =
+                await getActiveMailboxConnection();
+
+
+            if (
+                message.mailbox_email &&
+                mailbox.email !==
+                    message.mailbox_email
+            ) {
+
+                throw new Error(
+                    "Die Mail gehört nicht zum aktuell verbundenen Postfach."
+                );
+
+            }
+
+
+            const importedFolders =
+                Array.isArray(
+                    mailbox.imported_folders
+                )
+                    ? mailbox.imported_folders
+                    : [];
+
+
+            if (
+                !importedFolders.includes(
+                    folder
+                )
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        ok: false,
+                        error:
+                            "Der Zielordner ist in WorkPilot nicht aktiviert."
+                    });
+
+            }
+
+
+            const password =
+                decryptMailPassword(
+                    mailbox.encrypted_password
+                );
+
+
+            const connection = {
+                provider:
+                    "imap",
+
+                email:
+                    mailbox.email,
+
+                username:
+                    mailbox.username ||
+                    mailbox.email,
+
+                password,
+
+                imap_host:
+                    mailbox.imap_host,
+
+                imap_port:
+                    mailbox.imap_port,
+
+                imap_secure:
+                    mailbox.imap_secure,
+
+                smtp_host:
+                    mailbox.smtp_host,
+
+                smtp_port:
+                    mailbox.smtp_port,
+
+                smtp_secure:
+                    mailbox.smtp_secure
+            };
+
+
+            await moveImapMessageToFolder(
+                connection,
+                message.imap_mailbox ||
+                    "INBOX",
+                message.imap_uid,
+                folder
+            );
+
+
+            const {
+                data,
+                error
+            } = await supabase
+                .from("email_messages")
+                .update({
+                    imap_mailbox:
+                        folder,
+
+                    deleted_at:
+                        null
+                })
+                .eq(
+                    "id",
+                    id
+                )
+                .select()
+                .single();
+
+
+            if (error) {
+
+                return res
+                    .status(500)
+                    .json({
+                        ok: false,
+                        error:
+                            error.message
+                    });
+
+            }
+
+
+            return res.json({
+                ok: true,
+                message:
+                    data
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "EMAIL CUSTOM FOLDER MOVE ERROR:",
+                error
+            );
+
+            return res
+                .status(500)
+                .json({
+                    ok: false,
+                    error:
+                        error.message
+                });
+
+        }
+
+    }
+);
+
 app.post("/api/email-messages/:id/restore", async (req, res) => {
 const { id } = req.params;
 
