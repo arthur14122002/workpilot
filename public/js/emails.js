@@ -395,6 +395,23 @@ if (message.deleted_at) {
     return "trash";
 }
 
+const normalizedMailbox =
+    String(
+        message.imap_mailbox || ""
+    )
+        .trim()
+        .toLowerCase();
+
+if (
+    normalizedMailbox === "spamverdacht" ||
+    normalizedMailbox === "spam" ||
+    normalizedMailbox === "junk" ||
+    normalizedMailbox === "junk e-mail" ||
+    normalizedMailbox === "junk email"
+) {
+    return "spam";
+}
+
 if (message.direction === "outbound") {
     return "sent";
 }
