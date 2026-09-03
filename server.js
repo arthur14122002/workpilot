@@ -4171,13 +4171,14 @@ if (
             };
 
 
-            await moveImapMessageToFolder(
-                connection,
-                message.imap_mailbox ||
-                    "INBOX",
-                message.imap_uid,
-                folder
-            );
+const moveResult =
+    await moveImapMessageToFolder(
+        connection,
+        message.imap_mailbox ||
+            "INBOX",
+        message.imap_uid,
+        folder
+    );
 
 
             const {
@@ -4185,13 +4186,17 @@ if (
                 error
             } = await supabase
                 .from("email_messages")
-                .update({
-                    imap_mailbox:
-                        folder,
+.update({
+    imap_mailbox:
+        folder,
 
-                    deleted_at:
-                        null
-                })
+    imap_uid:
+        moveResult.destinationUid ||
+        message.imap_uid,
+
+    deleted_at:
+        null
+})
                 .eq(
                     "id",
                     id
