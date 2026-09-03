@@ -2674,19 +2674,26 @@ if (
 
     }
 
-    return res.json({
-        success: true,
+return res.json({
+    success: true,
 
-        provider:
-            "google",
+    provider:
+        "google",
 
-        email:
-            mailbox.email,
+    email:
+        mailbox.email,
 
-        systemFolders,
+    systemFolders,
 
-        customFolders
-    });
+    customFolders,
+
+    importedFolders:
+        Array.isArray(
+            mailbox.imported_folders
+        )
+            ? mailbox.imported_folders
+            : []
+});
 
 }
 
@@ -2740,21 +2747,28 @@ if (
                     client
                 );
 
-            return res.json({
-                success: true,
+return res.json({
+    success: true,
 
-                provider:
-                    "imap",
+    provider:
+        "imap",
 
-                email:
-                    mailbox.email,
+    email:
+        mailbox.email,
 
-                systemFolders:
-                    folders.systemFolders,
+    systemFolders:
+        folders.systemFolders,
 
-                customFolders:
-                    folders.customFolders
-            });
+    customFolders:
+        folders.customFolders,
+
+    importedFolders:
+        Array.isArray(
+            mailbox.imported_folders
+        )
+            ? mailbox.imported_folders
+            : []
+});
 
         } catch (error) {
 
