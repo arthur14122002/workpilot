@@ -3962,28 +3962,39 @@ async function moveImapMessageToFolder(
             sourceMailbox
         );
 
-        const moveResult =
-    await client.messageMove(
-        Number(uid),
-        destinationMailbox,
-        {
-            uid: true
-        }
-    );
+        const sourceUid =
+            Number(uid);
 
-console.log(
-    "IMAP CUSTOM MOVE RESULT:",
-    {
-        sourceMailbox,
-        destinationMailbox,
-        uid,
-        moveResult
-    }
-);
+        const moveResult =
+            await client.messageMove(
+                sourceUid,
+                destinationMailbox,
+                {
+                    uid: true
+                }
+            );
+
+        let destinationUid =
+            null;
+
+        if (
+            moveResult &&
+            moveResult.uidMap instanceof Map
+        ) {
+
+            destinationUid =
+                moveResult.uidMap.get(
+                    sourceUid
+                ) ||
+                null;
+
+        }
 
         return {
             sourceMailbox,
-            destinationMailbox
+            destinationMailbox,
+            sourceUid,
+            destinationUid
         };
 
     } finally {
