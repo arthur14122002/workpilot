@@ -3942,6 +3942,53 @@ app.put(
     }
 );
 
+async function moveImapMessageToFolder(
+    connection,
+    sourceMailbox,
+    uid,
+    destinationMailbox
+) {
+
+    const client =
+        createImapClient(
+            connection
+        );
+
+    try {
+
+        await client.connect();
+
+        await client.mailboxOpen(
+            sourceMailbox
+        );
+
+        await client.messageMove(
+            Number(uid),
+            destinationMailbox,
+            {
+                uid: true
+            }
+        );
+
+        return {
+            sourceMailbox,
+            destinationMailbox
+        };
+
+    } finally {
+
+        try {
+
+            await client.logout();
+
+        } catch (error) {
+
+        }
+
+    }
+
+}
+
 app.put(
     "/api/email-messages/:id/move-folder",
     async (req, res) => {
