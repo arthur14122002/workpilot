@@ -756,7 +756,8 @@ invoice: 0,
 appointment: 0,
 other: 0,
 sent: 0,
-trash: 0
+trash: 0,
+spam: 0
 };
 
 emailMessagesCache.forEach((message) => {
@@ -773,6 +774,7 @@ document.getElementById("countAppointment").textContent = counts.appointment;
 document.getElementById("countOther").textContent = counts.other;
 document.getElementById("countSent").textContent = counts.sent;
 document.getElementById("countTrash").textContent = counts.trash;
+document.getElementById("countSpam").textContent = counts.spam;
 }
 
 async function apiGetEmailMessages() {
