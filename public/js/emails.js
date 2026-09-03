@@ -496,95 +496,86 @@ function renderOriginalMailboxFolders() {
     container.innerHTML = "";
 
 
-    const folderCounts =
-        new Map();
+const folderCounts =
+    new Map();
 
-
-    for (
-        const message
-        of emailMessagesCache
-    ) {
-
-const normalizedMailbox =
-    String(
-        message.imap_mailbox || ""
-    )
-        .trim()
-        .toLowerCase();
-
-const systemMailboxes =
-    new Set([
-        "inbox",
-        "sent",
-        "sent items",
-        "sent messages",
-        "gesendet",
-        "gesendete elemente",
-        "trash",
-        "deleted",
-        "deleted items",
-        "deleted messages",
-        "gelöscht",
-        "gelöschte elemente",
-        "papierkorb",
-        "spam",
-        "junk",
-        "junk e-mail",
-        "junk email",
-        "spamverdacht",
-        "drafts",
-        "entwürfe",
-        "archive",
-        "archiv"
-    ]);
-
-if (
-    message.provider !== "imap" ||
-    !message.imap_mailbox ||
-    systemMailboxes.has(
-        normalizedMailbox
-    ) ||
-    message.direction === "outbound" ||
-    message.deleted_at
+for (
+    const message
+    of emailMessagesCache
 ) {
-    continue;
+
+    if (
+        !message.imap_mailbox
+    ) {
+        continue;
+    }
+
+    const folderName =
+        message.imap_mailbox;
+
+    folderCounts.set(
+        folderName,
+        (
+            folderCounts.get(
+                folderName
+            ) || 0
+        ) + 1
+    );
+
 }
 
+const customFolders =
+    Array.isArray(
+        providerFoldersCache
+    )
+        ? providerFoldersCache
+        : [];
 
-        const folderName =
-            message.imap_mailbox;
+if (!customFolders.length) {
 
+    section.classList.add(
+        "hidden"
+    );
 
-        folderCounts.set(
-            folderName,
-            (
-                folderCounts.get(
-                    folderName
-                ) || 0
-            ) + 1
-        );
-    }
+    return;
+}
 
-
-    if (!folderCounts.size) {
-
-        section.classList.add(
-            "hidden"
-        );
-
-        return;
-    }
-
-
-    const sortedFolders =
-        Array.from(
-            folderCounts.entries()
-        ).sort(
-            ([nameA], [nameB]) =>
-                nameA.localeCompare(
-                    nameB,
+const sortedFolders =
+    [...customFolders]
+        .sort(
+            (folderA, folderB) =>
+                String(
+                    folderA.name ||
+                    folderA.path ||
+                    ""
+                ).localeCompare(
+                    String(
+                        folderB.name ||
+                        folderB.path ||
+                        ""
+                    ),
                     "de"
                 )
+        )
+        .map(
+            folder => {
+
+                const folderName =
+                    folder.name ||
+                    folder.path;
+
+                return [
+                    folderName,
+                    folderCounts.get(
+                        folder.path
+                    ) ||
+                    folderCounts.get(
+                        folderName
+                    ) ||
+                    0
+                ];
+
+            }
         );
 
 
