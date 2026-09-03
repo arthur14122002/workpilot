@@ -25,6 +25,7 @@ const mailAttachmentsList = document.getElementById("mailAttachmentsList");
 let selectedAttachments = [];
 let activeFolder = "offer";
 let emailMessagesCache = [];
+let providerFoldersCache = [];
 let activeMessageId = null;
 let moveTargetMessageId = null;
 let selectedMoveFolder = null;
@@ -997,10 +998,18 @@ async function renderEmails() {
         emailThreadsList.innerHTML = "";
 
 try {
+
     emailMessagesCache =
         await apiGetEmailMessages();
+
+    await loadProviderFolders();
+
 } catch (error) {
-    showToast(error.message);
+
+    showToast(
+        error.message
+    );
+
     return;
 }
 
@@ -1608,6 +1617,48 @@ function stripHtml(value) {
 const div = document.createElement("div");
 div.innerHTML = value;
 return div.textContent || div.innerText || "";
+}
+
+async function loadProviderFolders() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/mailbox/folders"
+            );
+
+        const result =
+            await response.json();
+
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+            throw new Error(
+                result.message ||
+                "Ordner konnten nicht geladen werden."
+            );
+        }
+
+        providerFoldersCache =
+            Array.isArray(
+                result.customFolders
+            )
+                ? result.customFolders
+                : [];
+
+    } catch (error) {
+
+        console.error(
+            "PROVIDER FOLDER LOAD ERROR:",
+            error
+        );
+
+        providerFoldersCache = [];
+
+    }
+
 }
 
 async function openMailDetail(message) {
