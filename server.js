@@ -4083,28 +4083,31 @@ app.put(
 
 
             const importedFolders =
-                Array.isArray(
-                    mailbox.imported_folders
-                )
-                    ? mailbox.imported_folders
-                    : [];
+    Array.isArray(
+        mailbox.imported_folders
+    )
+        ? mailbox.imported_folders
+        : [];
 
+const isInboxTarget =
+    folder === "INBOX";
 
-            if (
-                !importedFolders.includes(
-                    folder
-                )
-            ) {
+if (
+    !isInboxTarget &&
+    !importedFolders.includes(
+        folder
+    )
+) {
 
-                return res
-                    .status(400)
-                    .json({
-                        ok: false,
-                        error:
-                            "Der Zielordner ist in WorkPilot nicht aktiviert."
-                    });
+    return res
+        .status(400)
+        .json({
+            ok: false,
+            error:
+                "Der Zielordner ist in WorkPilot nicht aktiviert."
+        });
 
-            }
+}
 
 
             const password =
