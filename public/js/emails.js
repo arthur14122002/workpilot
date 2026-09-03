@@ -26,6 +26,7 @@ let selectedAttachments = [];
 let activeFolder = "offer";
 let emailMessagesCache = [];
 let providerFoldersCache = [];
+let importedFoldersCache = [];
 let activeMessageId = null;
 let moveTargetMessageId = null;
 let selectedMoveFolder = null;
@@ -525,10 +526,19 @@ for (
 }
 
 const customFolders =
-    Array.isArray(
-        providerFoldersCache
-    )
-        ? providerFoldersCache
+    Array.isArray(providerFoldersCache)
+        ? providerFoldersCache.filter(
+            folder => {
+
+                const folderPath =
+                    folder.path ||
+                    folder.name;
+
+                return importedFoldersCache.includes(
+                    folderPath
+                );
+            }
+        )
         : [];
 
 if (!customFolders.length) {
@@ -1638,6 +1648,11 @@ async function loadProviderFolders() {
             )
                 ? result.customFolders
                 : [];
+
+                importedFoldersCache =
+    Array.isArray(result.importedFolders)
+        ? result.importedFolders
+        : [];
 
     } catch (error) {
 
