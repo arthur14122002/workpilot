@@ -591,7 +591,7 @@ const sortedFolders =
             folderName;
 
         folderSubtitles[folderName] =
-            "Originalordner aus deinem verbundenen Postfach.";
+            "Ordner aus deinem verbundenen Postfach.";
 
 
         const button =
