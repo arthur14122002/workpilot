@@ -19,6 +19,7 @@ const {
     loadImapMessage,
     findImapSentMailbox,
     findImapTrashMailbox,
+    findImapSpamMailbox,
     saveSentMailToImap
 } = require("./public/mail/core/mailImport");
 const { simpleParser } = require("mailparser");
@@ -1526,10 +1527,13 @@ const discoveryClient =
     );
 
 let sentMailbox =
-    null;
+null;
 
 let trashMailbox =
-    null;
+null;
+
+let spamMailbox =
+null;
 
 try {
 
@@ -1544,6 +1548,11 @@ try {
         await findImapTrashMailbox(
             discoveryClient
         );
+
+        spamMailbox =
+await findImapSpamMailbox(
+discoveryClient
+);
 
 } finally {
 
@@ -1572,13 +1581,22 @@ const sentMails =
         : [];
 
 const trashMails =
-    trashMailbox
-        ? await importImapFolder(
-            connection,
-            trashMailbox,
-            "trash"
-        )
-        : [];
+trashMailbox
+? await importImapFolder(
+connection,
+trashMailbox,
+"trash"
+)
+: [];
+
+const spamMails =
+spamMailbox
+? await importImapFolder(
+connection,
+spamMailbox,
+"spam"
+)
+: [];
 
 const folderMails = [];
 
@@ -1587,13 +1605,13 @@ for (
     of selectedFolders
 ) {
 
-    if (
-        folderPath === sentMailbox ||
-        folderPath === trashMailbox
-    ) {
-        continue;
-    }
-
+if (
+folderPath === sentMailbox ||
+folderPath === trashMailbox ||
+folderPath === spamMailbox
+) {
+continue;
+}
 
     const importedFolderMails =
         await importImapFolder(
@@ -1608,12 +1626,12 @@ for (
 }
 
 const mails = [
-    ...inboxMails,
-    ...sentMails,
-    ...trashMails,
-    ...folderMails
+...inboxMails,
+...sentMails,
+...trashMails,
+...spamMails,
+...folderMails
 ];
-
 
 mailboxImportProgress.total =
     mails.length;
