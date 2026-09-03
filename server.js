@@ -1661,6 +1661,38 @@ const {
     }
 });
 
+const existingImportedFolders =
+    Array.isArray(
+        mailbox.imported_folders
+    )
+        ? mailbox.imported_folders
+        : [];
+
+const updatedImportedFolders =
+    Array.from(
+        new Set([
+            ...existingImportedFolders,
+            ...selectedFolders
+        ])
+    );
+
+const {
+    error: importedFoldersUpdateError
+} = await supabase
+    .from("mailbox_connections")
+    .update({
+        imported_folders:
+            updatedImportedFolders
+    })
+    .eq(
+        "id",
+        mailbox.id
+    );
+
+if (importedFoldersUpdateError) {
+    throw importedFoldersUpdateError;
+}
+
             mailboxImportProgress = {
                 running: false,
 
