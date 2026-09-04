@@ -3121,6 +3121,16 @@ const profileSettings = JSON.parse(
 localStorage.getItem("workpilot_company_settings") || "{}"
 );
 
+sendComposeMailBtn.addEventListener("click", async () => {
+
+const recipient = composeRecipient.value.trim();
+const subject = composeSubject.value.trim();
+const body = composeBody.value.trim();
+
+const profileSettings = JSON.parse(
+localStorage.getItem("workpilot_company_settings") || "{}"
+);
+
 if (!profileSettings.mailboxConnected) {
 showToast("Bitte verbinde zuerst ein Postfach im Profil.");
 return;
