@@ -696,10 +696,11 @@ if (rfcMessageId) {
 
 if (existingRfcMessage) {
 
-    if (
-        mail.mailboxRole === "trash" ||
-        mail.mailboxRole === "spam"
-    ) {
+if (
+    mail.mailboxRole === "trash" ||
+    mail.mailboxRole === "spam" ||
+    mail.mailboxRole === "custom"
+) {
 
         const {
             error: folderUpdateError
@@ -2936,43 +2937,48 @@ if (
         );
 
 
-        const mails =
-            await importNewImapMessages(
-                {
-                    provider:
-                        "imap",
+const mails =
+    await importNewImapMessages(
+        {
+            provider:
+                "imap",
 
-                    email:
-                        mailbox.email,
+            email:
+                mailbox.email,
 
-                    username:
-                        mailbox.username ||
-                        mailbox.email,
+            username:
+                mailbox.username ||
+                mailbox.email,
 
-                    password,
+            password,
 
-                    imap_host:
-                        mailbox.imap_host,
+            imap_host:
+                mailbox.imap_host,
 
-                    imap_port:
-                        mailbox.imap_port,
+            imap_port:
+                mailbox.imap_port,
 
-                    imap_secure:
-                        mailbox.imap_secure,
+            imap_secure:
+                mailbox.imap_secure,
 
-                    smtp_host:
-                        mailbox.smtp_host,
+            smtp_host:
+                mailbox.smtp_host,
 
-                    smtp_port:
-                        mailbox.smtp_port,
+            smtp_port:
+                mailbox.smtp_port,
 
-                    smtp_secure:
-                        mailbox.smtp_secure
-                },
+            smtp_secure:
+                mailbox.smtp_secure
+        },
 
-                lastUid
-            );
+        lastUid,
 
+        Array.isArray(
+            mailbox.imported_folders
+        )
+            ? mailbox.imported_folders
+            : []
+    );
 
         const {
             savedCount
