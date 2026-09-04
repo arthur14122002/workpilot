@@ -5195,7 +5195,8 @@ async function analyzeInboundEmail(
     message,
     thread,
     {
-        createDashboardNotificationEntry = true
+        createDashboardNotificationEntry = true,
+        allowClassification = true
     } = {}
 ) {
 let response;
@@ -5326,7 +5327,8 @@ await saveEmailAnalysis(
     thread,
     safeAnalysis,
     {
-        createDashboardNotificationEntry
+        createDashboardNotificationEntry,
+        allowClassification
     }
 );
 
@@ -5343,7 +5345,8 @@ await saveEmailAnalysis(
     thread,
     fallbackAnalysis,
     {
-        createDashboardNotificationEntry
+        createDashboardNotificationEntry,
+        allowClassification
     }
 );
 
