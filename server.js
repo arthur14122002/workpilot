@@ -2824,6 +2824,237 @@ return res.json({
     }
 );
 
+app.post(
+    "/api/mailbox/folders",
+    async (req, res) => {
+
+        let client = null;
+
+        try {
+
+            const mailbox =
+                await getActiveMailboxConnection();
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Ordner erstellen ist aktuell nur für IMAP aktiviert."
+                    });
+
+            }
+
+
+            const rawName =
+                typeof req.body?.name === "string"
+                    ? req.body.name
+                    : "";
+
+            const folderName =
+                rawName.trim();
+
+
+            if (!folderName) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Bitte einen Ordnernamen eingeben."
+                    });
+
+            }
+
+
+            if (folderName.length > 50) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Ordnername darf maximal 50 Zeichen lang sein."
+                    });
+
+            }
+
+
+            const importedFolders =
+                Array.isArray(
+                    mailbox.imported_folders
+                )
+                    ? mailbox.imported_folders
+                    : [];
+
+
+            const password =
+                decryptMailPassword(
+                    mailbox.encrypted_password
+                );
+
+
+            client =
+                createImapClient({
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure
+                });
+
+
+            await client.connect();
+
+
+            const folders =
+                await discoverImapFolders(
+                    client
+                );
+
+
+            const existingFolderNames = [
+                ...folders.systemFolders,
+                ...folders.customFolders
+            ]
+                .map(
+                    folder =>
+                        String(
+                            folder.path ||
+                            folder.name ||
+                            ""
+                        )
+                            .trim()
+                            .toLowerCase()
+                );
+
+
+            if (
+                existingFolderNames.includes(
+                    folderName.toLowerCase()
+                )
+            ) {
+
+                return res
+                    .status(409)
+                    .json({
+                        success: false,
+                        message:
+                            "Ein Ordner mit diesem Namen existiert bereits."
+                    });
+
+            }
+
+
+            await client.mailboxCreate(
+                folderName
+            );
+
+
+            const updatedImportedFolders =
+                Array.from(
+                    new Set([
+                        ...importedFolders,
+                        folderName
+                    ])
+                );
+
+
+            const {
+                error: updateError
+            } =
+                await supabase
+                    .from(
+                        "mailbox_connections"
+                    )
+                    .update({
+                        imported_folders:
+                            updatedImportedFolders
+                    })
+                    .eq(
+                        "id",
+                        mailbox.id
+                    );
+
+
+            if (updateError) {
+                throw updateError;
+            }
+
+
+            return res.json({
+                success: true,
+
+                folder: {
+                    name:
+                        folderName,
+
+                    path:
+                        folderName
+                },
+
+                importedFolders:
+                    updatedImportedFolders
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "MAILBOX FOLDER CREATE ERROR:",
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        error.message ||
+                        "Der Ordner konnte nicht erstellt werden."
+                });
+
+
+        } finally {
+
+            if (client) {
+
+                try {
+
+                    await client.logout();
+
+                } catch (error) {
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
 app.post("/api/mailbox/import-new", async (req, res) => {
 
     try {
