@@ -5039,7 +5039,8 @@ async function saveEmailAnalysis(
     thread,
     analysis,
     {
-        createDashboardNotificationEntry = true
+        createDashboardNotificationEntry = true,
+        allowClassification = true
     } = {}
 ) {
 
@@ -5064,22 +5065,30 @@ async function saveEmailAnalysis(
         );
 
 
+    const threadUpdate = {
+        ai_summary:
+            analysis.summary
+    };
+
+    if (allowClassification) {
+        threadUpdate.related_type =
+            analysis.category;
+
+        threadUpdate.ai_category =
+            analysis.category;
+    }
+
+
     await supabase
         .from("email_threads")
-        .update({
-            related_type:
-                analysis.category,
-
-            ai_category:
-                analysis.category,
-
-            ai_summary:
-                analysis.summary
-        })
+        .update(
+            threadUpdate
+        )
         .eq(
             "id",
             thread.id
         );
+
 
     if (!createDashboardNotificationEntry) {
         return;
