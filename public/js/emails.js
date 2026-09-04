@@ -1579,21 +1579,57 @@ function openMoveMailModal(message) {
                             })
                         }
                     );
-                } else {
-                    response = await fetch(
-                        `/api/email-threads/${targetMessage.thread_id}/folder`,
-                        {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                folder:
-                                    selectedMoveFolder
-                            })
-                        }
-                    );
+} else {
+    const currentImapMailbox =
+        targetMessage.imap_mailbox ||
+        "INBOX";
+
+    if (
+        currentImapMailbox !== "INBOX"
+    ) {
+        const providerResponse =
+            await fetch(
+                `/api/email-messages/${targetMessage.id}/move-folder`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        folder:
+                            "INBOX"
+                    })
                 }
+            );
+
+        const providerResult =
+            await providerResponse.json();
+
+        if (
+            !providerResponse.ok ||
+            providerResult.ok === false
+        ) {
+            throw new Error(
+                providerResult.error ||
+                "E-Mail konnte nicht zurück in den Posteingang verschoben werden."
+            );
+        }
+    }
+
+    response = await fetch(
+        `/api/email-threads/${targetMessage.thread_id}/folder`,
+        {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                folder:
+                    selectedMoveFolder
+            })
+        }
+    );
+}
 
                 const result =
                     await response.json();
