@@ -1614,15 +1614,28 @@ folderPath === spamMailbox
 continue;
 }
 
-    const importedFolderMails =
-        await importImapFolder(
-            connection,
-            folderPath
-        );
-
-    folderMails.push(
-        ...importedFolderMails
+const importedFolderMails =
+    await importImapFolder(
+        connection,
+        folderPath
     );
+
+console.log(
+    "📁 CUSTOM FOLDER IMPORT:",
+    {
+        folderPath,
+        mails:
+            importedFolderMails.length,
+        subjects:
+            importedFolderMails.map(
+                mail => mail.subject
+            )
+    }
+);
+
+folderMails.push(
+    ...importedFolderMails
+);
 
 }
 
