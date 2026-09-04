@@ -417,7 +417,11 @@ if (
 if (
     message.provider === "imap" &&
     imapMailbox &&
-    String(imapMailbox).toUpperCase() !== "INBOX"
+    String(imapMailbox).toUpperCase() !== "INBOX" &&
+    Array.isArray(importedFoldersCache) &&
+    importedFoldersCache.includes(
+        imapMailbox
+    )
 ) {
     return imapMailbox;
 }
