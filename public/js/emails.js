@@ -2915,6 +2915,11 @@ const mailOriginalFolderAddBtn =
         "mailOriginalFolderAddBtn"
     );
 
+console.log(
+    "FOLDER ADD BUTTON:",
+    mailOriginalFolderAddBtn
+);
+
 const createFolderModal =
     document.getElementById(
         "createFolderModal"
@@ -2935,6 +2940,33 @@ const confirmCreateFolderBtn =
         "confirmCreateFolderBtn"
     );
 
+if (mailOriginalFolderAddBtn) {
+
+    mailOriginalFolderAddBtn.addEventListener(
+        "click",
+        () => {
+
+            console.log(
+                "FOLDER ADD CLICK"
+            );
+
+            createFolderNameInput.value = "";
+
+            createFolderModal.classList.remove(
+                "hidden"
+            );
+
+            setTimeout(
+                () => {
+                    createFolderNameInput.focus();
+                },
+                0
+            );
+
+        }
+    );
+
+}
 
 async function createMailboxFolder() {
 
