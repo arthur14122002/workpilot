@@ -2921,10 +2921,190 @@ if (mailOriginalFolderAddBtn) {
         "click",
         async () => {
 
-            const rawName =
-                window.prompt(
-                    "Name des neuen Ordners:"
-                );
+            const mailOriginalFolderAddBtn =
+    document.getElementById(
+        "mailOriginalFolderAddBtn"
+    );
+
+const createFolderModal =
+    document.getElementById(
+        "createFolderModal"
+    );
+
+const createFolderNameInput =
+    document.getElementById(
+        "createFolderNameInput"
+    );
+
+const cancelCreateFolderBtn =
+    document.getElementById(
+        "cancelCreateFolderBtn"
+    );
+
+const confirmCreateFolderBtn =
+    document.getElementById(
+        "confirmCreateFolderBtn"
+    );
+
+
+async function createMailboxFolder() {
+
+    const folderName =
+        createFolderNameInput
+            .value
+            .trim();
+
+    if (!folderName) {
+        return;
+    }
+
+    if (folderName.length > 50) {
+
+        showToast(
+            "Der Ordnername darf maximal 50 Zeichen lang sein."
+        );
+
+        return;
+    }
+
+    confirmCreateFolderBtn.disabled = true;
+    confirmCreateFolderBtn.textContent =
+        "Wird erstellt...";
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/mailbox/folders",
+                {
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            name:
+                                folderName
+                        })
+                }
+            );
+
+        const result =
+            await response.json();
+
+        if (
+            !response.ok ||
+            result.success === false
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Ordner konnte nicht erstellt werden."
+            );
+
+        }
+
+        createFolderModal.classList.add(
+            "hidden"
+        );
+
+        createFolderNameInput.value = "";
+
+        await loadProviderFolders();
+
+        renderOriginalMailboxFolders();
+
+        showToast(
+            "Ordner wurde erstellt."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "FOLDER CREATE ERROR:",
+            error
+        );
+
+        showToast(
+            error.message ||
+            "Ordner konnte nicht erstellt werden."
+        );
+
+    } finally {
+
+        confirmCreateFolderBtn.disabled = false;
+
+        confirmCreateFolderBtn.textContent =
+            "Erstellen";
+
+    }
+
+}
+
+
+if (mailOriginalFolderAddBtn) {
+
+    mailOriginalFolderAddBtn.addEventListener(
+        "click",
+        () => {
+
+            createFolderNameInput.value = "";
+
+            createFolderModal.classList.remove(
+                "hidden"
+            );
+
+            setTimeout(
+                () => {
+                    createFolderNameInput.focus();
+                },
+                0
+            );
+
+        }
+    );
+
+}
+
+
+cancelCreateFolderBtn.addEventListener(
+    "click",
+    () => {
+
+        createFolderModal.classList.add(
+            "hidden"
+        );
+
+        createFolderNameInput.value = "";
+
+    }
+);
+
+
+confirmCreateFolderBtn.addEventListener(
+    "click",
+    createMailboxFolder
+);
+
+
+createFolderNameInput.addEventListener(
+    "keydown",
+    (event) => {
+
+        if (event.key === "Enter") {
+
+            event.preventDefault();
+
+            createMailboxFolder();
+
+        }
+
+    }
+);
 
             if (rawName === null) {
                 return;

@@ -164,6 +164,53 @@ class="iconButton"
 </button>
 </div>
 
+<div
+    id="createFolderModal"
+    class="modalOverlay hidden"
+>
+    <div class="modalCard offerMailModalCard">
+
+        <div class="modalHeader">
+            <div>
+                <h3>Neuen Ordner erstellen</h3>
+                <p>Lege einen neuen Postfachordner an.</p>
+            </div>
+        </div>
+
+        <div class="modalBody">
+
+            <input
+                type="text"
+                id="createFolderNameInput"
+                maxlength="50"
+                placeholder="Ordnername"
+            >
+
+        </div>
+
+        <div class="modalActions">
+
+            <button
+                type="button"
+                id="cancelCreateFolderBtn"
+                class="secondaryBtn"
+            >
+                Abbrechen
+            </button>
+
+            <button
+                type="button"
+                id="confirmCreateFolderBtn"
+                class="primaryBtn"
+            >
+                Erstellen
+            </button>
+
+        </div>
+
+    </div>
+</div>
+
 <div class="modalBody">
 
 <div>
