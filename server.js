@@ -1341,18 +1341,23 @@ reportImapProgress(
     savedCount
 );
 
-if (
-    mail.mailboxRole !== "custom" &&
-    mail.mailboxRole !== "spam" &&
-    mail.mailboxRole !== "trash" &&
-    direction === "inbound"
-) {
+const isSpamOrTrash =
+    mail.mailboxRole === "spam" ||
+    mail.mailboxRole === "trash";
+
+if (!isSpamOrTrash) {
+
+    const allowClassification =
+        direction === "inbound" &&
+        String(mailboxPath)
+            .toUpperCase() === "INBOX";
 
     await analyzeInboundEmail(
         messageForAnalysis,
         thread,
         {
-            createDashboardNotificationEntry
+            createDashboardNotificationEntry,
+            allowClassification
         }
     );
 
