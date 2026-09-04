@@ -1191,3 +1191,30 @@ gap: 10px;
     min-height: 0;
     padding-right: 4px;
 }
+
+.mailOriginalFoldersTitle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.mailOriginalFolderAddBtn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--wp-text);
+}
+
+.mailOriginalFolderAddBtn:hover {
+    background: var(--wp-orange-soft);
+    color: var(--wp-orange-dark);
+}

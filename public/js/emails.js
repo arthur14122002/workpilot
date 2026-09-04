@@ -2910,6 +2910,106 @@ const newMailBtn = document.getElementById("newMailBtn");
 const composeMailModal = document.getElementById("composeMailModal");
 const closeComposeMailBtn = document.getElementById("closeComposeMailBtn");
 
+const mailOriginalFolderAddBtn =
+    document.getElementById(
+        "mailOriginalFolderAddBtn"
+    );
+
+if (mailOriginalFolderAddBtn) {
+
+    mailOriginalFolderAddBtn.addEventListener(
+        "click",
+        async () => {
+
+            const rawName =
+                window.prompt(
+                    "Name des neuen Ordners:"
+                );
+
+            if (rawName === null) {
+                return;
+            }
+
+            const folderName =
+                rawName.trim();
+
+            if (!folderName) {
+                return;
+            }
+
+            if (folderName.length > 50) {
+
+                alert(
+                    "Der Ordnername darf maximal 50 Zeichen lang sein."
+                );
+
+                return;
+            }
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/mailbox/folders",
+                        {
+                            method:
+                                "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    name:
+                                        folderName
+                                })
+                        }
+                    );
+
+                const result =
+                    await response.json();
+
+                if (
+                    !response.ok ||
+                    result.success === false
+                ) {
+
+                    throw new Error(
+                        result.message ||
+                        "Ordner konnte nicht erstellt werden."
+                    );
+
+                }
+
+                await loadProviderFolders();
+
+                renderOriginalMailboxFolders();
+
+            } catch (error) {
+
+                console.error(
+                    "FOLDER CREATE ERROR:",
+                    error
+                );
+
+                alert(
+                    error.message ||
+                    "Ordner konnte nicht erstellt werden."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+newMailBtn.addEventListener("click", () => {
+composeMailModal.classList.remove("hidden");
+});
+
 newMailBtn.addEventListener("click", () => {
 composeMailModal.classList.remove("hidden");
 });
