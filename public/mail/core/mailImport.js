@@ -556,7 +556,8 @@ async function importImapFolder(
 
 async function importNewImapMessages(
     connection,
-    lastUid = 0
+    lastUid = 0,
+    importedFolders = []
 ) {
 
     const client =
@@ -1120,6 +1121,170 @@ if (spamMailbox) {
             });
 
         }
+
+    }
+
+}
+
+for (
+    const folderPath
+    of importedFolders
+) {
+
+    if (
+        !folderPath ||
+        folderPath === sentMailbox ||
+        folderPath === trashMailbox ||
+        folderPath === spamMailbox ||
+        String(folderPath).toUpperCase() === "INBOX"
+    ) {
+        continue;
+    }
+
+    try {
+
+        await client.mailboxOpen(
+            folderPath
+        );
+
+        const customUids =
+            await client.search(
+                {
+                    all: true
+                },
+                {
+                    uid: true
+                }
+            );
+
+        const latestCustomUids =
+            customUids.slice(-5);
+
+        if (
+            latestCustomUids.length === 0
+        ) {
+            continue;
+        }
+
+        for await (
+            const message
+            of client.fetch(
+                latestCustomUids,
+                {
+                    uid: true,
+                    envelope: true,
+                    flags: true,
+                    size: true,
+                    bodyStructure: true
+                },
+                {
+                    uid: true
+                }
+            )
+        ) {
+
+            const envelope =
+                message.envelope || {};
+
+            const flags =
+                Array.from(
+                    message.flags || []
+                );
+
+            mails.push({
+
+                provider:
+                    "imap",
+
+                mailboxRole:
+                    "custom",
+
+                mailboxPath:
+                    folderPath,
+
+                externalId:
+                    `imap:${connection.email}:${folderPath}:${message.uid}`,
+
+                uid:
+                    message.uid,
+
+                messageId:
+                    envelope.messageId ||
+                    null,
+
+                inReplyTo:
+                    envelope.inReplyTo ||
+                    null,
+
+                subject:
+                    envelope.subject ||
+                    "",
+
+                from:
+                    envelope.from ||
+                    [],
+
+                to:
+                    envelope.to ||
+                    [],
+
+                cc:
+                    envelope.cc ||
+                    [],
+
+                bcc:
+                    envelope.bcc ||
+                    [],
+
+                date:
+                    envelope.date ||
+                    null,
+
+                size:
+                    Number(
+                        message.size || 0
+                    ),
+
+                flags,
+
+                isRead:
+                    flags.includes(
+                        "\\Seen"
+                    ),
+
+                isStarred:
+                    flags.includes(
+                        "\\Flagged"
+                    ),
+
+                hasAttachments:
+                    bodyStructureHasAttachments(
+                        message.bodyStructure
+                    ),
+
+                text:
+                    null,
+
+                html:
+                    null,
+
+                contentLoaded:
+                    false
+
+            });
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "CUSTOM FOLDER LIVE SYNC ERROR:",
+            {
+                folderPath,
+                message:
+                    error.message
+            }
+        );
 
     }
 
