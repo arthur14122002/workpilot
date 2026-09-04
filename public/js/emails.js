@@ -2915,17 +2915,6 @@ const mailOriginalFolderAddBtn =
         "mailOriginalFolderAddBtn"
     );
 
-if (mailOriginalFolderAddBtn) {
-
-    mailOriginalFolderAddBtn.addEventListener(
-        "click",
-        async () => {
-
-            const mailOriginalFolderAddBtn =
-    document.getElementById(
-        "mailOriginalFolderAddBtn"
-    );
-
 const createFolderModal =
     document.getElementById(
         "createFolderModal"
@@ -3106,27 +3095,23 @@ createFolderNameInput.addEventListener(
     }
 );
 
-newMailBtn.addEventListener("click", () => {
-composeMailModal.classList.remove("hidden");
-});
-
-closeComposeMailBtn.addEventListener("click", () => {
-composeMailModal.classList.add("hidden");
-});
 
 newMailBtn.addEventListener("click", () => {
-composeRecipient.value = "";
-composeSubject.value = "";
-composeBody.value = "";
 
-composeMailModal.classList.remove("hidden");
+    composeRecipient.value = "";
+    composeSubject.value = "";
+    composeBody.value = "";
+
+    composeMailModal.classList.remove("hidden");
+
 });
+
 
 closeComposeMailBtn.addEventListener("click", () => {
-composeMailModal.classList.add("hidden");
-});
 
-sendComposeMailBtn.addEventListener("click", async () => {
+    composeMailModal.classList.add("hidden");
+
+});
 
 const recipient = composeRecipient.value.trim();
 const subject = composeSubject.value.trim();
