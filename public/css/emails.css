@@ -720,6 +720,13 @@ background: var(--wp-orange-soft);
 color: var(--wp-orange-dark);
 }
 
+.moveFolderDivider {
+    grid-column: 1 / -1;
+    width: 100%;
+    border-top: 1px solid var(--wp-border);
+    margin: 4px 0;
+}
+
 .moveMailModalActions {
 display: flex;
 justify-content: flex-end;
