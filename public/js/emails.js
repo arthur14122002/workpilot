@@ -1382,105 +1382,252 @@ currentFolderSubtitle.textContent =
 }
 
 function openMoveMailModal(message) {
-const existing = document.getElementById("moveMailModalOverlay");
+    const existing = document.getElementById("moveMailModalOverlay");
 
-if (existing) {
-existing.remove();
-}
+    if (existing) {
+        existing.remove();
+    }
 
-const overlay = document.createElement("div");
-overlay.id = "moveMailModalOverlay";
-overlay.className = "moveMailModalOverlay";
+    selectedMoveFolder = null;
 
-overlay.innerHTML = `
-<div class="moveMailModal">
-<div class="moveMailModalHeader">
-<div>
-<h3>E-Mail verschieben</h3>
-<p>Wähle den Zielordner für diese E-Mail.</p>
-</div>
+    const providerFolderButtons =
+        Array.isArray(providerFoldersCache)
+            ? providerFoldersCache
+                .filter((folder) => {
+                    const folderPath =
+                        folder.path ||
+                        folder.name;
 
-<button class="moveMailModalClose" type="button">×</button>
-</div>
+                    return importedFoldersCache.includes(
+                        folderPath
+                    );
+                })
+                .map((folder) => {
+                    const folderPath =
+                        folder.path ||
+                        folder.name;
 
-<div class="moveFolderOptions">
-<button data-folder="offer">Angebote</button>
-<button data-folder="invoice">Rechnungen</button>
-<button data-folder="appointment">Termine</button>
-<button data-folder="other">Sonstiges</button>
-</div>
+                    const folderLabel =
+                        folder.name ||
+                        folder.path;
 
-<div class="moveMailModalActions">
-<button class="btn btnSecondary" id="cancelMoveMailBtn">Abbrechen</button>
-<button class="btn btnPrimary" id="confirmMoveMailBtn" disabled>Verschieben</button>
-</div>
-</div>
-`;
+                    return `
+                        <button
+                            data-folder="${folderPath}"
+                            data-folder-type="provider"
+                        >
+                            ${folderLabel}
+                        </button>
+                    `;
+                })
+                .join("")
+            : "";
 
-document.body.appendChild(overlay);
+    const overlay = document.createElement("div");
+    overlay.id = "moveMailModalOverlay";
+    overlay.className = "moveMailModalOverlay";
 
-overlay.querySelector(".moveMailModalClose").addEventListener("click", () => {
-overlay.remove();
-});
+    overlay.innerHTML = `
+        <div class="moveMailModal">
+            <div class="moveMailModalHeader">
+                <div>
+                    <h3>E-Mail verschieben</h3>
+                    <p>Wähle den Zielordner für diese E-Mail.</p>
+                </div>
 
-overlay.querySelector("#cancelMoveMailBtn").addEventListener("click", () => {
-overlay.remove();
-});
+                <button class="moveMailModalClose" type="button">×</button>
+            </div>
 
-overlay.querySelectorAll("[data-folder]").forEach((button) => {
-button.addEventListener("click", () => {
-selectedMoveFolder = button.dataset.folder;
+            <div class="moveFolderOptions">
+                <button
+                    data-folder="offer"
+                    data-folder-type="workpilot"
+                >
+                    Angebote
+                </button>
 
-overlay.querySelectorAll("[data-folder]").forEach((entry) => {
-entry.classList.remove("active");
-});
+                <button
+                    data-folder="invoice"
+                    data-folder-type="workpilot"
+                >
+                    Rechnungen
+                </button>
 
-button.classList.add("active");
+                <button
+                    data-folder="appointment"
+                    data-folder-type="workpilot"
+                >
+                    Termine
+                </button>
 
-overlay.querySelector("#confirmMoveMailBtn").disabled = false;
-});
-});
+                <button
+                    data-folder="other"
+                    data-folder-type="workpilot"
+                >
+                    Sonstiges
+                </button>
 
-overlay.querySelector("#confirmMoveMailBtn").addEventListener("click", async () => {
-if (!moveTargetMessageId || !selectedMoveFolder) return;
+                ${
+                    providerFolderButtons
+                        ? `
+                            <div class="moveFolderDivider"></div>
 
-try {
-const targetMessage =
-emailMessagesCache.find((entry) => entry.id === moveTargetMessageId);
+                            ${providerFolderButtons}
+                        `
+                        : ""
+                }
+            </div>
 
-if (!targetMessage) {
-throw new Error("E-Mail konnte nicht gefunden werden.");
-}
+            <div class="moveMailModalActions">
+                <button
+                    class="btn btnSecondary"
+                    id="cancelMoveMailBtn"
+                >
+                    Abbrechen
+                </button>
 
-const response = await fetch(`/api/email-threads/${targetMessage.thread_id}/folder`, {
-method: "PUT",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify({
-folder: selectedMoveFolder
-})
-});
+                <button
+                    class="btn btnPrimary"
+                    id="confirmMoveMailBtn"
+                    disabled
+                >
+                    Verschieben
+                </button>
+            </div>
+        </div>
+    `;
 
-const result = await response.json();
+    document.body.appendChild(overlay);
 
-if (!result.ok) {
-throw new Error(result.error || "E-Mail konnte nicht verschoben werden.");
-}
+    let selectedMoveFolderType = null;
 
-showToast("E-Mail wurde verschoben.");
-overlay.remove();
+    overlay
+        .querySelector(".moveMailModalClose")
+        .addEventListener("click", () => {
+            overlay.remove();
+        });
 
-await renderEmails();
+    overlay
+        .querySelector("#cancelMoveMailBtn")
+        .addEventListener("click", () => {
+            overlay.remove();
+        });
 
-if (window.updateEmailCounter) {
-await window.updateEmailCounter();
-}
+    overlay
+        .querySelectorAll("[data-folder]")
+        .forEach((button) => {
+            button.addEventListener("click", () => {
+                selectedMoveFolder =
+                    button.dataset.folder;
 
-} catch (error) {
-showToast(error.message);
-}
-});
+                selectedMoveFolderType =
+                    button.dataset.folderType;
+
+                overlay
+                    .querySelectorAll("[data-folder]")
+                    .forEach((entry) => {
+                        entry.classList.remove("active");
+                    });
+
+                button.classList.add("active");
+
+                overlay
+                    .querySelector("#confirmMoveMailBtn")
+                    .disabled = false;
+            });
+        });
+
+    overlay
+        .querySelector("#confirmMoveMailBtn")
+        .addEventListener("click", async () => {
+            if (
+                !moveTargetMessageId ||
+                !selectedMoveFolder ||
+                !selectedMoveFolderType
+            ) {
+                return;
+            }
+
+            try {
+                const targetMessage =
+                    emailMessagesCache.find(
+                        (entry) =>
+                            entry.id === moveTargetMessageId
+                    );
+
+                if (!targetMessage) {
+                    throw new Error(
+                        "E-Mail konnte nicht gefunden werden."
+                    );
+                }
+
+                let response;
+
+                if (
+                    selectedMoveFolderType === "provider"
+                ) {
+                    response = await fetch(
+                        `/api/email-messages/${targetMessage.id}/move-folder`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                folder:
+                                    selectedMoveFolder
+                            })
+                        }
+                    );
+                } else {
+                    response = await fetch(
+                        `/api/email-threads/${targetMessage.thread_id}/folder`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                folder:
+                                    selectedMoveFolder
+                            })
+                        }
+                    );
+                }
+
+                const result =
+                    await response.json();
+
+                if (
+                    !response.ok ||
+                    result.ok === false
+                ) {
+                    throw new Error(
+                        result.error ||
+                        "E-Mail konnte nicht verschoben werden."
+                    );
+                }
+
+                showToast(
+                    "E-Mail wurde verschoben."
+                );
+
+                overlay.remove();
+
+                await renderEmails();
+
+                if (
+                    window.updateEmailCounter
+                ) {
+                    await window.updateEmailCounter();
+                }
+
+            } catch (error) {
+                showToast(
+                    error.message
+                );
+            }
+        });
 }
 
 async function openEmailFromUrl() {
