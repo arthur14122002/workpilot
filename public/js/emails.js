@@ -414,10 +414,6 @@ if (
     return "spam";
 }
 
-if (message.direction === "outbound") {
-    return "sent";
-}
-
 if (
     message.provider === "imap" &&
     imapMailbox &&
@@ -426,6 +422,9 @@ if (
     return imapMailbox;
 }
 
+if (message.direction === "outbound") {
+    return "sent";
+}
 
 if (manualFolder) {
 if (manualFolder === "inbox") {
