@@ -4181,42 +4181,56 @@ const moveResult =
     );
 
 
-            const {
-                data,
-                error
-            } = await supabase
-                .from("email_messages")
-.update({
-    imap_mailbox:
-        folder,
+const {
+    data: updatedMessages,
+    error
+} = await supabase
+    .from("email_messages")
+    .update({
+        imap_mailbox:
+            folder,
 
-    imap_uid:
-        moveResult.destinationUid ||
-        message.imap_uid,
+        imap_uid:
+            moveResult.destinationUid ||
+            message.imap_uid,
 
-    deleted_at:
-        null
-})
-                .eq(
-                    "id",
-                    id
-                )
-                .select()
-                .single();
+        deleted_at:
+            null
+    })
+    .eq(
+        "id",
+        id
+    )
+    .select();
 
+if (error) {
 
-            if (error) {
+    return res
+        .status(500)
+        .json({
+            ok: false,
+            error:
+                error.message
+        });
 
-                return res
-                    .status(500)
-                    .json({
-                        ok: false,
-                        error:
-                            error.message
-                    });
+}
 
-            }
+const data =
+    Array.isArray(updatedMessages)
+        ? updatedMessages[0]
+        : null;
 
+if (!data) {
+
+    return res
+        .status(500)
+        .json({
+            ok: false,
+            error:
+                "Die E-Mail wurde beim Provider verschoben, konnte aber in WorkPilot nicht aktualisiert werden."
+        });
+
+}
 
             return res.json({
                 ok: true,
