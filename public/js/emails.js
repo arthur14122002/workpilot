@@ -544,14 +544,6 @@ const customFolders =
         )
         : [];
 
-if (!customFolders.length) {
-
-    section.classList.add(
-        "hidden"
-    );
-
-    return;
-}
 
 const sortedFolders =
     [...customFolders]
