@@ -1680,19 +1680,11 @@ const {
     }
 });
 
-const existingImportedFolders =
-    Array.isArray(
-        mailbox.imported_folders
-    )
-        ? mailbox.imported_folders
-        : [];
-
 const updatedImportedFolders =
     Array.from(
-        new Set([
-            ...existingImportedFolders,
-            ...selectedFolders
-        ])
+        new Set(
+            selectedFolders
+        )
     );
 
 const {
