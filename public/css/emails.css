@@ -1222,3 +1222,101 @@ gap: 10px;
 .createFolderModalActions {
     gap: 10px;
 }
+
+.mailOriginalFolderRow {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.mailOriginalFolderRow .mailOriginalFolder {
+    flex: 1;
+    min-width: 0;
+}
+
+.mailOriginalFolderEditBtn {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+    color: var(--wp-text);
+
+    cursor: pointer;
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition:
+        opacity 0.15s ease,
+        background 0.15s ease;
+}
+
+.mailOriginalFolderRow:hover
+.mailOriginalFolderEditBtn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mailOriginalFolderEditBtn:hover {
+    background: var(--wp-orange-soft);
+    color: var(--wp-orange-dark);
+}
+
+
+.mailOriginalFolderMenu {
+    position: absolute;
+
+    top: 34px;
+    right: 0;
+
+    min-width: 190px;
+
+    padding: 6px;
+
+    background: var(--wp-surface);
+    border: 1px solid var(--wp-border);
+    border-radius: 12px;
+
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.12);
+
+    z-index: 50;
+}
+
+.mailOriginalFolderMenuItem {
+    width: 100%;
+
+    padding: 9px 10px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+
+    text-align: left;
+    font: inherit;
+    color: var(--wp-text);
+
+    cursor: pointer;
+}
+
+.mailOriginalFolderMenuItem:hover {
+    background: var(--wp-orange-soft);
+}
+
+.mailOriginalFolderMenuDelete {
+    color: #c62828;
+}
+
+.mailOriginalFolderMenuDelete:hover {
+    background: rgba(198, 40, 40, 0.08);
+}

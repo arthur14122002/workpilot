@@ -735,9 +735,188 @@ const sortedFolders =
         );
 
 
-        container.appendChild(
-            button
+const folderRow =
+    document.createElement(
+        "div"
+    );
+
+folderRow.className =
+    "mailOriginalFolderRow";
+
+
+const editButton =
+    document.createElement(
+        "button"
+    );
+
+editButton.type =
+    "button";
+
+editButton.className =
+    "mailOriginalFolderEditBtn";
+
+editButton.title =
+    "Ordner bearbeiten";
+
+editButton.textContent =
+    "✎";
+
+
+const folderMenu =
+    document.createElement(
+        "div"
+    );
+
+folderMenu.className =
+    "mailOriginalFolderMenu hidden";
+
+
+const renameButton =
+    document.createElement(
+        "button"
+    );
+
+renameButton.type =
+    "button";
+
+renameButton.className =
+    "mailOriginalFolderMenuItem";
+
+renameButton.textContent =
+    "Ordner umbenennen";
+
+
+const emptyButton =
+    document.createElement(
+        "button"
+    );
+
+emptyButton.type =
+    "button";
+
+emptyButton.className =
+    "mailOriginalFolderMenuItem";
+
+emptyButton.textContent =
+    "Ordner leeren";
+
+
+const deleteButton =
+    document.createElement(
+        "button"
+    );
+
+deleteButton.type =
+    "button";
+
+deleteButton.className =
+    "mailOriginalFolderMenuItem mailOriginalFolderMenuDelete";
+
+deleteButton.textContent =
+    "Ordner löschen";
+
+
+folderMenu.appendChild(
+    renameButton
+);
+
+folderMenu.appendChild(
+    emptyButton
+);
+
+folderMenu.appendChild(
+    deleteButton
+);
+
+
+editButton.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+        document
+            .querySelectorAll(
+                ".mailOriginalFolderMenu"
+            )
+            .forEach(
+                menu => {
+
+                    if (
+                        menu !== folderMenu
+                    ) {
+                        menu.classList.add(
+                            "hidden"
+                        );
+                    }
+
+                }
+            );
+
+        folderMenu.classList.toggle(
+            "hidden"
         );
+    }
+);
+
+
+renameButton.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+        showToast(
+            "Ordner umbenennen kommt als Nächstes."
+        );
+
+    }
+);
+
+
+emptyButton.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+        showToast(
+            "Ordner leeren kommt als Nächstes."
+        );
+
+    }
+);
+
+
+deleteButton.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+        showToast(
+            "Ordner löschen kommt als Nächstes."
+        );
+
+    }
+);
+
+
+folderRow.appendChild(
+    button
+);
+
+folderRow.appendChild(
+    editButton
+);
+
+folderRow.appendChild(
+    folderMenu
+);
+
+container.appendChild(
+    folderRow
+);
     }
 
 
