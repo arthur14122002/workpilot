@@ -601,6 +601,13 @@ async function loadMailboxImportFolders() {
                 ? result.customFolders
                 : [];
 
+        const importedFolders =
+    Array.isArray(
+        result.importedFolders
+    )
+        ? result.importedFolders
+        : [];
+
         if (!customFolders.length) {
             return;
         }
@@ -642,6 +649,30 @@ async function loadMailboxImportFolders() {
 
             checkbox.value =
                 folder.path;
+
+            const isImported =
+    importedFolders.includes(
+        folder.path
+    );
+
+checkbox.checked =
+    isImported;
+
+if (isImported) {
+
+    checkbox.addEventListener(
+        "click",
+        (event) => {
+
+            event.preventDefault();
+
+            checkbox.checked =
+                true;
+
+        }
+    );
+
+}
 
             label.appendChild(
                 text
