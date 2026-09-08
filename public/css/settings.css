@@ -281,7 +281,7 @@ margin-top: 20px;
 .modalActions {
     display: flex;
     justify-content: flex-end;
-    gap: 14px;
+    gap: 10px;
 }
 
 .secondaryButton,
