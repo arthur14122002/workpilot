@@ -812,6 +812,24 @@ const deleteButton =
         "button"
     );
 
+deleteButton.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+        folderMenu.classList.add(
+            "hidden"
+        );
+
+        window.openDeleteFolderConfirmModal(
+            folderName,
+            folderName
+        );
+
+    }
+);
+
 deleteButton.type =
     "button";
 
