@@ -995,6 +995,10 @@ function createMailSyncSignature(messages) {
         .join("||");
 }
 
+let mailFrontendSyncSignature = "";
+let mailFrontendSyncTimer = null;
+let mailFrontendSyncRunning = false;
+
 async function checkMailFrontendSync() {
 
     if (mailFrontendSyncRunning) {
