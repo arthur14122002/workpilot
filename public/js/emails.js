@@ -3132,24 +3132,6 @@ if (mailOriginalFolderAddBtn) {
 
 }
 
-            createFolderNameInput.value = "";
-
-            createFolderModal.classList.remove(
-                "hidden"
-            );
-
-            setTimeout(
-                () => {
-                    createFolderNameInput.focus();
-                },
-                0
-            );
-
-        }
-    );
-
-}
-
 function openCreateFolderModal() {
 
     folderModalMode =
