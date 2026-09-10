@@ -914,24 +914,6 @@ emptyButton.addEventListener(
     }
 );
 
-deleteButton.addEventListener(
-    "click",
-    (event) => {
-
-        event.stopPropagation();
-
-        folderMenu.classList.add(
-            "hidden"
-        );
-
-        window.openDeleteFolderConfirmModal(
-            folderName,
-            folderName
-        );
-
-    }
-);
-
 folderRow.appendChild(
     button
 );
