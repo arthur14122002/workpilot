@@ -3322,25 +3322,6 @@ async function createMailboxFolder() {
 
 }
 
-            createFolderNameInput.value = "";
-
-            createFolderModal.classList.remove(
-                "hidden"
-            );
-
-            setTimeout(
-                () => {
-                    createFolderNameInput.focus();
-                },
-                0
-            );
-
-        }
-    );
-
-}
-
-
 cancelCreateFolderBtn.addEventListener(
     "click",
     () => {
@@ -3353,7 +3334,6 @@ cancelCreateFolderBtn.addEventListener(
 
     }
 );
-
 
 confirmCreateFolderBtn.addEventListener(
     "click",
