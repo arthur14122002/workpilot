@@ -3047,6 +3047,225 @@ app.post(
     }
 );
 
+app.delete(
+    "/api/mailbox/folders",
+    async (req, res) => {
+
+        let client = null;
+
+        try {
+
+            const mailbox =
+                await getActiveMailboxConnection();
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Ordner löschen ist aktuell nur für IMAP aktiviert."
+                    });
+
+            }
+
+
+            const rawFolderPath =
+                typeof req.body?.folderPath === "string"
+                    ? req.body.folderPath
+                    : "";
+
+            const folderPath =
+                rawFolderPath.trim();
+
+
+            if (!folderPath) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Ordnerpfad fehlt."
+                    });
+
+            }
+
+
+            const importedFolders =
+                Array.isArray(
+                    mailbox.imported_folders
+                )
+                    ? mailbox.imported_folders
+                    : [];
+
+
+            const password =
+                decryptMailPassword(
+                    mailbox.encrypted_password
+                );
+
+
+            client =
+                createImapClient({
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure
+                });
+
+
+            await client.connect();
+
+
+            const folders =
+                await discoverImapFolders(
+                    client
+                );
+
+
+            const existingFolder =
+                folders.customFolders.find(
+                    folder => {
+
+                        const path =
+                            String(
+                                folder.path ||
+                                folder.name ||
+                                ""
+                            ).trim();
+
+                        return (
+                            path.toLowerCase() ===
+                            folderPath.toLowerCase()
+                        );
+
+                    }
+                );
+
+
+            if (!existingFolder) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Ordner wurde im Originalpostfach nicht gefunden."
+                    });
+
+            }
+
+
+            const realFolderPath =
+                String(
+                    existingFolder.path ||
+                    existingFolder.name
+                ).trim();
+
+
+            await client.mailboxDelete(
+                realFolderPath
+            );
+
+
+            const updatedImportedFolders =
+                importedFolders.filter(
+                    path =>
+                        String(path)
+                            .toLowerCase() !==
+                        realFolderPath
+                            .toLowerCase()
+                );
+
+
+            const {
+                error: updateError
+            } =
+                await supabase
+                    .from(
+                        "mailbox_connections"
+                    )
+                    .update({
+                        imported_folders:
+                            updatedImportedFolders
+                    })
+                    .eq(
+                        "id",
+                        mailbox.id
+                    );
+
+
+            if (updateError) {
+                throw updateError;
+            }
+
+
+            return res.json({
+                success: true,
+                deletedFolder:
+                    realFolderPath,
+                importedFolders:
+                    updatedImportedFolders
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "MAILBOX FOLDER DELETE ERROR:",
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        error.message ||
+                        "Der Ordner konnte nicht gelöscht werden."
+                });
+
+
+        } finally {
+
+            if (client) {
+
+                try {
+
+                    await client.logout();
+
+                } catch (error) {
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
 app.put(
     "/api/mailbox/folders/rename",
     async (req, res) => {
