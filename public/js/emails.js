@@ -3171,7 +3171,7 @@ function openCreateFolderModal() {
     );
 }
 
-function openEditFolderModal(
+window.openEditFolderModal = function(
     folderName,
     folderPath
 ) {
@@ -3208,7 +3208,7 @@ function openEditFolderModal(
         },
         0
     );
-}
+};
 
 async function createMailboxFolder() {
 
