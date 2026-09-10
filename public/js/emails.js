@@ -858,6 +858,11 @@ deleteButton.className =
 deleteButton.textContent =
     "Ordner löschen";
 
+console.log(
+    "🧪 DELETE BUTTON WIRD ERZEUGT",
+    folderName
+);
+
 
 folderMenu.appendChild(
     renameButton
