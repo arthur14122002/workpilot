@@ -3210,7 +3210,144 @@ window.openEditFolderModal = function(
     );
 };
 
+async function renameMailboxFolder() {
+
+    const newName =
+        createFolderNameInput
+            .value
+            .trim();
+
+    if (!newName) {
+        return;
+    }
+
+    if (newName.length > 50) {
+
+        showToast(
+            "Der Ordnername darf maximal 50 Zeichen lang sein."
+        );
+
+        return;
+    }
+
+    if (!editingFolderPath) {
+
+        showToast(
+            "Der Ordner konnte nicht gefunden werden."
+        );
+
+        return;
+    }
+
+
+    confirmCreateFolderBtn.disabled =
+        true;
+
+    confirmCreateFolderBtn.textContent =
+        "Wird gespeichert...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/mailbox/folders/rename",
+                {
+                    method:
+                        "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            oldPath:
+                                editingFolderPath,
+
+                            newName:
+                                newName
+                        })
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            result.success === false
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Ordner konnte nicht umbenannt werden."
+            );
+
+        }
+
+
+        createFolderModal.classList.add(
+            "hidden"
+        );
+
+
+        editingFolderPath =
+            null;
+
+        folderModalMode =
+            "create";
+
+
+        await loadProviderFolders();
+
+        renderOriginalMailboxFolders();
+
+
+        showToast(
+            "Ordner wurde umbenannt."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "FOLDER RENAME ERROR:",
+            error
+        );
+
+
+        showToast(
+            error.message ||
+            "Ordner konnte nicht umbenannt werden."
+        );
+
+
+    } finally {
+
+        confirmCreateFolderBtn.disabled =
+            false;
+
+        confirmCreateFolderBtn.textContent =
+            "Erstellen";
+
+    }
+
+}
+
 async function createMailboxFolder() {
+
+    if (
+        folderModalMode === "edit"
+    ) {
+
+        await renameMailboxFolder();
+        return;
+
+    }
 
     const folderName =
         createFolderNameInput
