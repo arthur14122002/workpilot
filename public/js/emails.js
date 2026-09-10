@@ -38,6 +38,8 @@ let editingFolderPath =
     null;
 let deletingFolderPath =
     null;
+let emptyingFolderPath =
+    null;
 
 const folderLabels = {
 offer: "Angebote",
@@ -925,8 +927,13 @@ emptyButton.addEventListener(
 
         event.stopPropagation();
 
-        showToast(
-            "Ordner leeren kommt als Nächstes."
+        folderMenu.classList.add(
+            "hidden"
+        );
+
+        window.openEmptyFolderConfirmModal(
+            folderName,
+            folderName
         );
 
     }
@@ -3160,6 +3167,21 @@ const confirmDeleteFolderBtn =
         "confirmDeleteFolderBtn"
     );
 
+const emptyFolderConfirmModal =
+    document.getElementById(
+        "emptyFolderConfirmModal"
+    );
+
+const cancelEmptyFolderBtn =
+    document.getElementById(
+        "cancelEmptyFolderBtn"
+    );
+
+const confirmEmptyFolderBtn =
+    document.getElementById(
+        "confirmEmptyFolderBtn"
+    );
+
 if (mailOriginalFolderAddBtn) {
 
     mailOriginalFolderAddBtn.addEventListener(
@@ -3250,6 +3272,142 @@ window.openDeleteFolderConfirmModal =
             );
 
     };
+
+    window.openEmptyFolderConfirmModal =
+    function(
+        folderName,
+        folderPath
+    ) {
+
+        emptyingFolderPath =
+            folderPath;
+
+        emptyFolderConfirmModal
+            .classList.remove(
+                "hidden"
+            );
+
+    };
+
+    cancelEmptyFolderBtn.addEventListener(
+    "click",
+    () => {
+
+        emptyingFolderPath =
+            null;
+
+        emptyFolderConfirmModal
+            .classList.add(
+                "hidden"
+            );
+
+    }
+);
+
+async function emptyMailboxFolder() {
+
+    if (!emptyingFolderPath) {
+
+        showToast(
+            "Der Ordner konnte nicht gefunden werden."
+        );
+
+        return;
+    }
+
+
+    confirmEmptyFolderBtn.disabled =
+        true;
+
+    confirmEmptyFolderBtn.textContent =
+        "Wird geleert...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/mailbox/folders/empty",
+                {
+                    method:
+                        "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            folderPath:
+                                emptyingFolderPath
+                        })
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            result.success === false
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Ordner konnte nicht geleert werden."
+            );
+
+        }
+
+
+        emptyFolderConfirmModal
+            .classList.add(
+                "hidden"
+            );
+
+
+        emptyingFolderPath =
+            null;
+
+
+        showToast(
+            "Ordner wurde geleert."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "FOLDER EMPTY ERROR:",
+            error
+        );
+
+
+        showToast(
+            error.message ||
+            "Ordner konnte nicht geleert werden."
+        );
+
+
+    } finally {
+
+        confirmEmptyFolderBtn.disabled =
+            false;
+
+        confirmEmptyFolderBtn.textContent =
+            "Fortfahren";
+
+    }
+
+}
+
+confirmEmptyFolderBtn.addEventListener(
+    "click",
+    emptyMailboxFolder
+);
 
 cancelDeleteFolderBtn.addEventListener(
     "click",

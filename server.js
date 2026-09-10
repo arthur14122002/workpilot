@@ -3559,7 +3559,6 @@ app.put(
 
             }
 
-
             const rawOldPath =
                 typeof req.body?.oldPath === "string"
                     ? req.body.oldPath
