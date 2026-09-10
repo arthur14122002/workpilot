@@ -818,6 +818,25 @@ deleteButton.addEventListener(
 
         event.stopPropagation();
 
+        console.log(
+            "🗑️ DELETE BUTTON CLICKED"
+        );
+
+        console.log(
+            "folderName:",
+            folderName
+        );
+
+        console.log(
+            "openDeleteFolderConfirmModal:",
+            window.openDeleteFolderConfirmModal
+        );
+
+        console.log(
+            "deleteFolderConfirmModal:",
+            deleteFolderConfirmModal
+        );
+
         folderMenu.classList.add(
             "hidden"
         );
