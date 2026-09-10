@@ -32,6 +32,10 @@ let moveTargetMessageId = null;
 let selectedMoveFolder = null;
 let renderEmailsRunning = false;
 let renderEmailsPending = false;
+let folderModalMode =
+    "create";
+let editingFolderPath =
+    null;
 
 const folderLabels = {
 offer: "Angebote",
@@ -859,20 +863,23 @@ editButton.addEventListener(
     }
 );
 
-
 renameButton.addEventListener(
     "click",
     (event) => {
 
         event.stopPropagation();
 
-        showToast(
-            "Ordner umbenennen kommt als Nächstes."
+        folderMenu.classList.add(
+            "hidden"
+        );
+
+        openEditFolderModal(
+            folderName,
+            folderName
         );
 
     }
 );
-
 
 emptyButton.addEventListener(
     "click",
@@ -973,26 +980,20 @@ function createMailSyncSignature(messages) {
     return messages
         .map((message) => {
 
-return [
-    message.id || "",
-    message.message_status || "",
-    message.read_at || "",
-    message.deleted_at || "",
-    message.imap_mailbox || "",
-    message.updated_at || "",
-    message.received_at || "",
-    message.created_at || ""
-].join("|");
+            return [
+                message.id || "",
+                message.message_status || "",
+                message.read_at || "",
+                message.deleted_at || "",
+                message.imap_mailbox || "",
+                message.direction || "",
+                message.received_at || "",
+                message.created_at || ""
+            ].join("|");
 
         })
         .join("||");
 }
-
-
-let mailFrontendSyncSignature = "";
-let mailFrontendSyncTimer = null;
-let mailFrontendSyncRunning = false;
-
 
 async function checkMailFrontendSync() {
 
@@ -3111,15 +3112,25 @@ const confirmCreateFolderBtn =
         "confirmCreateFolderBtn"
     );
 
+const deleteFolderBtn =
+    document.getElementById(
+        "deleteFolderBtn"
+    );
+
+const createFolderModalTitle =
+    createFolderModal
+        ?.querySelector(
+            ".modalHeader h3"
+        );
+
 if (mailOriginalFolderAddBtn) {
 
     mailOriginalFolderAddBtn.addEventListener(
         "click",
-        () => {
+        openCreateFolderModal
+    );
 
-            console.log(
-                "FOLDER ADD CLICK"
-            );
+}
 
             createFolderNameInput.value = "";
 
@@ -3137,6 +3148,80 @@ if (mailOriginalFolderAddBtn) {
         }
     );
 
+}
+
+function openCreateFolderModal() {
+
+    folderModalMode =
+        "create";
+
+    editingFolderPath =
+        null;
+
+    createFolderNameInput.value =
+        "";
+
+    if (createFolderModalTitle) {
+        createFolderModalTitle.textContent =
+            "Neuen Ordner erstellen";
+    }
+
+    confirmCreateFolderBtn.textContent =
+        "Erstellen";
+
+    deleteFolderBtn?.classList.add(
+        "hidden"
+    );
+
+    createFolderModal.classList.remove(
+        "hidden"
+    );
+
+    setTimeout(
+        () => {
+            createFolderNameInput.focus();
+        },
+        0
+    );
+}
+
+function openEditFolderModal(
+    folderName,
+    folderPath
+) {
+
+    folderModalMode =
+        "edit";
+
+    editingFolderPath =
+        folderPath;
+
+    createFolderNameInput.value =
+        folderName;
+
+    if (createFolderModalTitle) {
+        createFolderModalTitle.textContent =
+            "Ordner bearbeiten";
+    }
+
+    confirmCreateFolderBtn.textContent =
+        "Speichern";
+
+    deleteFolderBtn?.classList.remove(
+        "hidden"
+    );
+
+    createFolderModal.classList.remove(
+        "hidden"
+    );
+
+    setTimeout(
+        () => {
+            createFolderNameInput.focus();
+            createFolderNameInput.select();
+        },
+        0
+    );
 }
 
 async function createMailboxFolder() {
@@ -3236,13 +3321,6 @@ async function createMailboxFolder() {
     }
 
 }
-
-
-if (mailOriginalFolderAddBtn) {
-
-    mailOriginalFolderAddBtn.addEventListener(
-        "click",
-        () => {
 
             createFolderNameInput.value = "";
 
