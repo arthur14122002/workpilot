@@ -3267,6 +3267,274 @@ app.delete(
 );
 
 app.put(
+    "/api/mailbox/folders/empty",
+    async (req, res) => {
+
+        let client = null;
+        let lock = null;
+
+        try {
+
+            const mailbox =
+                await getActiveMailboxConnection();
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Ordner leeren ist aktuell nur für IMAP aktiviert."
+                    });
+
+            }
+
+
+            const rawFolderPath =
+                typeof req.body?.folderPath === "string"
+                    ? req.body.folderPath
+                    : "";
+
+            const folderPath =
+                rawFolderPath.trim();
+
+
+            if (!folderPath) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Ordnerpfad fehlt."
+                    });
+
+            }
+
+
+            const password =
+                decryptMailPassword(
+                    mailbox.encrypted_password
+                );
+
+
+            client =
+                createImapClient({
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure
+                });
+
+
+            await client.connect();
+
+
+            const folders =
+                await discoverImapFolders(
+                    client
+                );
+
+
+            const existingFolder =
+                folders.customFolders.find(
+                    folder => {
+
+                        const path =
+                            String(
+                                folder.path ||
+                                folder.name ||
+                                ""
+                            ).trim();
+
+                        return (
+                            path.toLowerCase() ===
+                            folderPath.toLowerCase()
+                        );
+
+                    }
+                );
+
+
+            if (!existingFolder) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Ordner wurde im Originalpostfach nicht gefunden."
+                    });
+
+            }
+
+
+            const realFolderPath =
+                String(
+                    existingFolder.path ||
+                    existingFolder.name
+                ).trim();
+
+
+            const trashFolder =
+                folders.systemFolders.find(
+                    folder =>
+                        String(
+                            folder.role ||
+                            folder.specialUse ||
+                            ""
+                        )
+                            .toLowerCase()
+                            .includes("trash")
+                );
+
+
+            if (!trashFolder) {
+
+                return res
+                    .status(500)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Papierkorb des Originalpostfachs konnte nicht gefunden werden."
+                    });
+
+            }
+
+
+            const trashPath =
+                String(
+                    trashFolder.path ||
+                    trashFolder.name ||
+                    ""
+                ).trim();
+
+
+            if (!trashPath) {
+
+                return res
+                    .status(500)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Papierkorbpfad konnte nicht ermittelt werden."
+                    });
+
+            }
+
+
+            lock =
+                await client.getMailboxLock(
+                    realFolderPath
+                );
+
+
+            const uids =
+                await client.search(
+                    {
+                        all: true
+                    },
+                    {
+                        uid: true
+                    }
+                );
+
+
+            if (
+                Array.isArray(uids) &&
+                uids.length > 0
+            ) {
+
+                await client.messageMove(
+                    uids,
+                    trashPath,
+                    {
+                        uid: true
+                    }
+                );
+
+            }
+
+
+            return res.json({
+                success: true,
+                folder:
+                    realFolderPath,
+                trash:
+                    trashPath,
+                moved:
+                    Array.isArray(uids)
+                        ? uids.length
+                        : 0
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "MAILBOX FOLDER EMPTY ERROR:",
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        error.message ||
+                        "Der Ordner konnte nicht geleert werden."
+                });
+
+
+        } finally {
+
+            if (lock) {
+
+                try {
+                    lock.release();
+                } catch (error) {
+
+                }
+
+            }
+
+
+            if (client) {
+
+                try {
+                    await client.logout();
+                } catch (error) {
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
+app.put(
     "/api/mailbox/folders/rename",
     async (req, res) => {
 
