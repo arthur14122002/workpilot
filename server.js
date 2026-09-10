@@ -3047,6 +3047,336 @@ app.post(
     }
 );
 
+app.put(
+    "/api/mailbox/folders/rename",
+    async (req, res) => {
+
+        let client = null;
+
+        try {
+
+            const mailbox =
+                await getActiveMailboxConnection();
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Ordner umbenennen ist aktuell nur für IMAP aktiviert."
+                    });
+
+            }
+
+
+            const rawOldPath =
+                typeof req.body?.oldPath === "string"
+                    ? req.body.oldPath
+                    : "";
+
+            const rawNewName =
+                typeof req.body?.newName === "string"
+                    ? req.body.newName
+                    : "";
+
+
+            const oldPath =
+                rawOldPath.trim();
+
+            const newName =
+                rawNewName.trim();
+
+
+            if (!oldPath) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Der bisherige Ordnerpfad fehlt."
+                    });
+
+            }
+
+
+            if (!newName) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Bitte einen neuen Ordnernamen eingeben."
+                    });
+
+            }
+
+
+            if (newName.length > 50) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Ordnername darf maximal 50 Zeichen lang sein."
+                    });
+
+            }
+
+
+            const importedFolders =
+                Array.isArray(
+                    mailbox.imported_folders
+                )
+                    ? mailbox.imported_folders
+                    : [];
+
+
+            const password =
+                decryptMailPassword(
+                    mailbox.encrypted_password
+                );
+
+
+            client =
+                createImapClient({
+                    provider:
+                        "imap",
+
+                    email:
+                        mailbox.email,
+
+                    username:
+                        mailbox.username ||
+                        mailbox.email,
+
+                    password,
+
+                    imap_host:
+                        mailbox.imap_host,
+
+                    imap_port:
+                        mailbox.imap_port,
+
+                    imap_secure:
+                        mailbox.imap_secure
+                });
+
+
+            await client.connect();
+
+
+            const folders =
+                await discoverImapFolders(
+                    client
+                );
+
+
+            const customFolderPaths =
+                folders.customFolders
+                    .map(
+                        folder =>
+                            String(
+                                folder.path ||
+                                folder.name ||
+                                ""
+                            )
+                                .trim()
+                    )
+                    .filter(Boolean);
+
+
+            const existingOldFolder =
+                customFolderPaths.find(
+                    folderPath =>
+                        folderPath.toLowerCase() ===
+                        oldPath.toLowerCase()
+                );
+
+
+            if (!existingOldFolder) {
+
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            "Der Ordner wurde im Originalpostfach nicht gefunden."
+                    });
+
+            }
+
+
+            const duplicateFolder =
+                customFolderPaths.find(
+                    folderPath =>
+                        folderPath.toLowerCase() ===
+                            newName.toLowerCase() &&
+                        folderPath.toLowerCase() !==
+                            existingOldFolder.toLowerCase()
+                );
+
+
+            if (duplicateFolder) {
+
+                return res
+                    .status(409)
+                    .json({
+                        success: false,
+                        message:
+                            "Ein Ordner mit diesem Namen existiert bereits."
+                    });
+
+            }
+
+
+            if (
+                existingOldFolder === newName
+            ) {
+
+                return res.json({
+                    success: true,
+                    oldPath:
+                        existingOldFolder,
+                    newPath:
+                        existingOldFolder
+                });
+
+            }
+
+
+            await client.mailboxRename(
+                existingOldFolder,
+                newName
+            );
+
+
+            const updatedImportedFolders =
+                Array.from(
+                    new Set(
+                        importedFolders.map(
+                            folderPath => {
+
+                                if (
+                                    String(folderPath)
+                                        .toLowerCase() ===
+                                    existingOldFolder
+                                        .toLowerCase()
+                                ) {
+
+                                    return newName;
+
+                                }
+
+                                return folderPath;
+
+                            }
+                        )
+                    )
+                );
+
+
+            const {
+                error: connectionUpdateError
+            } =
+                await supabase
+                    .from(
+                        "mailbox_connections"
+                    )
+                    .update({
+                        imported_folders:
+                            updatedImportedFolders
+                    })
+                    .eq(
+                        "id",
+                        mailbox.id
+                    );
+
+
+            if (connectionUpdateError) {
+                throw connectionUpdateError;
+            }
+
+
+            const {
+                error: messageUpdateError
+            } =
+                await supabase
+                    .from(
+                        "email_messages"
+                    )
+                    .update({
+                        imap_mailbox:
+                            newName
+                    })
+                    .eq(
+                        "imap_mailbox",
+                        existingOldFolder
+                    );
+
+
+            if (messageUpdateError) {
+                throw messageUpdateError;
+            }
+
+
+            return res.json({
+                success: true,
+
+                oldPath:
+                    existingOldFolder,
+
+                newPath:
+                    newName,
+
+                importedFolders:
+                    updatedImportedFolders
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "MAILBOX FOLDER RENAME ERROR:",
+                error
+            );
+
+
+            return res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        error.message ||
+                        "Der Ordner konnte nicht umbenannt werden."
+                });
+
+
+        } finally {
+
+            if (client) {
+
+                try {
+
+                    await client.logout();
+
+                } catch (error) {
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
 app.post("/api/mailbox/import-new", async (req, res) => {
 
     try {
