@@ -36,6 +36,8 @@ let folderModalMode =
     "create";
 let editingFolderPath =
     null;
+let deletingFolderPath =
+    null;
 
 const folderLabels = {
 offer: "Angebote",
@@ -894,20 +896,23 @@ emptyButton.addEventListener(
     }
 );
 
-
 deleteButton.addEventListener(
     "click",
     (event) => {
 
         event.stopPropagation();
 
-        showToast(
-            "Ordner löschen kommt als Nächstes."
+        folderMenu.classList.add(
+            "hidden"
+        );
+
+        window.openDeleteFolderConfirmModal(
+            folderName,
+            folderName
         );
 
     }
 );
-
 
 folderRow.appendChild(
     button
@@ -3116,16 +3121,26 @@ const confirmCreateFolderBtn =
         "confirmCreateFolderBtn"
     );
 
-const deleteFolderBtn =
-    document.getElementById(
-        "deleteFolderBtn"
-    );
-
 const createFolderModalTitle =
     createFolderModal
         ?.querySelector(
             ".modalHeader h3"
         );
+
+const deleteFolderConfirmModal =
+    document.getElementById(
+        "deleteFolderConfirmModal"
+    );
+
+const cancelDeleteFolderBtn =
+    document.getElementById(
+        "cancelDeleteFolderBtn"
+    );
+
+const confirmDeleteFolderBtn =
+    document.getElementById(
+        "confirmDeleteFolderBtn"
+    );
 
 if (mailOriginalFolderAddBtn) {
 
@@ -3154,10 +3169,6 @@ function openCreateFolderModal() {
 
     confirmCreateFolderBtn.textContent =
         "Erstellen";
-
-    deleteFolderBtn?.classList.add(
-        "hidden"
-    );
 
     createFolderModal.classList.remove(
         "hidden"
@@ -3193,10 +3204,6 @@ window.openEditFolderModal = function(
     confirmCreateFolderBtn.textContent =
         "Speichern";
 
-    deleteFolderBtn?.classList.remove(
-        "hidden"
-    );
-
     createFolderModal.classList.remove(
         "hidden"
     );
@@ -3209,6 +3216,136 @@ window.openEditFolderModal = function(
         0
     );
 };
+
+window.openDeleteFolderConfirmModal =
+    function(
+        folderName,
+        folderPath
+    ) {
+
+        deletingFolderPath =
+            folderPath;
+
+        deleteFolderConfirmModal
+            .classList.remove(
+                "hidden"
+            );
+
+    };
+
+cancelDeleteFolderBtn.addEventListener(
+    "click",
+    () => {
+
+        deletingFolderPath =
+            null;
+
+        deleteFolderConfirmModal
+            .classList.add(
+                "hidden"
+            );
+
+    }
+);
+
+async function deleteMailboxFolder() {
+
+    if (!deletingFolderPath) {
+
+        showToast(
+            "Der Ordner konnte nicht gefunden werden."
+        );
+
+        return;
+    }
+
+    confirmDeleteFolderBtn.disabled =
+        true;
+
+    confirmDeleteFolderBtn.textContent =
+        "Wird gelöscht...";
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/mailbox/folders",
+                {
+                    method:
+                        "DELETE",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            folderPath:
+                                deletingFolderPath
+                        })
+                }
+            );
+
+        const result =
+            await response.json();
+
+        if (
+            !response.ok ||
+            result.success === false
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Ordner konnte nicht gelöscht werden."
+            );
+
+        }
+
+        deleteFolderConfirmModal
+            .classList.add(
+                "hidden"
+            );
+
+        deletingFolderPath =
+            null;
+
+        await loadProviderFolders();
+
+        renderOriginalMailboxFolders();
+
+        showToast(
+            "Ordner wurde gelöscht."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "FOLDER DELETE ERROR:",
+            error
+        );
+
+        showToast(
+            error.message ||
+            "Ordner konnte nicht gelöscht werden."
+        );
+
+    } finally {
+
+        confirmDeleteFolderBtn.disabled =
+            false;
+
+        confirmDeleteFolderBtn.textContent =
+            "Fortfahren";
+
+    }
+
+}
+
+confirmDeleteFolderBtn.addEventListener(
+    "click",
+    deleteMailboxFolder
+);
 
 async function renameMailboxFolder() {
 
