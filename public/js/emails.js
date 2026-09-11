@@ -1433,6 +1433,11 @@ currentFolderSubtitle.textContent =
                     ".mailRowMoveBtn"
                 );
 
+            const restoreButton =
+    item.querySelector(
+        ".mailRowRestoreBtn"
+    );
+
 
             if (moveButton) {
 
@@ -1519,6 +1524,29 @@ currentFolderSubtitle.textContent =
                 item.querySelector(
                     ".mailRowRestoreBtn"
                 );
+
+            if (restoreButton) {
+
+    restoreButton.addEventListener(
+        "click",
+        (event) => {
+
+            event.stopPropagation();
+
+            moveTargetMessageId =
+                message.id;
+
+            selectedMoveFolder =
+                null;
+
+            openMoveMailModal(
+                message
+            );
+
+        }
+    );
+
+}
 
 
             if (restoreButton) {
