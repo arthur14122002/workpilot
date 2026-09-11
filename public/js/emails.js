@@ -1520,54 +1520,33 @@ currentFolderSubtitle.textContent =
             );
 
 
-            const restoreButton =
-                item.querySelector(
-                    ".mailRowRestoreBtn"
-                );
+ const restoreButton =
+    item.querySelector(
+        ".mailRowRestoreBtn"
+    );
 
-            if (restoreButton) {
+if (restoreButton) {
 
-                restoreButton.addEventListener(
-                    "click",
-                    async (event) => {
+    restoreButton.addEventListener(
+        "click",
+        (event) => {
 
-                        event.stopPropagation();
+            event.stopPropagation();
 
-                        try {
+            moveTargetMessageId =
+                message.id;
 
-                            await restoreMessage(
-                                message.id
-                            );
+            selectedMoveFolder =
+                null;
 
-                            showToast(
-                                "E-Mail wurde wiederhergestellt."
-                            );
+            openMoveMailModal(
+                message
+            );
 
+        }
+    );
 
-                            await renderEmails();
-
-
-                            if (
-                                window.updateEmailCounter
-                            ) {
-                                await window
-                                    .updateEmailCounter();
-                            }
-
-
-                        } catch (error) {
-
-                            showToast(
-                                error.message
-                            );
-
-                        }
-
-                    }
-                );
-
-            }
-
+}
 
             emailThreadsList
                 .appendChild(item);
