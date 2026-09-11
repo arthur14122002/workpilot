@@ -423,7 +423,10 @@ if (
 }
 
 if (
-    message.provider === "imap" &&
+    (
+        message.provider === "imap" ||
+        message.provider === "google"
+    ) &&
     imapMailbox &&
     String(imapMailbox).toUpperCase() !== "INBOX" &&
     Array.isArray(importedFoldersCache) &&
