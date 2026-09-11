@@ -7068,107 +7068,340 @@ async function importSingleGoogleMessage(
         createDashboardNotificationEntry = true
     } = {}
 ) {
-const detailResponse = await gmail.users.messages.get({
-userId: "me",
-id: gmailMessageId,
-format: "metadata",
-metadataHeaders: ["From", "To", "Subject", "Date"]
-});
 
-const messageData = detailResponse.data;
-const headers = messageData.payload?.headers || [];
+    const {
+        mailbox
+    } =
+        await getActiveGoogleMailboxAuth();
 
-const getHeader = (name) => {
-const found = headers.find((header) =>
-header.name.toLowerCase() === name.toLowerCase()
-);
 
-return found?.value || "";
-};
+    const detailResponse =
+        await gmail.users.messages.get({
+            userId: "me",
+            id: gmailMessageId,
+            format: "metadata",
+            metadataHeaders: [
+                "From",
+                "To",
+                "Subject",
+                "Date"
+            ]
+        });
 
-const sender = extractEmailAddress(getHeader("From"));
-const recipient = extractEmailAddress(getHeader("To"));
-const subject = getHeader("Subject") || "Ohne Betreff";
-const dateHeader = getHeader("Date");
 
-const createdAt = dateHeader
-? new Date(dateHeader).toISOString()
-: new Date().toISOString();
+    const messageData =
+        detailResponse.data;
 
-const gmailThreadId = messageData.threadId;
-const gmailMessageIdFinal = messageData.id;
+    const headers =
+        messageData.payload?.headers || [];
 
-const { data: existingMessage } = await supabase
-.from("email_messages")
-.select("id")
-.eq("external_message_id", gmailMessageIdFinal)
-.maybeSingle();
 
-if (existingMessage) {
-return null;
-}
+    const getHeader = (name) => {
 
-let { data: thread } = await supabase
-.from("email_threads")
-.select("*")
-.eq("external_thread_id", gmailThreadId)
-.maybeSingle();
+        const found =
+            headers.find(
+                (header) =>
+                    header.name
+                        .toLowerCase() ===
+                    name.toLowerCase()
+            );
 
-if (!thread) {
-const { data: newThread, error: threadError } = await supabase
-.from("email_threads")
-.insert([
-{
-subject,
-related_type: "gmail",
-related_id: gmailThreadId,
-status: "open",
-ai_category: "Importiert",
-manual_folder: "inbox",
-external_thread_id: gmailThreadId
-}
-])
-.select()
-.single();
+        return found?.value || "";
 
-if (threadError) throw threadError;
+    };
 
-thread = newThread;
-}
 
-const matchedContact = await findMatchingContact(sender);
+    const sender =
+        extractEmailAddress(
+            getHeader("From")
+        );
 
-const { data: message, error: messageError } = await supabase
-.from("email_messages")
-.insert([
-{
-thread_id: thread.id,
-contact_id: matchedContact?.id || null,
-direction: "inbound",
-sender,
-recipient,
-subject,
-body: messageData.snippet || "",
-message_status: "received",
-external_message_id: gmailMessageIdFinal,
-external_thread_id: gmailThreadId,
-created_at: createdAt
-}
-])
-.select()
-.single();
+    const recipient =
+        extractEmailAddress(
+            getHeader("To")
+        );
 
-if (messageError) throw messageError;
+    const subject =
+        getHeader("Subject") ||
+        "Ohne Betreff";
 
-await analyzeInboundEmail(
-    message,
-    thread,
-    {
-        createDashboardNotificationEntry
+    const dateHeader =
+        getHeader("Date");
+
+
+    const createdAt =
+        dateHeader
+            ? new Date(
+                dateHeader
+            ).toISOString()
+            : new Date().toISOString();
+
+
+    const gmailThreadId =
+        messageData.threadId;
+
+    const gmailMessageIdFinal =
+        messageData.id;
+
+
+    const labelIds =
+        Array.isArray(
+            messageData.labelIds
+        )
+            ? messageData.labelIds
+            : [];
+
+
+    const isSent =
+        labelIds.includes(
+            "SENT"
+        );
+
+    const isTrash =
+        labelIds.includes(
+            "TRASH"
+        );
+
+    const isSpam =
+        labelIds.includes(
+            "SPAM"
+        );
+
+    const isInbox =
+        labelIds.includes(
+            "INBOX"
+        );
+
+
+    let googleMailbox =
+        "INBOX";
+
+
+    if (isTrash) {
+
+        googleMailbox =
+            "TRASH";
+
+    } else if (isSpam) {
+
+        googleMailbox =
+            "SPAM";
+
+    } else if (isSent) {
+
+        googleMailbox =
+            "SENT";
+
+    } else if (isInbox) {
+
+        googleMailbox =
+            "INBOX";
+
+    } else {
+
+        const customLabel =
+            labelIds.find(
+                (labelId) =>
+                    ![
+                        "UNREAD",
+                        "STARRED",
+                        "IMPORTANT",
+                        "CATEGORY_PERSONAL",
+                        "CATEGORY_SOCIAL",
+                        "CATEGORY_PROMOTIONS",
+                        "CATEGORY_UPDATES",
+                        "CATEGORY_FORUMS"
+                    ].includes(
+                        labelId
+                    )
+            );
+
+        if (customLabel) {
+
+            googleMailbox =
+                customLabel;
+
+        }
+
     }
-);
 
-return message;
+
+    const direction =
+        isSent
+            ? "outbound"
+            : "inbound";
+
+
+    const {
+        data: existingMessage
+    } =
+        await supabase
+            .from("email_messages")
+            .select("id")
+            .eq(
+                "external_message_id",
+                gmailMessageIdFinal
+            )
+            .maybeSingle();
+
+
+    if (existingMessage) {
+
+        return null;
+
+    }
+
+
+    let {
+        data: thread
+    } =
+        await supabase
+            .from("email_threads")
+            .select("*")
+            .eq(
+                "external_thread_id",
+                gmailThreadId
+            )
+            .maybeSingle();
+
+
+    if (!thread) {
+
+        const {
+            data: newThread,
+            error: threadError
+        } =
+            await supabase
+                .from("email_threads")
+                .insert([
+                    {
+                        subject,
+                        related_type:
+                            "gmail",
+                        related_id:
+                            gmailThreadId,
+                        status:
+                            "open",
+                        ai_category:
+                            "Importiert",
+                        manual_folder:
+                            "inbox",
+                        external_thread_id:
+                            gmailThreadId
+                    }
+                ])
+                .select()
+                .single();
+
+
+        if (threadError) {
+            throw threadError;
+        }
+
+
+        thread =
+            newThread;
+
+    }
+
+
+    const matchedContact =
+        await findMatchingContact(
+            sender
+        );
+
+
+    const {
+        data: message,
+        error: messageError
+    } =
+        await supabase
+            .from("email_messages")
+            .insert([
+                {
+                    thread_id:
+                        thread.id,
+
+                    contact_id:
+                        matchedContact?.id ||
+                        null,
+
+                    direction,
+
+                    sender,
+
+                    recipient,
+
+                    subject,
+
+                    body:
+                        messageData.snippet ||
+                        "",
+
+                    message_status:
+                        direction === "outbound"
+                            ? "sent"
+                            : "received",
+
+                    external_message_id:
+                        gmailMessageIdFinal,
+
+                    external_thread_id:
+                        gmailThreadId,
+
+                    provider:
+                        "google",
+
+                    mailbox_email:
+                        mailbox.email,
+
+                    imap_mailbox:
+                        googleMailbox,
+
+                    deleted_at:
+                        isTrash
+                            ? new Date().toISOString()
+                            : null,
+
+                    created_at:
+                        createdAt
+                }
+            ])
+            .select()
+            .single();
+
+
+    if (messageError) {
+        throw messageError;
+    }
+
+
+    const isSpamOrTrash =
+        isSpam ||
+        isTrash;
+
+
+    if (!isSpamOrTrash) {
+
+        const allowClassification =
+            direction === "inbound" &&
+            isInbox;
+
+
+        await analyzeInboundEmail(
+            message,
+            thread,
+            {
+                createDashboardNotificationEntry,
+                allowClassification
+            }
+        );
+
+    }
+
+
+    return message;
+
 }
 
 app.post("/api/gmail/webhook", async (req, res) => {
