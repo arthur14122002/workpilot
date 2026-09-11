@@ -5136,13 +5136,14 @@ app.put(
                 error: messageLoadError
             } = await supabase
                 .from("email_messages")
-                .select(`
-                    id,
-                    provider,
-                    mailbox_email,
-                    imap_uid,
-                    imap_mailbox
-                `)
+.select(`
+    id,
+    provider,
+    mailbox_email,
+    imap_uid,
+    imap_mailbox,
+    external_message_id
+`)
                 .eq(
                     "id",
                     id
@@ -5163,21 +5164,52 @@ app.put(
             }
 
 
-            if (
-                message.provider !== "imap" ||
-                !message.imap_uid
-            ) {
+if (
+    message.provider !== "imap" &&
+    message.provider !== "google"
+) {
 
-                return res
-                    .status(400)
-                    .json({
-                        ok: false,
-                        error:
-                            "Diese E-Mail kann aktuell nicht providerseitig verschoben werden."
-                    });
+    return res
+        .status(400)
+        .json({
+            ok: false,
+            error:
+                "Diese E-Mail kann aktuell nicht providerseitig verschoben werden."
+        });
 
-            }
+}
 
+
+if (
+    message.provider === "imap" &&
+    !message.imap_uid
+) {
+
+    return res
+        .status(400)
+        .json({
+            ok: false,
+            error:
+                "Für diese IMAP-E-Mail fehlt die Provider-ID."
+        });
+
+}
+
+
+if (
+    message.provider === "google" &&
+    !message.external_message_id
+) {
+
+    return res
+        .status(400)
+        .json({
+            ok: false,
+            error:
+                "Für diese Google-E-Mail fehlt die Gmail-ID."
+        });
+
+}
 
             const mailbox =
                 await getActiveMailboxConnection();
@@ -5220,6 +5252,152 @@ if (
             error:
                 "Der Zielordner ist in WorkPilot nicht aktiviert."
         });
+
+}
+
+if (
+    message.provider === "google"
+) {
+
+    const {
+        auth
+    } =
+        await getActiveGoogleMailboxAuth();
+
+
+    const gmail =
+        google.gmail({
+            version: "v1",
+            auth
+        });
+
+
+    const currentFolder =
+        message.imap_mailbox ||
+        "INBOX";
+
+
+    if (
+        currentFolder === "TRASH" ||
+        currentFolder === "SPAM"
+    ) {
+
+        return res
+            .status(400)
+            .json({
+                ok: false,
+                error:
+                    "Google Papierkorb und Spam werden separat behandelt."
+            });
+
+    }
+
+
+    const addLabelIds =
+        currentFolder === folder
+            ? []
+            : [folder];
+
+
+    const removeLabelIds = [];
+
+
+    if (
+        currentFolder !== folder &&
+        (
+            currentFolder === "INBOX" ||
+            importedFolders.includes(
+                currentFolder
+            )
+        )
+    ) {
+
+        removeLabelIds.push(
+            currentFolder
+        );
+
+    }
+
+
+    if (
+        addLabelIds.length > 0 ||
+        removeLabelIds.length > 0
+    ) {
+
+        await gmail.users.messages.modify({
+            userId: "me",
+
+            id:
+                message.external_message_id,
+
+            requestBody: {
+                addLabelIds,
+                removeLabelIds
+            }
+        });
+
+    }
+
+
+    const {
+        data: updatedMessages,
+        error
+    } =
+        await supabase
+            .from("email_messages")
+            .update({
+                imap_mailbox:
+                    folder,
+
+                deleted_at:
+                    null
+            })
+            .eq(
+                "id",
+                id
+            )
+            .select();
+
+
+    if (error) {
+
+        return res
+            .status(500)
+            .json({
+                ok: false,
+                error:
+                    error.message
+            });
+
+    }
+
+
+    const data =
+        Array.isArray(
+            updatedMessages
+        )
+            ? updatedMessages[0]
+            : null;
+
+
+    if (!data) {
+
+        return res
+            .status(500)
+            .json({
+                ok: false,
+                error:
+                    "Die E-Mail wurde bei Google verschoben, konnte aber in WorkPilot nicht aktualisiert werden."
+            });
+
+    }
+
+
+    return res.json({
+        ok: true,
+        message:
+            data
+    });
 
 }
 
@@ -5349,7 +5527,6 @@ if (!data) {
         }
 
     }
-);
 
 app.post("/api/email-messages/:id/restore", async (req, res) => {
 const { id } = req.params;
