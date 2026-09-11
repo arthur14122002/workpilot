@@ -1527,30 +1527,6 @@ currentFolderSubtitle.textContent =
 
             if (restoreButton) {
 
-    restoreButton.addEventListener(
-        "click",
-        (event) => {
-
-            event.stopPropagation();
-
-            moveTargetMessageId =
-                message.id;
-
-            selectedMoveFolder =
-                null;
-
-            openMoveMailModal(
-                message
-            );
-
-        }
-    );
-
-}
-
-
-            if (restoreButton) {
-
                 restoreButton.addEventListener(
                     "click",
                     async (event) => {
