@@ -1014,7 +1014,6 @@ function createMailSyncSignature(messages) {
                 message.id || "",
                 message.message_status || "",
                 message.read_at || "",
-                message.deleted_at || "",
                 message.imap_mailbox || "",
                 message.direction || "",
                 message.received_at || "",
