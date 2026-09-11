@@ -56,7 +56,7 @@ invoice: "E-Mails, die zu Rechnungen gehören.",
 appointment: "E-Mails mit erkannten Terminen und Rücksprachen.",
 other: "Sonstige Kundenkommunikation.",
 sent: "Von WorkPilot gesendete E-Mails.",
-trash: "Gelöschte E-Mails werden später nach 30 Tagen entfernt."
+trash: "Gelöschte E-Mails werden im Papierkorb des verbundenen Postfachs verwaltet."
 };
 
 function formatFileSize(bytes){
@@ -1792,9 +1792,15 @@ function openMoveMailModal(message) {
         targetMessage.imap_mailbox ||
         "INBOX";
 
-    if (
-        currentImapMailbox !== "INBOX"
-    ) {
+const needsProviderRestore =
+    Boolean(
+        targetMessage.deleted_at
+    ) ||
+    currentImapMailbox !== "INBOX";
+
+if (
+    needsProviderRestore
+) {
         const providerResponse =
             await fetch(
                 `/api/email-messages/${targetMessage.id}/move-folder`,
