@@ -1520,14 +1520,14 @@ currentFolderSubtitle.textContent =
             );
 
 
- const restoreButton =
+const restoreMoveButton =
     item.querySelector(
         ".mailRowRestoreBtn"
     );
 
-if (restoreButton) {
+if (restoreMoveButton) {
 
-    restoreButton.addEventListener(
+    restoreMoveButton.addEventListener(
         "click",
         (event) => {
 
