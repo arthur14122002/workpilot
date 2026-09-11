@@ -1778,6 +1778,35 @@ if (importedFoldersUpdateError) {
 
     }
 
+        const updatedImportedFolders =
+        Array.from(
+            new Set(
+                Array.isArray(selectedFolders)
+                    ? selectedFolders
+                    : []
+            )
+        );
+
+
+    const {
+        error: importedFoldersUpdateError
+    } =
+        await supabase
+            .from("mailbox_connections")
+            .update({
+                imported_folders:
+                    updatedImportedFolders
+            })
+            .eq(
+                "id",
+                mailbox.id
+            );
+
+
+    if (importedFoldersUpdateError) {
+        throw importedFoldersUpdateError;
+    }
+
 
     const {
         auth
