@@ -400,6 +400,30 @@ const intent =
 const imapMailbox =
     message.imap_mailbox;
 
+if (
+    String(imapMailbox || "")
+        .startsWith("Label_")
+) {
+
+    console.log(
+        "🔎 GOOGLE LABEL MAIL:",
+        {
+            id:
+                message.id,
+
+            provider:
+                message.provider,
+
+            imap_mailbox:
+                message.imap_mailbox,
+
+            importedFoldersCache:
+                importedFoldersCache
+        }
+    );
+
+}
+
 
 if (message.deleted_at) {
     return "trash";
