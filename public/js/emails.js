@@ -400,31 +400,6 @@ const intent =
 const imapMailbox =
     message.imap_mailbox;
 
-if (
-    String(imapMailbox || "")
-        .startsWith("Label_")
-) {
-
-    console.log(
-        "🔎 GOOGLE LABEL MAIL:",
-        {
-            id:
-                message.id,
-
-            provider:
-                message.provider,
-
-            imap_mailbox:
-                message.imap_mailbox,
-
-            importedFoldersCache:
-                importedFoldersCache
-        }
-    );
-
-}
-
-
 if (message.deleted_at) {
     return "trash";
 }
@@ -597,41 +572,44 @@ const sortedFolders =
                     "de"
                 )
         )
-        .map(
-            folder => {
+.map(
+    folder => {
 
-                const folderName =
-                    folder.name ||
-                    folder.path;
+        const folderName =
+            folder.name ||
+            folder.path;
 
-                return [
-                    folderName,
-                    folderCounts.get(
-                        folder.path
-                    ) ||
-                    folderCounts.get(
-                        folderName
-                    ) ||
-                    0
-                ];
+        const folderPath =
+            folder.path ||
+            folder.name;
 
-            }
-        );
-
-
-    for (
-        const [
+        return [
+            folderPath,
             folderName,
-            count
-        ]
-        of sortedFolders
-    ) {
+            folderCounts.get(
+                folderPath
+            ) ||
+            0
+        ];
 
-        folderLabels[folderName] =
-            folderName;
+    }
+);
 
-        folderSubtitles[folderName] =
-            "Ordner aus deinem verbundenen Postfach.";
+
+for (
+    const [
+        folderPath,
+        folderName,
+        count
+    ]
+    of sortedFolders
+) {
+
+folderLabels[folderPath] =
+    folderName;
+
+folderSubtitles[folderPath] =
+    "Ordner aus deinem verbundenen Postfach.";
 
 
         const button =
@@ -645,13 +623,13 @@ const sortedFolders =
         button.className =
             "mailFolder mailOriginalFolder";
 
-        button.dataset.folder =
-            folderName;
+button.dataset.folder =
+    folderPath;
 
 
         if (
             activeFolder ===
-            folderName
+            folderPath
         ) {
             button.classList.add(
                 "active"
@@ -726,7 +704,7 @@ const sortedFolders =
             () => {
 
                 activeFolder =
-                    folderName;
+                    folderPath;
 
 
                 document
