@@ -5322,22 +5322,105 @@ if (
         message.imap_mailbox ||
         "INBOX";
 
+if (
+    currentFolder === "TRASH"
+) {
 
-    if (
-        currentFolder === "TRASH" ||
-        currentFolder === "SPAM"
-    ) {
+    if (folder !== "INBOX") {
 
         return res
             .status(400)
             .json({
                 ok: false,
                 error:
-                    "Google Papierkorb und Spam werden separat behandelt."
+                    "Google-Mails aus dem Papierkorb können nur in den Posteingang wiederhergestellt werden."
             });
 
     }
 
+    await gmail.users.messages.untrash({
+        userId: "me",
+        id:
+            message.external_message_id
+    });
+
+
+    const {
+        data: updatedMessages,
+        error
+    } =
+        await supabase
+            .from("email_messages")
+            .update({
+                imap_mailbox:
+                    "INBOX",
+
+                deleted_at:
+                    null
+            })
+            .eq(
+                "id",
+                id
+            )
+            .select();
+
+
+    if (error) {
+
+        return res
+            .status(500)
+            .json({
+                ok: false,
+                error:
+                    error.message
+            });
+
+    }
+
+
+    const data =
+        Array.isArray(
+            updatedMessages
+        )
+            ? updatedMessages[0]
+            : null;
+
+
+    if (!data) {
+
+        return res
+            .status(500)
+            .json({
+                ok: false,
+                error:
+                    "Die E-Mail wurde bei Google wiederhergestellt, konnte aber in WorkPilot nicht aktualisiert werden."
+            });
+
+    }
+
+
+    return res.json({
+        ok: true,
+        message:
+            data
+    });
+
+}
+
+
+if (
+    currentFolder === "SPAM"
+) {
+
+    return res
+        .status(400)
+        .json({
+            ok: false,
+            error:
+                "Google Spam wird separat behandelt."
+        });
+
+}
 
     const addLabelIds =
         currentFolder === folder
