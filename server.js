@@ -4874,7 +4874,8 @@ app.put(
                     provider,
                     mailbox_email,
                     imap_uid,
-                    imap_mailbox
+                    imap_mailbox,
+                    external_message_id
                 `)
                 .eq(
                     "id",
@@ -4899,6 +4900,51 @@ app.put(
             let providerTrashMailbox =
                 message.imap_mailbox ||
                 null;
+
+                            if (
+                message.provider === "google"
+            ) {
+
+                if (
+                    !message.external_message_id
+                ) {
+                    throw new Error(
+                        "Für diese Google-Mail fehlt die Gmail Message-ID."
+                    );
+                }
+
+                const {
+                    auth,
+                    mailbox
+                } =
+                    await getActiveGoogleMailboxAuth();
+
+                if (
+                    message.mailbox_email &&
+                    mailbox.email !==
+                        message.mailbox_email
+                ) {
+                    throw new Error(
+                        "Die Mail gehört nicht zum aktuell verbundenen Google-Postfach."
+                    );
+                }
+
+                const gmail =
+                    google.gmail({
+                        version: "v1",
+                        auth
+                    });
+
+                await gmail.users.messages.trash({
+                    userId: "me",
+                    id:
+                        message.external_message_id
+                });
+
+                providerTrashMailbox =
+                    "TRASH";
+
+            }
 
             if (
                 message.provider === "imap" &&
