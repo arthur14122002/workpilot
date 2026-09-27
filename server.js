@@ -5387,17 +5387,29 @@ if (
 
     }
 
-    await gmail.users.messages.untrash({
-        userId: "me",
-        id:
-            message.external_message_id
-    });
+await gmail.users.messages.untrash({
+    userId: "me",
+    id:
+        message.external_message_id
+});
 
 
-    const {
-        data: updatedMessages,
-        error
-    } =
+await gmail.users.messages.modify({
+    userId: "me",
+    id:
+        message.external_message_id,
+    requestBody: {
+        addLabelIds: [
+            "INBOX"
+        ]
+    }
+});
+
+
+const {
+    data: updatedMessages,
+    error
+} =
         await supabase
             .from("email_messages")
             .update({
