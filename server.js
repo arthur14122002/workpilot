@@ -327,20 +327,34 @@ async function sendEmailFromActiveMailbox({
         );
     }
 
-    if (mailbox.provider === "google") {
+if (mailbox.provider === "google") {
 
+    const googleResult =
         await sendEmailWithGoogle({
             to,
             subject,
             html
         });
 
-        return {
-            sender: mailbox.email,
-            provider: "google",
-            messageId: null
-        };
-    }
+    return {
+        sender:
+            googleResult.sender,
+
+        provider:
+            "google",
+
+        messageId:
+            null,
+
+        externalMessageId:
+            googleResult.email?.id ||
+            null,
+
+        externalThreadId:
+            googleResult.email?.threadId ||
+            null
+    };
+}
 
     if (mailbox.provider !== "imap") {
         throw new Error(
