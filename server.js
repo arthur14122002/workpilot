@@ -4015,6 +4015,12 @@ await collectLiveGoogleMessages({
 
 await collectLiveGoogleMessages({
     labelIds: [
+        "INBOX"
+    ]
+});
+
+await collectLiveGoogleMessages({
+    labelIds: [
         "TRASH"
     ]
 });
