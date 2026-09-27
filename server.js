@@ -1826,10 +1826,17 @@ const query =
         ? "in:inbox"
         : `in:inbox newer_than:${Number(range)}d`;
 
-    const gmailMessages = [];
+
+const gmailMessageMap =
+    new Map();
+
+
+async function collectGoogleMessages({
+    q,
+    labelIds
+}) {
 
     let pageToken = null;
-
 
     do {
 
@@ -1839,7 +1846,9 @@ const query =
 
                 maxResults: 500,
 
-                q: query,
+                q,
+
+                labelIds,
 
                 pageToken:
                     pageToken ||
@@ -1847,24 +1856,64 @@ const query =
             });
 
 
-        gmailMessages.push(
-            ...(
-                listResponse
-                    .data
-                    .messages ||
-                []
-            )
-        );
+        const messages =
+            listResponse.data.messages ||
+            [];
+
+
+        for (
+            const gmailMessage
+            of messages
+        ) {
+
+            gmailMessageMap.set(
+                gmailMessage.id,
+                gmailMessage
+            );
+
+        }
 
 
         pageToken =
-            listResponse
-                .data
-                .nextPageToken ||
+            listResponse.data.nextPageToken ||
             null;
 
 
     } while (pageToken);
+
+}
+
+
+await collectGoogleMessages({
+    q: query
+});
+
+
+for (
+    const folderId
+    of selectedFolders
+) {
+
+    const folderQuery =
+        String(range) === "all"
+            ? undefined
+            : `newer_than:${Number(range)}d`;
+
+
+    await collectGoogleMessages({
+        q: folderQuery,
+        labelIds: [
+            folderId
+        ]
+    });
+
+}
+
+
+const gmailMessages =
+    Array.from(
+        gmailMessageMap.values()
+    );
 
 
     mailboxImportProgress.total =
