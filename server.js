@@ -7639,6 +7639,15 @@ async function importSingleGoogleMessage(
             "INBOX"
         );
 
+    const isDraft =
+    labelIds.includes(
+        "DRAFT"
+    );
+
+if (isDraft) {
+    return null;
+}
+
 
     let googleMailbox =
         "INBOX";
