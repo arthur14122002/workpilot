@@ -3966,21 +3966,80 @@ if (
         });
 
 
+const gmailMessageMap =
+    new Map();
+
+
+async function collectLiveGoogleMessages({
+    q,
+    labelIds
+}) {
+
     const listResponse =
         await gmail.users.messages.list({
             userId: "me",
 
             maxResults: 50,
 
-            q: "newer_than:1d"
+            q,
+
+            labelIds
         });
 
 
-    const gmailMessages =
+    const messages =
         listResponse
             .data
             .messages ||
         [];
+
+
+    for (
+        const gmailMessage
+        of messages
+    ) {
+
+        gmailMessageMap.set(
+            gmailMessage.id,
+            gmailMessage
+        );
+
+    }
+
+}
+
+
+await collectLiveGoogleMessages({
+    q: "newer_than:1d"
+});
+
+
+const importedFolders =
+    Array.isArray(
+        mailbox.imported_folders
+    )
+        ? mailbox.imported_folders
+        : [];
+
+
+for (
+    const folderId
+    of importedFolders
+) {
+
+    await collectLiveGoogleMessages({
+        labelIds: [
+            folderId
+        ]
+    });
+
+}
+
+
+const gmailMessages =
+    Array.from(
+        gmailMessageMap.values()
+    );
 
 
     let savedCount = 0;
