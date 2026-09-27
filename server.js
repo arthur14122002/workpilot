@@ -4013,6 +4013,11 @@ await collectLiveGoogleMessages({
     q: "newer_than:1d"
 });
 
+await collectLiveGoogleMessages({
+    labelIds: [
+        "TRASH"
+    ]
+});
 
 const importedFolders =
     Array.isArray(
