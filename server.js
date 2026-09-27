@@ -7629,24 +7629,79 @@ async function importSingleGoogleMessage(
             : "inbound";
 
 
+const {
+    data: existingMessage,
+    error: existingMessageError
+} =
+    await supabase
+        .from("email_messages")
+        .select(`
+            id,
+            imap_mailbox,
+            deleted_at,
+            direction,
+            message_status
+        `)
+        .eq(
+            "external_message_id",
+            gmailMessageIdFinal
+        )
+        .maybeSingle();
+
+
+if (existingMessageError) {
+    throw existingMessageError;
+}
+
+if (existingMessage) {
+
     const {
-        data: existingMessage
+        data: updatedMessage,
+        error: updateError
     } =
         await supabase
             .from("email_messages")
-            .select("id")
+            .update({
+                imap_mailbox:
+                    googleMailbox,
+
+                deleted_at:
+                    isTrash
+                        ? (
+                            existingMessage.deleted_at ||
+                            new Date().toISOString()
+                        )
+                        : null,
+
+                direction,
+
+                message_status:
+                    direction === "outbound"
+                        ? "sent"
+                        : "received",
+
+                mailbox_email:
+                    mailbox.email,
+
+                provider:
+                    "google"
+            })
             .eq(
-                "external_message_id",
-                gmailMessageIdFinal
+                "id",
+                existingMessage.id
             )
-            .maybeSingle();
+            .select()
+            .single();
 
 
-    if (existingMessage) {
-
-        return null;
-
+    if (updateError) {
+        throw updateError;
     }
+
+
+    return updatedMessage;
+
+}
 
 
     let {
