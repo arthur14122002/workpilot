@@ -1663,11 +1663,18 @@ function openMoveMailModal(message) {
                     Sonstiges
                 </button>
 
+                <div class="moveFolderDivider"></div>
+
+                <button
+                    data-folder="SPAM"
+                    data-folder-type="provider"
+                >
+                    Spam
+                </button>
+
                 ${
                     providerFolderButtons
                         ? `
-                            <div class="moveFolderDivider"></div>
-
                             ${providerFolderButtons}
                         `
                         : ""
