@@ -5420,11 +5420,12 @@ if (
         ? mailbox.imported_folders
         : [];
 
-const isInboxTarget =
-    folder === "INBOX";
+const isSystemTarget =
+    folder === "INBOX" ||
+    folder === "SPAM";
 
 if (
-    !isInboxTarget &&
+    !isSystemTarget &&
     !importedFolders.includes(
         folder
     )
