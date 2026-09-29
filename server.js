@@ -4039,6 +4039,12 @@ await collectLiveGoogleMessages({
     ]
 });
 
+await collectLiveGoogleMessages({
+    labelIds: [
+        "SPAM"
+    ]
+});
+
 const importedFolders =
     Array.isArray(
         mailbox.imported_folders
