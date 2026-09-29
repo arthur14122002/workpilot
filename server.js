@@ -7357,10 +7357,31 @@ const { data: message, error: messageError } = await supabase
 
     content_loaded: true,
 
-    message_status: "sent",
+message_status: "sent",
 
-    rfc_message_id:
-    email.messageId || null
+rfc_message_id:
+    email.messageId || null,
+
+external_message_id:
+    email.externalMessageId ||
+    null,
+
+external_thread_id:
+    email.externalThreadId ||
+    null,
+
+provider:
+    email.provider ||
+    null,
+
+mailbox_email:
+    email.sender ||
+    null,
+
+imap_mailbox:
+    email.provider === "google"
+        ? "SENT"
+        : null
 }
 ])
 .select()
