@@ -936,10 +936,10 @@ emptyButton.addEventListener(
             "hidden"
         );
 
-        window.openEmptyFolderConfirmModal(
-            folderName,
-            folderName
-        );
+window.openEmptyFolderConfirmModal(
+    folderName,
+    folderPath
+);
 
     }
 );

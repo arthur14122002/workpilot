@@ -3512,21 +3512,6 @@ app.put(
             const mailbox =
                 await getActiveMailboxConnection();
 
-            if (
-                mailbox.provider !== "imap"
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Ordner leeren ist aktuell nur für IMAP aktiviert."
-                    });
-
-            }
-
-
             const rawFolderPath =
                 typeof req.body?.folderPath === "string"
                     ? req.body.folderPath
@@ -3548,6 +3533,146 @@ app.put(
 
             }
 
+                        if (
+                mailbox.provider === "google"
+            ) {
+
+                const {
+                    auth
+                } =
+                    await getActiveGoogleMailboxAuth();
+
+
+                const gmail =
+                    google.gmail({
+                        version: "v1",
+                        auth
+                    });
+
+
+                const labelsResponse =
+                    await gmail.users.labels.list({
+                        userId: "me"
+                    });
+
+
+                const labels =
+                    labelsResponse.data.labels ||
+                    [];
+
+
+                const existingLabel =
+                    labels.find(
+                        label =>
+                            label.id ===
+                            folderPath &&
+                            String(
+                                label.type ||
+                                ""
+                            ).toLowerCase() ===
+                                "user"
+                    );
+
+
+                if (!existingLabel) {
+
+                    return res
+                        .status(404)
+                        .json({
+                            success: false,
+                            message:
+                                "Der Ordner wurde im Google-Postfach nicht gefunden."
+                        });
+
+                }
+
+
+                let pageToken =
+                    null;
+
+                let moved =
+                    0;
+
+
+                do {
+
+                    const messagesResponse =
+                        await gmail.users.messages.list({
+                            userId: "me",
+
+                            labelIds: [
+                                folderPath
+                            ],
+
+                            maxResults:
+                                500,
+
+                            pageToken:
+                                pageToken ||
+                                undefined
+                        });
+
+
+                    const messages =
+                        messagesResponse
+                            .data
+                            .messages ||
+                        [];
+
+
+                    for (
+                        const message
+                        of messages
+                    ) {
+
+                        await gmail.users.messages.trash({
+                            userId: "me",
+                            id: message.id
+                        });
+
+                        moved++;
+
+                    }
+
+
+                    pageToken =
+                        messagesResponse
+                            .data
+                            .nextPageToken ||
+                        null;
+
+
+                } while (pageToken);
+
+
+                return res.json({
+                    success: true,
+
+                    folder:
+                        folderPath,
+
+                    trash:
+                        "TRASH",
+
+                    moved
+                });
+
+            }
+
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Dieser Mail-Provider unterstützt das Leeren von Ordnern aktuell nicht."
+                    });
+
+            }
 
             const password =
                 decryptMailPassword(
