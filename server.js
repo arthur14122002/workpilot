@@ -2919,19 +2919,7 @@ app.post(
             const mailbox =
                 await getActiveMailboxConnection();
 
-            if (
-                mailbox.provider !== "imap"
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Ordner erstellen ist aktuell nur für IMAP aktiviert."
-                    });
-
-            }
+}
 
 
             const rawName =
@@ -2976,6 +2964,160 @@ app.post(
                     ? mailbox.imported_folders
                     : [];
 
+            if (
+                mailbox.provider === "google"
+            ) {
+
+                const {
+                    auth
+                } =
+                    await getActiveGoogleMailboxAuth();
+
+
+                const gmail =
+                    google.gmail({
+                        version: "v1",
+                        auth
+                    });
+
+
+                const labelsResponse =
+                    await gmail.users.labels.list({
+                        userId: "me"
+                    });
+
+
+                const labels =
+                    labelsResponse.data.labels ||
+                    [];
+
+
+                const existingFolderNames =
+                    labels
+                        .map(
+                            label =>
+                                String(
+                                    label.name ||
+                                    ""
+                                )
+                                    .trim()
+                                    .toLowerCase()
+                        );
+
+
+                if (
+                    existingFolderNames.includes(
+                        folderName.toLowerCase()
+                    )
+                ) {
+
+                    return res
+                        .status(409)
+                        .json({
+                            success: false,
+                            message:
+                                "Ein Ordner mit diesem Namen existiert bereits."
+                        });
+
+                }
+
+
+                const createResponse =
+                    await gmail.users.labels.create({
+                        userId: "me",
+
+                        requestBody: {
+                            name:
+                                folderName,
+
+                            labelListVisibility:
+                                "labelShow",
+
+                            messageListVisibility:
+                                "show"
+                        }
+                    });
+
+
+                const createdLabel =
+                    createResponse.data;
+
+
+                if (!createdLabel?.id) {
+
+                    throw new Error(
+                        "Google hat keine Label-ID zurückgegeben."
+                    );
+
+                }
+
+
+                const updatedImportedFolders =
+                    Array.from(
+                        new Set([
+                            ...importedFolders,
+                            createdLabel.id
+                        ])
+                    );
+
+
+                const {
+                    error: updateError
+                } =
+                    await supabase
+                        .from(
+                            "mailbox_connections"
+                        )
+                        .update({
+                            imported_folders:
+                                updatedImportedFolders
+                        })
+                        .eq(
+                            "id",
+                            mailbox.id
+                        );
+
+
+                if (updateError) {
+                    throw updateError;
+                }
+
+
+                return res.json({
+                    success: true,
+
+                    folder: {
+                        id:
+                            createdLabel.id,
+
+                        name:
+                            createdLabel.name ||
+                            folderName,
+
+                        path:
+                            createdLabel.id
+                    },
+
+                    importedFolders:
+                        updatedImportedFolders
+                });
+
+            }
+
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Dieser Mail-Provider unterstützt das Erstellen von Ordnern aktuell nicht."
+                    });
+
+            }
 
             const password =
                 decryptMailPassword(
