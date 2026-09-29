@@ -5564,13 +5564,95 @@ if (
     currentFolder === "SPAM"
 ) {
 
-    return res
-        .status(400)
-        .json({
-            ok: false,
-            error:
-                "Google Spam wird separat behandelt."
-        });
+    if (folder !== "INBOX") {
+
+        return res
+            .status(400)
+            .json({
+                ok: false,
+                error:
+                    "Google-Spam kann nur in den Posteingang zurückverschoben werden."
+            });
+
+    }
+
+    await gmail.users.messages.modify({
+        userId: "me",
+
+        id:
+            message.external_message_id,
+
+        requestBody: {
+            addLabelIds: [
+                "INBOX"
+            ],
+
+            removeLabelIds: [
+                "SPAM"
+            ]
+        }
+    });
+
+
+    const {
+        data: updatedMessages,
+        error
+    } =
+        await supabase
+            .from("email_messages")
+            .update({
+                imap_mailbox:
+                    "INBOX",
+
+                deleted_at:
+                    null
+            })
+            .eq(
+                "id",
+                id
+            )
+            .select();
+
+
+    if (error) {
+
+        return res
+            .status(500)
+            .json({
+                ok: false,
+                error:
+                    error.message
+            });
+
+    }
+
+
+    const data =
+        Array.isArray(
+            updatedMessages
+        )
+            ? updatedMessages[0]
+            : null;
+
+
+    if (!data) {
+
+        return res
+            .status(500)
+            .json({
+                ok: false,
+                error:
+                    "Die E-Mail wurde aus Google-Spam entfernt, konnte aber in WorkPilot nicht aktualisiert werden."
+            });
+
+    }
+
+
+    return res.json({
+        ok: true,
+        message:
+            data
+    });
 
 }
 
