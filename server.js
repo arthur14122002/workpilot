@@ -3779,20 +3779,6 @@ app.put(
             const mailbox =
                 await getActiveMailboxConnection();
 
-            if (
-                mailbox.provider !== "imap"
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Ordner umbenennen ist aktuell nur für IMAP aktiviert."
-                    });
-
-            }
-
             const rawOldPath =
                 typeof req.body?.oldPath === "string"
                     ? req.body.oldPath
@@ -3856,6 +3842,154 @@ app.put(
                 )
                     ? mailbox.imported_folders
                     : [];
+
+                        if (
+                mailbox.provider === "google"
+            ) {
+
+                const {
+                    auth
+                } =
+                    await getActiveGoogleMailboxAuth();
+
+
+                const gmail =
+                    google.gmail({
+                        version: "v1",
+                        auth
+                    });
+
+
+                const labelsResponse =
+                    await gmail.users.labels.list({
+                        userId: "me"
+                    });
+
+
+                const labels =
+                    labelsResponse.data.labels ||
+                    [];
+
+
+                const existingLabel =
+                    labels.find(
+                        label =>
+                            label.id ===
+                            oldPath
+                    );
+
+
+                if (
+                    !existingLabel ||
+                    String(
+                        existingLabel.type ||
+                        ""
+                    ).toLowerCase() !== "user"
+                ) {
+
+                    return res
+                        .status(404)
+                        .json({
+                            success: false,
+                            message:
+                                "Der Ordner wurde im Google-Postfach nicht gefunden."
+                        });
+
+                }
+
+
+                const duplicateLabel =
+                    labels.find(
+                        label =>
+                            label.id !==
+                                oldPath &&
+                            String(
+                                label.name ||
+                                ""
+                            )
+                                .trim()
+                                .toLowerCase() ===
+                            newName.toLowerCase()
+                    );
+
+
+                if (duplicateLabel) {
+
+                    return res
+                        .status(409)
+                        .json({
+                            success: false,
+                            message:
+                                "Ein Ordner mit diesem Namen existiert bereits."
+                        });
+
+                }
+
+
+                if (
+                    String(
+                        existingLabel.name ||
+                        ""
+                    ).trim() === newName
+                ) {
+
+                    return res.json({
+                        success: true,
+
+                        oldPath,
+
+                        newPath:
+                            oldPath,
+
+                        importedFolders
+                    });
+
+                }
+
+
+                await gmail.users.labels.update({
+                    userId: "me",
+
+                    id:
+                        oldPath,
+
+                    requestBody: {
+                        name:
+                            newName
+                    }
+                });
+
+
+                return res.json({
+                    success: true,
+
+                    oldPath,
+
+                    newPath:
+                        oldPath,
+
+                    name:
+                        newName,
+
+                    importedFolders
+                });
+
+            }
+
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Dieser Mail-Provider unterstützt das Umbenennen von Ordnern aktuell nicht."
+                    });
+
+            }
 
 
             const password =
