@@ -918,10 +918,10 @@ renameButton.addEventListener(
             "hidden"
         );
 
-        openEditFolderModal(
-            folderName,
-            folderName
-        );
+openEditFolderModal(
+    folderName,
+    folderPath
+);
 
     }
 );
