@@ -7759,7 +7759,7 @@ const {
 content_loaded:
     true,
 
-has_attachment:
+has_attachments:
     true,
 
 message_status:
