@@ -329,12 +329,13 @@ async function sendEmailFromActiveMailbox({
 
 if (mailbox.provider === "google") {
 
-    const googleResult =
-        await sendEmailWithGoogle({
-            to,
-            subject,
-            html
-        });
+const googleResult =
+    await sendEmailWithGoogle({
+        to,
+        subject,
+        html,
+        attachments
+    });
 
     return {
         sender:
@@ -2475,36 +2476,83 @@ return Buffer.from(input)
 .replace(/=+$/, "");
 }
 
-async function sendEmailWithGoogle({ to, subject, html }) {
-const { auth, mailbox } = await getActiveGoogleMailboxAuth();
+async function sendEmailWithGoogle({
+    to,
+    subject,
+    html,
+    attachments = []
+}) {
 
-const gmail = google.gmail({
-version: "v1",
-auth
-});
+    const {
+        auth,
+        mailbox
+    } =
+        await getActiveGoogleMailboxAuth();
 
-const rawMessage = [
-`From: ${mailbox.email}`,
-`To: ${to}`,
-`Subject: ${subject}`,
-"MIME-Version: 1.0",
-'Content-Type: text/html; charset="UTF-8"',
-"",
-html
-].join("\r\n");
 
-const result = await gmail.users.messages.send({
-userId: "me",
-requestBody: {
-raw: makeBase64Url(rawMessage)
-}
-});
+    const gmail =
+        google.gmail({
+            version: "v1",
+            auth
+        });
 
-return {
-provider: "google",
-email: result.data,
-sender: mailbox.email
-};
+
+    const mailOptions = {
+        from:
+            mailbox.email,
+
+        to,
+        subject,
+        html,
+
+        attachments:
+            attachments.map(
+                file => ({
+                    filename:
+                        file.originalname,
+
+                    content:
+                        file.buffer,
+
+                    contentType:
+                        file.mimetype
+                })
+            )
+    };
+
+
+    const rawMessage =
+        await new MailComposer(
+            mailOptions
+        )
+            .compile()
+            .build();
+
+
+    const result =
+        await gmail.users.messages.send({
+            userId: "me",
+
+            requestBody: {
+                raw:
+                    makeBase64Url(
+                        rawMessage
+                    )
+            }
+        });
+
+
+    return {
+        provider:
+            "google",
+
+        email:
+            result.data,
+
+        sender:
+            mailbox.email
+    };
+
 }
 
 function extractEmailAddress(value = "") {
