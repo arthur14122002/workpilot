@@ -5969,46 +5969,47 @@ if (
     currentFolder === "TRASH"
 ) {
 
-    if (folder !== "INBOX") {
+    await gmail.users.messages.untrash({
+        userId: "me",
 
-        return res
-            .status(400)
-            .json({
-                ok: false,
-                error:
-                    "Google-Mails aus dem Papierkorb können nur in den Posteingang wiederhergestellt werden."
-            });
-
-    }
-
-await gmail.users.messages.untrash({
-    userId: "me",
-    id:
-        message.external_message_id
-});
+        id:
+            message.external_message_id
+    });
 
 
-await gmail.users.messages.modify({
-    userId: "me",
-    id:
-        message.external_message_id,
-    requestBody: {
-        addLabelIds: [
-            "INBOX"
-        ]
-    }
-});
+    const targetLabelIds =
+        folder === "INBOX"
+            ? ["INBOX"]
+            : [folder];
 
 
-const {
-    data: updatedMessages,
-    error
-} =
+    await gmail.users.messages.modify({
+        userId: "me",
+
+        id:
+            message.external_message_id,
+
+        requestBody: {
+            addLabelIds:
+                targetLabelIds,
+
+            removeLabelIds:
+                folder === "INBOX"
+                    ? []
+                    : ["INBOX"]
+        }
+    });
+
+
+    const {
+        data: updatedMessages,
+        error
+    } =
         await supabase
             .from("email_messages")
             .update({
                 imap_mailbox:
-                    "INBOX",
+                    folder,
 
                 deleted_at:
                     null
@@ -6061,7 +6062,6 @@ const {
     });
 
 }
-
 
 if (
     currentFolder === "SPAM"
