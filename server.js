@@ -3292,21 +3292,6 @@ app.delete(
             const mailbox =
                 await getActiveMailboxConnection();
 
-            if (
-                mailbox.provider !== "imap"
-            ) {
-
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Ordner löschen ist aktuell nur für IMAP aktiviert."
-                    });
-
-            }
-
-
             const rawFolderPath =
                 typeof req.body?.folderPath === "string"
                     ? req.body.folderPath
@@ -3336,6 +3321,123 @@ app.delete(
                     ? mailbox.imported_folders
                     : [];
 
+            if (
+                mailbox.provider === "google"
+            ) {
+
+                const {
+                    auth
+                } =
+                    await getActiveGoogleMailboxAuth();
+
+
+                const gmail =
+                    google.gmail({
+                        version: "v1",
+                        auth
+                    });
+
+
+                const labelsResponse =
+                    await gmail.users.labels.list({
+                        userId: "me"
+                    });
+
+
+                const labels =
+                    labelsResponse.data.labels ||
+                    [];
+
+
+                const existingLabel =
+                    labels.find(
+                        label =>
+                            label.id ===
+                                folderPath &&
+                            String(
+                                label.type ||
+                                ""
+                            ).toLowerCase() ===
+                                "user"
+                    );
+
+
+                if (!existingLabel) {
+
+                    return res
+                        .status(404)
+                        .json({
+                            success: false,
+                            message:
+                                "Der Ordner wurde im Google-Postfach nicht gefunden."
+                        });
+
+                }
+
+
+                await gmail.users.labels.delete({
+                    userId: "me",
+                    id:
+                        folderPath
+                });
+
+
+                const updatedImportedFolders =
+                    importedFolders.filter(
+                        path =>
+                            String(path) !==
+                            folderPath
+                    );
+
+
+                const {
+                    error: updateError
+                } =
+                    await supabase
+                        .from(
+                            "mailbox_connections"
+                        )
+                        .update({
+                            imported_folders:
+                                updatedImportedFolders
+                        })
+                        .eq(
+                            "id",
+                            mailbox.id
+                        );
+
+
+                if (updateError) {
+                    throw updateError;
+                }
+
+
+                return res.json({
+                    success: true,
+
+                    deletedFolder:
+                        folderPath,
+
+                    importedFolders:
+                        updatedImportedFolders
+                });
+
+            }
+
+
+            if (
+                mailbox.provider !== "imap"
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "Dieser Mail-Provider unterstützt das Löschen von Ordnern aktuell nicht."
+                    });
+
+            }
 
             const password =
                 decryptMailPassword(

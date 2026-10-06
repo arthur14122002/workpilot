@@ -850,7 +850,7 @@ deleteButton.addEventListener(
 
         window.openDeleteFolderConfirmModal(
             folderName,
-            folderName
+            folderPath
         );
 
     }
