@@ -7756,11 +7756,14 @@ const {
             body_html:
                 html,
 
-            content_loaded:
-                true,
+content_loaded:
+    true,
 
-            message_status:
-                "sent",
+has_attachment:
+    true,
+
+message_status:
+    "sent",
 
             external_message_id:
                 email.externalMessageId ||
