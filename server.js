@@ -7967,58 +7967,136 @@ const email =
         ]
     });
 
-await supabase
-    .from("email_messages")
-    .insert([
-        {
-            thread_id:
-                thread.id,
+const {
+    data: savedMessage,
+    error: messageError
+} =
+    await supabase
+        .from("email_messages")
+        .insert([
+            {
+                thread_id:
+                    thread.id,
 
-            direction:
-                "outbound",
+                direction:
+                    "outbound",
 
-            sender:
-                email.sender,
+                sender:
+                    email.sender,
 
-            recipient:
-                to,
+                recipient:
+                    to,
 
-            subject,
+                subject,
 
-            body:
-                message,
+                body:
+                    message,
 
-            body_html:
-                html,
+                body_html:
+                    html,
 
-            content_loaded:
-                true,
+                content_loaded:
+                    true,
 
-            message_status:
-                "sent",
+                has_attachments:
+                    true,
 
-            external_message_id:
-                email.externalMessageId ||
-                null,
+                message_status:
+                    "sent",
 
-            external_thread_id:
-                email.externalThreadId ||
-                null,
+                external_message_id:
+                    email.externalMessageId ||
+                    null,
 
-            provider:
-                email.provider ||
-                null,
+                external_thread_id:
+                    email.externalThreadId ||
+                    null,
 
-            mailbox_email:
-                email.sender ||
-                null,
+                provider:
+                    email.provider ||
+                    null,
 
-            imap_mailbox:
-                email.provider === "google"
-                    ? "SENT"
-                    : null
-        }
-    ]);
+                mailbox_email:
+                    email.sender ||
+                    null,
+
+                imap_mailbox:
+                    email.provider === "google"
+                        ? "SENT"
+                        : null
+            }
+        ])
+        .select()
+        .single();
+
+if (messageError) {
+    throw messageError;
+}
+
+const pdfFileName =
+    `Rechnung-${invoice.invoiceNumber || invoice.id}.pdf`;
+
+const filePath =
+    `${savedMessage.id}/${Date.now()}-${pdfFileName}`;
+
+
+const {
+    error: uploadError
+} =
+    await supabase.storage
+        .from("email-attachments")
+        .upload(
+            filePath,
+            pdfBuffer,
+            {
+                contentType:
+                    "application/pdf",
+
+                upsert:
+                    false
+            }
+        );
+
+
+if (uploadError) {
+    throw uploadError;
+}
+
+
+const {
+    error: attachmentError
+} =
+    await supabase
+        .from("email_attachments")
+        .insert([
+            {
+                message_id:
+                    savedMessage.id,
+
+                file_name:
+                    pdfFileName,
+
+                file_size:
+                    pdfBuffer.length,
+
+                file_path:
+                    filePath,
+
+                mime_type:
+                    "application/pdf",
+
+                disposition:
+                    "attachment",
+
+                is_inline:
+                    false
+            }
+        ]);
+
+
+if (attachmentError) {
+    throw attachmentError;
+}
 
 await createDashboardEvent({
 type: "invoice_email_sent",
