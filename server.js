@@ -6067,17 +6067,11 @@ if (
     currentFolder === "SPAM"
 ) {
 
-    if (folder !== "INBOX") {
+    const targetLabelIds =
+        folder === "INBOX"
+            ? ["INBOX"]
+            : [folder];
 
-        return res
-            .status(400)
-            .json({
-                ok: false,
-                error:
-                    "Google-Spam kann nur in den Posteingang zurückverschoben werden."
-            });
-
-    }
 
     await gmail.users.messages.modify({
         userId: "me",
@@ -6086,9 +6080,8 @@ if (
             message.external_message_id,
 
         requestBody: {
-            addLabelIds: [
-                "INBOX"
-            ],
+            addLabelIds:
+                targetLabelIds,
 
             removeLabelIds: [
                 "SPAM"
@@ -6105,7 +6098,7 @@ if (
             .from("email_messages")
             .update({
                 imap_mailbox:
-                    "INBOX",
+                    folder,
 
                 deleted_at:
                     null
