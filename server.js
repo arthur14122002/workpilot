@@ -7756,7 +7756,28 @@ await supabase
                 true,
 
             message_status:
-                "sent"
+                "sent",
+
+            external_message_id:
+                email.externalMessageId ||
+                null,
+
+            external_thread_id:
+                email.externalThreadId ||
+                null,
+
+            provider:
+                email.provider ||
+                null,
+
+            mailbox_email:
+                email.sender ||
+                null,
+
+            imap_mailbox:
+                email.provider === "google"
+                    ? "SENT"
+                    : null
         }
     ]);
 

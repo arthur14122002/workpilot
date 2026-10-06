@@ -135,7 +135,6 @@ anbei erhalten Sie unsere Rechnung.
 Bitte überweisen Sie den Rechnungsbetrag innerhalb des angegebenen Zahlungsziels.
 
 Mit freundlichen Grüßen
-${invoice.companyName || "WorkPilot"}
 `;
 
 invoiceMailModal.classList.remove("hidden");

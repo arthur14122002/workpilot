@@ -55,7 +55,7 @@ offer: "E-Mails, die zu Angeboten gehören.",
 invoice: "E-Mails, die zu Rechnungen gehören.",
 appointment: "E-Mails mit erkannten Terminen und Rücksprachen.",
 other: "Sonstige Kundenkommunikation.",
-sent: "Von WorkPilot gesendete E-Mails.",
+sent: "Von Ihnen gesendete E-Mails.",
 trash: "Gelöschte E-Mails werden im Papierkorb des verbundenen Postfachs verwaltet."
 };
 
