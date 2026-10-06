@@ -7728,8 +7728,12 @@ const email =
         ]
     });
 
-await supabase
-    .from("email_messages")
+const {
+    data: savedMessage,
+    error: messageError
+} =
+    await supabase
+        .from("email_messages")
     .insert([
         {
             thread_id:
@@ -7779,7 +7783,78 @@ await supabase
                     ? "SENT"
                     : null
         }
-    ]);
+    ])
+        .select()
+    .single();
+
+if (messageError) {
+    throw messageError;
+};
+
+const pdfFileName =
+    `Angebot-${offer.offerNumber || offer.id}.pdf`;
+
+const filePath =
+    `${savedMessage.id}/${Date.now()}-${pdfFileName}`;
+
+
+const {
+    error: uploadError
+} =
+    await supabase.storage
+        .from("email-attachments")
+        .upload(
+            filePath,
+            pdfBuffer,
+            {
+                contentType:
+                    "application/pdf",
+
+                upsert:
+                    false
+            }
+        );
+
+
+if (uploadError) {
+    throw uploadError;
+}
+
+
+const {
+    error: attachmentError
+} =
+    await supabase
+        .from("email_attachments")
+        .insert([
+            {
+                message_id:
+                    savedMessage.id,
+
+                file_name:
+                    pdfFileName,
+
+                file_size:
+                    pdfBuffer.length,
+
+                file_path:
+                    filePath,
+
+                mime_type:
+                    "application/pdf",
+
+                disposition:
+                    "attachment",
+
+                is_inline:
+                    false
+            }
+        ]);
+
+
+if (attachmentError) {
+    throw attachmentError;
+}
 
 await createDashboardEvent({
 type: "offer_email_sent",
