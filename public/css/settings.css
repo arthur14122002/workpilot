@@ -388,3 +388,17 @@ margin-top: 20px;
     opacity: 0.65;
     cursor: not-allowed;
 }
+
+#emailImportProgressModal .mailImportProgress {
+    margin-bottom: 28px;
+}
+
+#emailImportProgressModal .modalActions {
+    margin-top: 24px;
+}
+
+#emailImportProgressModal .modalActions button {
+    border-radius: 999px;
+    padding: 12px 24px;
+    min-width: 120px;
+}
