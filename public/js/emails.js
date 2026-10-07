@@ -1418,11 +1418,17 @@ currentFolderSubtitle.textContent =
                             : ""
                     }
 
-                    <button
-                        class="mailRowDeleteBtn"
-                    >
-                        🗑
-                    </button>
+${
+    activeFolder !== "trash"
+        ? `
+            <button
+                class="mailRowDeleteBtn"
+            >
+                🗑
+            </button>
+        `
+        : ""
+}
 
                 </div>
             `;
