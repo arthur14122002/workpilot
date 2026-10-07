@@ -1094,6 +1094,22 @@ if (startImportBtn) {
             startImportBtn.textContent =
                 "Import läuft...";
 
+            emailImportModal
+    ?.classList
+    .add("hidden");
+
+emailImportProgressModal
+    ?.classList
+    .remove("hidden");
+
+cancelRunningImportBtn
+    ?.classList
+    .remove("hidden");
+
+finishImportBtn
+    ?.classList
+    .add("hidden");
+
 
             if (mailImportProgress) {
 
@@ -1177,25 +1193,51 @@ body:
                 }
 
 
-                if (mailImportProgressCount) {
+if (mailImportProgressStatus) {
 
-                    mailImportProgressCount.textContent =
-                        `${result.imported || 0} / ${result.imported || 0}`;
+    mailImportProgressStatus.textContent =
+        "Import abgeschlossen";
 
-                }
-
-
-                if (mailImportProgressBar) {
-
-                    mailImportProgressBar.style.width =
-                        "100%";
-
-                }
+}
 
 
-                showToast(
-                    `${result.imported || 0} E-Mails wurden verarbeitet.`
-                );
+if (mailImportProgressCount) {
+
+    mailImportProgressCount.textContent =
+        `${result.imported || 0} / ${result.imported || 0}`;
+
+}
+
+
+if (mailImportProgressBar) {
+
+    mailImportProgressBar.style.width =
+        "100%";
+
+}
+
+
+if (emailImportProgressTitle) {
+
+    emailImportProgressTitle.textContent =
+        "Import abgeschlossen";
+
+}
+
+
+cancelRunningImportBtn
+    ?.classList
+    .add("hidden");
+
+
+finishImportBtn
+    ?.classList
+    .remove("hidden");
+
+
+showToast(
+    `${result.imported || 0} E-Mails wurden verarbeitet.`
+);
 
 
             } catch (error) {
@@ -1226,6 +1268,26 @@ body:
         }
     );
 
+        }
+    );
+
 }
+
+
+if (finishImportBtn) {
+
+    finishImportBtn.addEventListener(
+        "click",
+        () => {
+
+            emailImportProgressModal
+                ?.classList
+                .add("hidden");
+
+        }
+    );
+
+}
+
 
 window.getCommunicationSettings = getCommunicationSettings;

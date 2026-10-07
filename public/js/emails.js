@@ -22,6 +22,26 @@ const sendComposeMailBtn = document.getElementById("sendComposeMailBtn");
 const mailAttachmentInput = document.getElementById("mailAttachmentInput");
 const mailAttachmentsList = document.getElementById("mailAttachmentsList");
 
+const emailImportProgressModal =
+    document.getElementById(
+        "emailImportProgressModal"
+    );
+
+const emailImportProgressTitle =
+    document.getElementById(
+        "emailImportProgressTitle"
+    );
+
+const cancelRunningImportBtn =
+    document.getElementById(
+        "cancelRunningImportBtn"
+    );
+
+const finishImportBtn =
+    document.getElementById(
+        "finishImportBtn"
+    );
+
 let selectedAttachments = [];
 let activeFolder = "offer";
 let emailMessagesCache = [];

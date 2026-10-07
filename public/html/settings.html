@@ -436,6 +436,8 @@ Von welchem Zeitraum sollen bestehende E-Mails importiert werden?
     ></div>
 </div>
 
+
+
 <div
     id="mailImportProgress"
     class="mailImportProgress hidden"
@@ -483,6 +485,77 @@ Import starten
 </div>
 
 </div>
+
+</div>
+
+<div
+    id="emailImportProgressModal"
+    class="modalOverlay hidden"
+>
+
+    <div class="modalCard mailboxModalCard">
+
+        <div class="modalHeader">
+
+            <h2 id="emailImportProgressTitle">
+                E-Mails werden importiert
+            </h2>
+
+        </div>
+
+        <p
+            id="emailImportProgressStatus"
+            class="modalText"
+        >
+            Import wird vorbereitet...
+        </p>
+
+        <div
+            id="mailImportProgress"
+            class="mailImportProgress"
+        >
+
+            <div class="mailImportProgressInfo">
+
+                <span id="mailImportProgressCount">
+                    0 / 0
+                </span>
+
+            </div>
+
+            <div class="mailImportProgressTrack">
+
+                <div
+                    id="mailImportProgressBar"
+                    class="mailImportProgressBar"
+                    style="width: 0%;"
+                ></div>
+
+            </div>
+
+        </div>
+
+        <div class="modalActions">
+
+            <button
+                id="cancelRunningImportBtn"
+                type="button"
+                class="secondaryButton"
+            >
+                Abbrechen
+            </button>
+
+            <button
+                id="finishImportBtn"
+                type="button"
+                class="primaryButton hidden"
+            >
+                OK
+            </button>
+
+        </div>
+
+    </div>
 
 </div>
 
