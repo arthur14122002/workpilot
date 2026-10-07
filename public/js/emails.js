@@ -1240,10 +1240,29 @@ currentFolderSubtitle.textContent =
         currentFolderSubtitle.textContent =
             folderSubtitles[activeFolder];
 
-        const visibleMessages =
-            getVisibleMessages();
+const visibleMessages =
+    getVisibleMessages()
+        .sort((a, b) => {
 
-        if (!visibleMessages.length) {
+            const dateA =
+                new Date(
+                    a.received_at ||
+                    a.created_at ||
+                    0
+                ).getTime();
+
+            const dateB =
+                new Date(
+                    b.received_at ||
+                    b.created_at ||
+                    0
+                ).getTime();
+
+            return dateB - dateA;
+
+        });
+
+if (!visibleMessages.length) {
             emptyEmails.classList.remove("hidden");
             return;
         }
