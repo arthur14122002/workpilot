@@ -6403,11 +6403,53 @@ if (folder === "SPAM") {
 
 }
 
+let sourceMailbox =
+    message.imap_mailbox ||
+    "INBOX";
+
+if (
+    String(sourceMailbox)
+        .toUpperCase() === "TRASH"
+) {
+
+    const client =
+        createImapClient(
+            connection
+        );
+
+    try {
+
+        await client.connect();
+
+        const trashMailbox =
+            await findImapTrashMailbox(
+                client
+            );
+
+        if (!trashMailbox) {
+            throw new Error(
+                "Der Papierkorb des Providers konnte nicht gefunden werden."
+            );
+        }
+
+        sourceMailbox =
+            trashMailbox;
+
+    } finally {
+
+        try {
+            await client.logout();
+        } catch (error) {
+        }
+
+    }
+
+}
+
 const moveResult =
     await moveImapMessageToFolder(
         connection,
-        message.imap_mailbox ||
-            "INBOX",
+        sourceMailbox,
         message.imap_uid,
         destinationMailbox
     );
