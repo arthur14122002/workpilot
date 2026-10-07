@@ -1595,6 +1595,8 @@ async function discoverImapFolders(
         customFolders
     };
 
+    }
+
 async function loadImapMessage(
     connection,
     uid,
