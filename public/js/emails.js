@@ -1474,62 +1474,45 @@ ${
             }
 
 
-            deleteButton.addEventListener(
-                "click",
-                async (event) => {
+if (deleteButton) {
 
-                    event.stopPropagation();
+    deleteButton.addEventListener(
+        "click",
+        async (event) => {
 
-                    try {
+            event.stopPropagation();
 
-                        if (
-                            activeFolder ===
-                            "trash"
-                        ) {
+            try {
 
-                            await deleteMessageForever(
-                                message.id
-                            );
+                await moveMessageToTrash(
+                    message.id
+                );
 
-                            showToast(
-                                "E-Mail wurde endgültig gelöscht."
-                            );
+                showToast(
+                    "E-Mail wurde in den Papierkorb verschoben."
+                );
 
-                        } else {
+                await renderEmails();
 
-                            await moveMessageToTrash(
-                                message.id
-                            );
-
-                            showToast(
-                                "E-Mail wurde in den Papierkorb verschoben."
-                            );
-
-                        }
-
-
-                        await renderEmails();
-
-
-                        if (
-                            window.updateEmailCounter
-                        ) {
-                            await window
-                                .updateEmailCounter();
-                        }
-
-
-                    } catch (error) {
-
-                        showToast(
-                            error.message
-                        );
-
-                    }
-
+                if (
+                    window.updateEmailCounter
+                ) {
+                    await window
+                        .updateEmailCounter();
                 }
-            );
 
+            } catch (error) {
+
+                showToast(
+                    error.message
+                );
+
+            }
+
+        }
+    );
+
+}
 
 const restoreMoveButton =
     item.querySelector(
