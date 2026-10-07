@@ -1594,7 +1594,6 @@ async function discoverImapFolders(
         systemFolders,
         customFolders
     };
-}
 
 async function loadImapMessage(
     connection,

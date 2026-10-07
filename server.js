@@ -6347,6 +6347,61 @@ if (
                     mailbox.smtp_secure
             };
 
+let destinationMailbox =
+    folder;
+
+
+if (folder === "SPAM") {
+
+    const client =
+        createImapClient(
+            connection
+        );
+
+    try {
+
+        await client.connect();
+
+        const {
+            systemFolders
+        } =
+            await discoverImapFolders(
+                client
+            );
+
+
+        const spamFolder =
+            systemFolders.find(
+                item =>
+                    item.role === "junk"
+            );
+
+
+        if (!spamFolder?.path) {
+
+            throw new Error(
+                "Der Spamordner des Providers konnte nicht gefunden werden."
+            );
+
+        }
+
+
+        destinationMailbox =
+            spamFolder.path;
+
+    } finally {
+
+        try {
+
+            await client.logout();
+
+        } catch (error) {
+
+        }
+
+    }
+
+}
 
 const moveResult =
     await moveImapMessageToFolder(
@@ -6354,7 +6409,7 @@ const moveResult =
         message.imap_mailbox ||
             "INBOX",
         message.imap_uid,
-        folder
+        destinationMailbox
     );
 
 
@@ -6364,8 +6419,8 @@ const {
 } = await supabase
     .from("email_messages")
     .update({
-        imap_mailbox:
-            folder,
+imap_mailbox:
+    destinationMailbox,
 
         imap_uid:
             moveResult.destinationUid ||
