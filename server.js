@@ -1481,18 +1481,8 @@ if (
 const mailbox =
     await getActiveMailboxConnection();
 
-console.log(
-    "🔍 LIVE SYNC SPERRPRÜFUNG:",
-    mailbox.id,
-    "AKTIVE SPERREN:",
-    [...activeManualMailboxImports]
-);
-
-
 if (
-    activeManualMailboxImports.has(
-        mailbox.id
-    )
+    activeManualMailboxImports.has(mailbox.id)
 ) {
 
     return res.status(409).json({
@@ -1500,6 +1490,8 @@ if (
         message:
             "Für dieses Postfach läuft bereits ein manueller Import."
     });
+
+}
 
 }
 
@@ -2152,6 +2144,21 @@ const gmailMessages =
                 error.message ||
                 "Das Postfach konnte nicht importiert werden."
         });
+
+    } finally {
+
+        if (lockedMailboxId !== null) {
+
+            activeManualMailboxImports.delete(
+                lockedMailboxId
+            );
+
+            console.log(
+                "▶️ LIVE SYNC WIEDER FREIGEGEBEN:",
+                lockedMailboxId
+            );
+
+        }
 
     }
 
