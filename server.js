@@ -1493,9 +1493,6 @@ if (
 
 }
 
-}
-
-
 activeManualMailboxImports.add(
     mailbox.id
 );
@@ -2123,15 +2120,8 @@ const gmailMessages =
         mailboxImportProgress.running = false;
         mailboxImportProgress.finished = true;
         mailboxImportProgress.error =
-            error.message ||
-            "Das Postfach konnte nicht importiert werden.";
-
-        return res.status(500).json({
-            success: false,
-            message:
-                error.message ||
-                "Das Postfach konnte nicht importiert werden."
-        });
+        error.message ||
+        "Das Postfach konnte nicht importiert werden."
 
     } finally {
 
