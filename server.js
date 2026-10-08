@@ -1446,6 +1446,8 @@ if (!isSpamOrTrash) {
 
 app.post("/api/mailbox/import", async (req, res) => {
 
+let lockedMailboxId = null;
+
 const {
     range = "30",
     selectedFolders = []
@@ -1476,12 +1478,33 @@ if (
 
     try {
 
-        const mailbox =
-            await getActiveMailboxConnection();
+const mailbox =
+    await getActiveMailboxConnection();
 
 
-        console.log(
-            "MAILBOX IMPORT START:",
+if (
+    activeManualMailboxImports.has(
+        mailbox.id
+    )
+) {
+
+    return res.status(409).json({
+        success: false,
+        message:
+            "Für dieses Postfach läuft bereits ein manueller Import."
+    });
+
+}
+
+
+activeManualMailboxImports.add(
+    mailbox.id
+);
+
+lockedMailboxId = mailbox.id;
+
+console.log(
+    "MAILBOX IMPORT START:",
             {
                 provider:
                     mailbox.provider,
@@ -1844,7 +1867,6 @@ const query =
 
 const gmailMessageMap =
     new Map();
-
 
 async function collectGoogleMessages({
     q,
@@ -9611,6 +9633,8 @@ let mailboxImportProgress = {
     error: null
 };
 
+const activeManualMailboxImports =
+    new Set();
 
 async function startMailboxLiveSync() {
 
