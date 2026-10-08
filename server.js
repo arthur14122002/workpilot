@@ -2114,32 +2114,20 @@ const gmailMessages =
         console.error(
             "MAILBOX IMPORT ERROR:",
             {
-                message:
-                    error.message,
-
-                code:
-                    error.code,
-
-                authenticationFailed:
-                    error.authenticationFailed
+                message: error.message,
+                code: error.code,
+                authenticationFailed: error.authenticationFailed
             }
         );
 
-
-        mailboxImportProgress.running =
-            false;
-
-        mailboxImportProgress.finished =
-            true;
-
+        mailboxImportProgress.running = false;
+        mailboxImportProgress.finished = true;
         mailboxImportProgress.error =
             error.message ||
             "Das Postfach konnte nicht importiert werden.";
 
-
         return res.status(500).json({
             success: false,
-
             message:
                 error.message ||
                 "Das Postfach konnte nicht importiert werden."
