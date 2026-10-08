@@ -1481,6 +1481,13 @@ if (
 const mailbox =
     await getActiveMailboxConnection();
 
+console.log(
+    "🔍 LIVE SYNC SPERRPRÜFUNG:",
+    mailbox.id,
+    "AKTIVE SPERREN:",
+    [...activeManualMailboxImports]
+);
+
 
 if (
     activeManualMailboxImports.has(
@@ -1499,6 +1506,13 @@ if (
 
 activeManualMailboxImports.add(
     mailbox.id
+);
+
+console.log(
+    "🔒 MANUELLER IMPORT GESPERRT:",
+    mailbox.id,
+    "AKTIVE SPERREN:",
+    [...activeManualMailboxImports]
 );
 
 lockedMailboxId = mailbox.id;
