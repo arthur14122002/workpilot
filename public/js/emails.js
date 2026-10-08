@@ -1052,10 +1052,14 @@ function createMailSyncSignature(messages) {
 let mailFrontendSyncSignature = "";
 let mailFrontendSyncTimer = null;
 let mailFrontendSyncRunning = false;
+let manualMailboxImportRunning = false;
 
 async function checkMailFrontendSync() {
 
-    if (mailFrontendSyncRunning) {
+    if (
+        mailFrontendSyncRunning ||
+        manualMailboxImportRunning
+    ) {
         return;
     }
 
@@ -1134,7 +1138,6 @@ async function checkMailFrontendSync() {
     }
 
 }
-
 
 function startMailFrontendLiveSync() {
 

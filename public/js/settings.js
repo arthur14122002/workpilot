@@ -1088,6 +1088,8 @@ if (startImportBtn) {
             checkbox.value
     );
 
+    manualMailboxImportRunning = true;
+
             startImportBtn.disabled =
                 true;
 
@@ -1255,15 +1257,17 @@ showToast(
                 );
 
 
-            } finally {
+} finally {
 
-                startImportBtn.disabled =
-                    false;
+    manualMailboxImportRunning = false;
 
-                startImportBtn.textContent =
-                    "Import starten";
+    startImportBtn.disabled =
+        false;
 
-            }
+    startImportBtn.textContent =
+        "Import starten";
+
+}
 
         }
     );
