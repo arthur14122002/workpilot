@@ -4534,6 +4534,23 @@ app.post("/api/mailbox/import-new", async (req, res) => {
         const mailbox =
             await getActiveMailboxConnection();
 
+        if (
+            activeManualMailboxImports.has(mailbox.id)
+        ) {
+
+            console.log(
+                "⏸️ AUTOMATISCHER LIVE-SYNC PAUSIERT:",
+                mailbox.email
+            );
+
+            return res.json({
+                success: true,
+                skipped: true,
+                reason: "manual_import_running"
+            });
+
+        }
+
 
 if (
     mailbox.provider === "google"
