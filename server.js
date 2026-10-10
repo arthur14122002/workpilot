@@ -562,6 +562,89 @@ function reportImapProgress(
 
 }
 
+async function countNewImapMails(mailbox, mails) {
+
+    let newCount = 0;
+    let existingCount = 0;
+
+    const seenExternalIds = new Set();
+    const seenRfcIds = new Set();
+
+    for (const mail of mails) {
+
+        const mailboxPath =
+            mail.mailboxPath || "INBOX";
+
+        const externalMessageId =
+            `imap:${mailbox.email}:${mailboxPath}:${mail.uid}`;
+
+        const rfcMessageId =
+            mail.messageId || null;
+
+        if (
+            seenExternalIds.has(externalMessageId) ||
+            (rfcMessageId && seenRfcIds.has(rfcMessageId))
+        ) {
+            existingCount++;
+            continue;
+        }
+
+        const { data: existingExternal, error: externalError } =
+            await supabase
+                .from("email_messages")
+                .select("id")
+                .eq("external_message_id", externalMessageId)
+                .maybeSingle();
+
+        if (externalError) {
+            throw externalError;
+        }
+
+        if (existingExternal) {
+            existingCount++;
+            continue;
+        }
+
+        if (rfcMessageId) {
+
+            const { data: existingRfc, error: rfcError } =
+                await supabase
+                    .from("email_messages")
+                    .select("id")
+                    .eq("rfc_message_id", rfcMessageId)
+                    .maybeSingle();
+
+            if (rfcError) {
+                throw rfcError;
+            }
+
+            if (existingRfc) {
+                existingCount++;
+                continue;
+            }
+        }
+
+        newCount++;
+
+        seenExternalIds.add(externalMessageId);
+
+        if (rfcMessageId) {
+            seenRfcIds.add(rfcMessageId);
+        }
+    }
+
+    console.log("📊 IMAP IMPORT VORPRÜFUNG:", {
+        total: mails.length,
+        new: newCount,
+        existing: existingCount
+    });
+
+    return {
+        newCount,
+        existingCount
+    };
+}
+
 async function saveImportedImapMails({
     mailbox,
     mails,
