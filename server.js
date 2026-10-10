@@ -649,7 +649,8 @@ async function saveImportedImapMails({
     mailbox,
     mails,
     onProgress,
-    createDashboardNotificationEntry = true
+    createDashboardNotificationEntry = true,
+    manualImportNewCount = null
 }) {
 
 let savedCount = 0;
