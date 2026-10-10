@@ -1776,6 +1776,20 @@ const mails = [
 ...folderMails
 ];
 
+const {
+    newCount,
+    existingCount
+} = await countNewImapMails(
+    mailbox,
+    mails
+);
+
+console.log("📬 MANUELLER IMPORT – VORPRÜFUNG:", {
+    fetched: mails.length,
+    new: newCount,
+    existing: existingCount
+});
+
 mailboxImportProgress.total =
     mails.length;
 
