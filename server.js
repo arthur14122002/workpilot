@@ -911,6 +911,20 @@ if (
 
 }
 
+if (isManualImport) {
+
+    manualProcessedCount++;
+
+    console.log(
+        "📬 MANUELLER IMAP-FORTSCHRITT:",
+        {
+            processed: manualProcessedCount,
+            total: manualImportNewCount
+        }
+    );
+
+}
+
         const senderEmail =
             extractFirstEmail(
                 mail.from
