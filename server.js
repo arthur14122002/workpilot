@@ -1820,17 +1820,9 @@ const {
 } = await saveImportedImapMails({
     mailbox,
     mails,
-    const {
-    savedCount
-} = await saveImportedImapMails({
-    mailbox,
-    mails,
 
     manualImportNewCount: newCount,
 
-    createDashboardNotificationEntry: false,
-
-    onProgress: ({
     createDashboardNotificationEntry: false,
 
     onProgress: ({
