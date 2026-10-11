@@ -933,26 +933,8 @@ if (
 
 }
 
-if (isManualImport) {
-
-    manualProcessedCount++;
-
-    console.log(
-        "📬 MANUELLER IMAP-FORTSCHRITT:",
-        {
-            processed: manualProcessedCount,
-            total: manualImportNewCount
-        }
-    );
-
-    reportImapProgress(
-        onProgress,
-        manualProcessedCount,
-        manualImportNewCount,
-        savedCount
-    );
-
-}
+// Diese E-Mail hat die Duplikatprüfung bestanden.
+// Der Fortschritt wird erst nach dem Speicherversuch erhöht.
 
         const senderEmail =
             extractFirstEmail(
@@ -1183,33 +1165,42 @@ external_thread_id:
 
         if (messageError) {
 
-            console.error(
-                "EMAIL SAVE ERROR:",
-                {
-                    uid:
-                        mail.uid,
-
-                    subject:
-                        mail.subject,
-
-                    error:
-                        messageError
-                }
-            );
-
-        reportImapProgress(
-        onProgress,
-        processedCount,
-        mails.length,
-        savedCount
+    console.error(
+        "EMAIL SAVE ERROR:",
+        {
+            uid: mail.uid,
+            subject: mail.subject,
+            error: messageError
+        }
     );
 
+    if (isManualImport) {
+        manualProcessedCount++;
+    }
 
-            continue;
+    reportCurrentImportProgress();
+
+    continue;
+}
+
+savedCount++;
+
+if (isManualImport) {
+
+    manualProcessedCount++;
+
+    console.log(
+        "📬 MANUELLER IMAP-FORTSCHRITT:",
+        {
+            processed: manualProcessedCount,
+            total: manualImportNewCount,
+            saved: savedCount
         }
+    );
 
+}
 
-        savedCount++;
+reportCurrentImportProgress();
 
         try {
 
