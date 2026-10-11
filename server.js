@@ -1881,24 +1881,24 @@ if (importedFoldersUpdateError) {
     throw importedFoldersUpdateError;
 }
 
-            mailboxImportProgress = {
-                running: false,
+mailboxImportProgress = {
+    running: false,
 
-                total:
-                    mails.length,
+    total:
+        newCount,
 
-                processed:
-                    mails.length,
+    processed:
+        newCount,
 
-                saved:
-                    savedCount,
+    saved:
+        savedCount,
 
-                finished:
-                    true,
+    finished:
+        true,
 
-                error:
-                    null
-            };
+    error:
+        null
+};
 
 
             console.log(
