@@ -663,6 +663,28 @@ const isManualImport =
 
 let manualProcessedCount = 0;
 
+function reportCurrentImportProgress() {
+
+    if (isManualImport) {
+
+        reportImapProgress(
+            onProgress,
+            manualProcessedCount,
+            manualImportNewCount,
+            savedCount
+        );
+
+        return;
+    }
+
+    reportImapProgress(
+        onProgress,
+        processedCount,
+        mails.length,
+        savedCount
+    );
+}
+
     const password =
         decryptMailPassword(
             mailbox.encrypted_password
@@ -1460,12 +1482,7 @@ const messageForAnalysis = {
         null
 };
 
-reportImapProgress(
-    onProgress,
-    processedCount,
-    mails.length,
-    savedCount
-);
+reportCurrentImportProgress();
 
 const isSpamOrTrash =
     mail.mailboxRole === "spam" ||
