@@ -672,7 +672,7 @@ function reportCurrentImportProgress() {
             onProgress,
             manualProcessedCount,
             manualImportNewCount,
-            savedCount
+            completedCount
         );
 
         return;
@@ -1892,33 +1892,41 @@ mailboxImportProgress = {
     error: null
 };
 
-            console.log(
-                "IMAP IMPORT SUCCESS:",
-                {
-                    email:
-                        mailbox.email,
+console.log(
+    "📊 IMAP IMPORT ABGESCHLOSSEN:",
+    {
+        email: mailbox.email,
+        fetched: mails.length,
+        new: newCount,
+        existing: existingCount,
+        processed: manualProcessedCount,
+        saved: savedCount,
+        completed: completedCount,
+        failed: Math.max(
+            0,
+            manualProcessedCount - completedCount
+        )
+    }
+);
 
-                    fetched:
-                        mails.length,
+return res.json({
+    success: true,
 
-                    saved:
-                        savedCount
-                }
-            );
+    imported: mails.length,
+    new: newCount,
+    existing: existingCount,
 
+    processed: manualProcessedCount,
+    saved: savedCount,
+    completed: completedCount,
 
-            return res.json({
-                success: true,
+    failed: Math.max(
+        0,
+        manualProcessedCount - completedCount
+    ),
 
-                imported:
-                    mails.length,
-
-                saved:
-                    savedCount,
-
-                provider:
-                    "imap"
-            });
+    provider: "imap"
+});
 
         }
 
