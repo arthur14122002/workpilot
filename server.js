@@ -1163,24 +1163,7 @@ external_thread_id:
 
 savedCount++;
 
-if (isManualImport) {
-
-    manualProcessedCount++;
-
-    console.log(
-        "📬 MANUELLER IMAP-FORTSCHRITT:",
-        {
-            processed: manualProcessedCount,
-            total: manualImportNewCount,
-            saved: savedCount
-        }
-    );
-
-}
-
-reportCurrentImportProgress();
-
-        try {
+try {
 
             const loaded =
                 await loadImapMessage(
@@ -1534,10 +1517,11 @@ if (!isSpamOrTrash) {
     }
 
 
-    return {
-        savedCount,
-        analyzedCount
-    };
+return {
+    savedCount,
+    analyzedCount,
+    manualProcessedCount
+};
 
 }
 
