@@ -1048,9 +1048,13 @@ const matchedContact =
                     }
                 );
 
+if (isManualImport) {
+    manualProcessedCount++;
+}
+
 reportCurrentImportProgress();
 
-                continue;
+continue;
             }
 
 
