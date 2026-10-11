@@ -1223,6 +1223,7 @@ try {
 const parsedAttachments =
     parsed.attachments || [];
 
+let attachmentImportFailed = false;
 
 for (
     const attachment
@@ -1293,6 +1294,8 @@ for (
 
         if (uploadError) {
 
+        attachmentImportFailed = true;
+
             console.error(
                 "INBOUND ATTACHMENT UPLOAD ERROR:",
                 {
@@ -1348,6 +1351,8 @@ for (
 
         if (attachmentError) {
 
+        attachmentImportFailed = true;
+
             console.error(
                 "INBOUND ATTACHMENT DB ERROR:",
                 {
@@ -1381,6 +1386,8 @@ for (
 
 
     } catch (attachmentImportError) {
+
+    attachmentImportFailed = true;
 
         console.error(
             "INBOUND ATTACHMENT IMPORT ERROR:",
