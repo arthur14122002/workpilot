@@ -740,12 +740,7 @@ if (existingMessageError) {
         }
     );
 
-    reportImapProgress(
-        onProgress,
-        processedCount,
-        mails.length,
-        savedCount
-    );
+reportCurrentImportProgress();
 
     continue;
 }
@@ -767,12 +762,7 @@ if (existingMessage) {
         }
     );
 
-    reportImapProgress(
-        onProgress,
-        processedCount,
-        mails.length,
-        savedCount
-    );
+reportCurrentImportProgress();
 
     continue;
 }
@@ -810,12 +800,7 @@ if (rfcMessageId) {
             }
         );
 
-        reportImapProgress(
-            onProgress,
-            processedCount,
-            mails.length,
-            savedCount
-        );
+reportCurrentImportProgress();
 
         continue;
     }
@@ -921,12 +906,7 @@ if (
     }
 
 
-    reportImapProgress(
-        onProgress,
-        processedCount,
-        mails.length,
-        savedCount
-    );
+reportCurrentImportProgress();
 
     continue;
 }
@@ -1068,13 +1048,7 @@ const matchedContact =
                     }
                 );
 
-        reportImapProgress(
-        onProgress,
-        processedCount,
-        mails.length,
-        savedCount
-    );
-
+reportCurrentImportProgress();
 
                 continue;
             }
