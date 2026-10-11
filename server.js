@@ -923,6 +923,13 @@ if (isManualImport) {
         }
     );
 
+    reportImapProgress(
+        onProgress,
+        manualProcessedCount,
+        manualImportNewCount,
+        savedCount
+    );
+
 }
 
         const senderEmail =
