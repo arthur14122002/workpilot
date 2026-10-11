@@ -1496,6 +1496,20 @@ if (!isSpamOrTrash) {
 
         }
 
+if (isManualImport) {
+    manualProcessedCount++;
+
+    console.log(
+        "📬 MANUELLER IMAP-FORTSCHRITT:",
+        {
+            processed: manualProcessedCount,
+            total: manualImportNewCount,
+            saved: savedCount
+        }
+    );
+}
+
+reportCurrentImportProgress();
 
         console.log(
             "EMAIL SAVED:",
