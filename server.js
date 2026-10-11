@@ -657,6 +657,12 @@ let savedCount = 0;
 let analyzedCount = 0;
 let processedCount = 0;
 
+const isManualImport =
+    Number.isInteger(manualImportNewCount) &&
+    manualImportNewCount >= 0;
+
+let manualProcessedCount = 0;
+
     const password =
         decryptMailPassword(
             mailbox.encrypted_password
