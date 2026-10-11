@@ -656,6 +656,7 @@ async function saveImportedImapMails({
 let savedCount = 0;
 let analyzedCount = 0;
 let processedCount = 0;
+let completedCount = 0;
 
 const isManualImport =
     Number.isInteger(manualImportNewCount) &&
@@ -1474,6 +1475,7 @@ if (!isSpamOrTrash) {
                 }
             );
 
+completedCount++;
 
         } catch (analysisError) {
 
