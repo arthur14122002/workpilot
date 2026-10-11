@@ -1442,8 +1442,6 @@ const messageForAnalysis = {
         null
 };
 
-reportCurrentImportProgress();
-
 const isSpamOrTrash =
     mail.mailboxRole === "spam" ||
     mail.mailboxRole === "trash";
@@ -1482,7 +1480,18 @@ if (!isSpamOrTrash) {
                 }
             );
 
-completedCount++;
+if (!attachmentImportFailed) {
+    completedCount++;
+} else {
+    console.warn(
+        "⚠️ IMAP IMPORT UNVOLLSTÄNDIG – ANHANG FEHLGESCHLAGEN:",
+        {
+            uid: mail.uid,
+            subject: mail.subject,
+            messageId: message.id
+        }
+    );
+}
 
         } catch (analysisError) {
 
@@ -1543,7 +1552,8 @@ reportCurrentImportProgress();
 return {
     savedCount,
     analyzedCount,
-    manualProcessedCount
+    manualProcessedCount,
+    completedCount
 };
 
 }
@@ -1811,12 +1821,14 @@ console.log("📬 MANUELLER IMPORT – VORPRÜFUNG:", {
     existing: existingCount
 });
 
-mailboxImportProgress.total =
-    mails.length;
-
+mailboxImportProgress.total = newCount;
+mailboxImportProgress.processed = 0;
+mailboxImportProgress.saved = 0;
 
 const {
-    savedCount
+    savedCount,
+    manualProcessedCount,
+    completedCount
 } = await saveImportedImapMails({
     mailbox,
     mails,
@@ -1869,22 +1881,16 @@ if (importedFoldersUpdateError) {
 mailboxImportProgress = {
     running: false,
 
-    total:
-        newCount,
+    total: newCount,
 
-    processed:
-        newCount,
+    processed: manualProcessedCount,
 
-    saved:
-        savedCount,
+    saved: completedCount,
 
-    finished:
-        true,
+    finished: true,
 
-    error:
-        null
+    error: null
 };
-
 
             console.log(
                 "IMAP IMPORT SUCCESS:",
