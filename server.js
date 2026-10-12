@@ -9370,9 +9370,50 @@ return updatedMessage;
             .single();
 
 
-    if (messageError) {
-        throw messageError;
+if (messageError) {
+
+    if (messageError.code === "23505") {
+
+        console.log(
+            "🔄 GOOGLE IMPORT-KONFLIKT:",
+            gmailMessageIdFinal
+        );
+
+        const {
+            data: concurrentMessage,
+            error: concurrentLookupError
+        } = await supabase
+            .from("email_messages")
+            .select("*")
+            .eq("provider", "google")
+            .eq("mailbox_email", mailbox.email)
+            .eq(
+                "external_message_id",
+                gmailMessageIdFinal
+            )
+            .maybeSingle();
+
+        if (concurrentLookupError) {
+            throw concurrentLookupError;
+        }
+
+        if (concurrentMessage) {
+
+            if (concurrentMessage.content_loaded === true) {
+                return concurrentMessage;
+            }
+
+            throw new Error(
+                `Gmail-Nachricht ${gmailMessageIdFinal} ` +
+                "wird möglicherweise bereits verarbeitet. " +
+                "Ein späterer Sync kann sie erneut prüfen."
+            );
+        }
+
     }
+
+    throw messageError;
+}
 
     const isSpamOrTrash =
         isSpam ||
