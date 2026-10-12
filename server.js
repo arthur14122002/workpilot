@@ -4861,38 +4861,45 @@ const gmailMessages =
     );
 
 
-    let savedCount = 0;
-    let skippedCount = 0;
+let savedCount = 0;
+let skippedCount = 0;
+let failedCount = 0;
 
+for (const gmailMessage of gmailMessages) {
 
-    for (
-        const gmailMessage
-        of gmailMessages
-    ) {
+    try {
 
         const importedMessage =
             await importSingleGoogleMessage(
                 gmail,
                 gmailMessage.id,
                 {
-                    createDashboardNotificationEntry:
-                        false
+                    createDashboardNotificationEntry: false,
+                    manualFullContent: true
                 }
             );
 
-
         if (importedMessage) {
-
             savedCount++;
-
         } else {
-
             skippedCount++;
-
         }
+
+    } catch (error) {
+
+        failedCount++;
+
+        console.error(
+            "GOOGLE LIVE-SYNC MESSAGE ERROR:",
+            {
+                messageId: gmailMessage.id,
+                error
+            }
+        );
 
     }
 
+}
 
     return res.json({
         success: true,
@@ -4905,6 +4912,9 @@ const gmailMessages =
 
         skipped:
             skippedCount,
+
+        failed:
+            failedCount,
 
         provider:
             "google"
@@ -8897,7 +8907,7 @@ async function importSingleGoogleMessage(
     gmailMessageId,
     {
         createDashboardNotificationEntry = true,
-        manualFullContent = false
+        manualFullContent = true
     } = {}
 ) {
 
