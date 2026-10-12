@@ -8902,7 +8902,64 @@ async function completeManualGoogleMessage({
     };
 }
 
+const activeGoogleMessageImports = new Map();
+
 async function importSingleGoogleMessage(
+    gmail,
+    gmailMessageId,
+    options = {}
+) {
+
+    const messageKey = String(gmailMessageId);
+
+    if (activeGoogleMessageImports.has(messageKey)) {
+
+        console.log(
+            "🔒 GOOGLE DOPPELIMPORT VERHINDERT:",
+            messageKey
+        );
+
+        return await activeGoogleMessageImports.get(
+            messageKey
+        );
+    }
+
+    const importPromise = Promise.resolve().then(() =>
+        importSingleGoogleMessageUnlocked(
+            gmail,
+            gmailMessageId,
+            {
+                ...options,
+                manualFullContent: true
+            }
+        )
+    );
+
+    activeGoogleMessageImports.set(
+        messageKey,
+        importPromise
+    );
+
+    try {
+
+        return await importPromise;
+
+    } finally {
+
+        if (
+            activeGoogleMessageImports.get(messageKey) ===
+            importPromise
+        ) {
+            activeGoogleMessageImports.delete(
+                messageKey
+            );
+        }
+
+    }
+
+}
+
+async function importSingleGoogleMessageUnlocked(
     gmail,
     gmailMessageId,
     {
@@ -9096,11 +9153,19 @@ const {
             direction,
             message_status
         `)
-        .eq(
-            "external_message_id",
-            gmailMessageIdFinal
-        )
-        .maybeSingle();
+.eq(
+    "external_message_id",
+    gmailMessageIdFinal
+)
+.eq(
+    "provider",
+    "google"
+)
+.eq(
+    "mailbox_email",
+    mailbox.email
+)
+.maybeSingle();
 
 
 if (existingMessageError) {
