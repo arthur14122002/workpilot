@@ -1558,26 +1558,16 @@ return {
 
 }
 
-async function countNewGoogleMessages(
-    mailbox,
-    gmailMessages
-) {
+async function countNewGoogleMessages(mailbox, gmailMessages) {
     const newMessages = [];
     let existingCount = 0;
+    let incompleteCount = 0;
 
     const seenIds = new Set();
-
     const batchSize = 100;
 
-    for (
-        let i = 0;
-        i < gmailMessages.length;
-        i += batchSize
-    ) {
-        const batch = gmailMessages.slice(
-            i,
-            i + batchSize
-        );
+    for (let i = 0; i < gmailMessages.length; i += batchSize) {
+        const batch = gmailMessages.slice(i, i + batchSize);
 
         const ids = batch
             .map(message => message.id)
@@ -1588,12 +1578,9 @@ async function countNewGoogleMessages(
             continue;
         }
 
-        const {
-            data: existingRows,
-            error
-        } = await supabase
+        const { data: existingRows, error } = await supabase
             .from("email_messages")
-            .select("external_message_id")
+            .select("external_message_id, content_loaded")
             .eq("provider", "google")
             .eq("mailbox_email", mailbox.email)
             .in("external_message_id", ids);
@@ -1602,42 +1589,48 @@ async function countNewGoogleMessages(
             throw error;
         }
 
-        const existingIds = new Set(
-            (existingRows || []).map(
-                row => row.external_message_id
-            )
+        const existingMap = new Map(
+            (existingRows || []).map(row => [
+                row.external_message_id,
+                row
+            ])
         );
 
         for (const message of batch) {
             const id = message.id;
 
-            if (
-                !id ||
-                seenIds.has(id) ||
-                existingIds.has(id)
-            ) {
+            if (!id || seenIds.has(id)) {
                 existingCount++;
                 continue;
             }
 
             seenIds.add(id);
-            newMessages.push(message);
+
+            const existing = existingMap.get(id);
+
+            if (!existing) {
+                newMessages.push(message);
+            } else if (existing.content_loaded !== true) {
+                newMessages.push(message);
+                incompleteCount++;
+            } else {
+                existingCount++;
+            }
         }
     }
 
-    console.log(
-        "📊 GOOGLE IMPORT VORPRÜFUNG:",
-        {
-            total: gmailMessages.length,
-            new: newMessages.length,
-            existing: existingCount
-        }
-    );
+    console.log("📊 GOOGLE IMPORT VORPRÜFUNG:", {
+        total: gmailMessages.length,
+        pending: newMessages.length,
+        incomplete: incompleteCount,
+        existing: existingCount
+    });
 
     return {
         newMessages,
         newCount: newMessages.length,
-        existingCount
+        existingCount,
+        incompleteCount
     };
 }
 
@@ -2194,15 +2187,15 @@ for (const gmailMessage of newMessages) {
 
     try {
 
-        const importedMessage =
-            await importSingleGoogleMessage(
-                gmail,
-                gmailMessage.id,
-                {
-                    createDashboardNotificationEntry:
-                        false
-                }
-            );
+const importedMessage =
+    await importSingleGoogleMessage(
+        gmail,
+        gmailMessage.id,
+        {
+            createDashboardNotificationEntry: false,
+            manualFullContent: true
+        }
+    );
 
         if (importedMessage) {
             savedCount++;
@@ -8747,11 +8740,176 @@ error: "Inbound-E-Mail konnte nicht verarbeitet werden."
 }
 });
 
+async function completeManualGoogleMessage({
+    gmail,
+    gmailMessageId,
+    message,
+    thread,
+    isSpamOrTrash,
+    allowClassification
+}) {
+    const rawResponse = await gmail.users.messages.get({
+        userId: "me",
+        id: gmailMessageId,
+        format: "raw"
+    });
+
+    const raw = rawResponse.data.raw;
+
+    if (!raw) {
+        throw new Error("Gmail hat keinen vollständigen E-Mail-Inhalt geliefert.");
+    }
+
+    const rawBuffer = Buffer.from(
+        raw.replace(/-/g, "+").replace(/_/g, "/"),
+        "base64"
+    );
+
+    const parsed = await simpleParser(rawBuffer);
+
+    const body = parsed.text || "";
+    const bodyHtml = parsed.html || "";
+    const attachments = parsed.attachments || [];
+
+    const {
+        data: existingAttachments,
+        error: attachmentLookupError
+    } = await supabase
+        .from("email_attachments")
+        .select("file_path")
+        .eq("message_id", message.id);
+
+    if (attachmentLookupError) {
+        throw attachmentLookupError;
+    }
+
+    const existingPaths = new Set(
+        (existingAttachments || []).map(item => item.file_path)
+    );
+
+    for (let index = 0; index < attachments.length; index++) {
+        const attachment = attachments[index];
+
+        const fileName =
+            attachment.filename || `attachment-${index + 1}`;
+
+        const safeFileName = fileName
+            .replace(/[^\p{L}\p{N}._-]+/gu, "_")
+            .slice(0, 180);
+
+        const filePath =
+            `${message.id}/gmail-${index}-${safeFileName}`;
+
+        if (existingPaths.has(filePath)) {
+            continue;
+        }
+
+        const mimeType =
+            attachment.contentType || "application/octet-stream";
+
+        const contentId = attachment.cid
+            ? String(attachment.cid).replace(/^<|>$/g, "")
+            : null;
+
+        const disposition =
+            attachment.contentDisposition || "attachment";
+
+        const { error: uploadError } = await supabase.storage
+            .from("email-attachments")
+            .upload(filePath, attachment.content, {
+                contentType: mimeType,
+                upsert: true
+            });
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        const { error: attachmentError } = await supabase
+            .from("email_attachments")
+            .insert([{
+                message_id: message.id,
+                file_name: fileName,
+                file_size:
+                    attachment.size ||
+                    attachment.content?.length ||
+                    0,
+                file_path: filePath,
+                mime_type: mimeType,
+                content_id: contentId,
+                disposition,
+                is_inline:
+                    disposition === "inline" ||
+                    Boolean(contentId)
+            }]);
+
+        if (attachmentError) {
+            throw attachmentError;
+        }
+
+        existingPaths.add(filePath);
+    }
+
+    const { error: bodyError } = await supabase
+        .from("email_messages")
+        .update({
+            body,
+            body_html: bodyHtml,
+            has_attachments: attachments.length > 0,
+            content_loaded: false
+        })
+        .eq("id", message.id);
+
+    if (bodyError) {
+        throw bodyError;
+    }
+
+    if (!isSpamOrTrash) {
+        await analyzeInboundEmail(
+            {
+                ...message,
+                body,
+                body_html: bodyHtml
+            },
+            thread,
+            {
+                createDashboardNotificationEntry: false,
+                allowClassification
+            }
+        );
+    }
+
+    const { error: completeError } = await supabase
+        .from("email_messages")
+        .update({
+            content_loaded: true
+        })
+        .eq("id", message.id);
+
+    if (completeError) {
+        throw completeError;
+    }
+
+    console.log("✅ GOOGLE EMAIL VOLLSTÄNDIG:", {
+        messageId: message.id,
+        subject: message.subject,
+        attachments: attachments.length
+    });
+
+    return {
+        ...message,
+        body,
+        body_html: bodyHtml,
+        content_loaded: true
+    };
+}
+
 async function importSingleGoogleMessage(
     gmail,
     gmailMessageId,
     {
-        createDashboardNotificationEntry = true
+        createDashboardNotificationEntry = true,
+        manualFullContent = false
     } = {}
 ) {
 
@@ -8997,7 +9155,35 @@ if (existingMessage) {
     }
 
 
-    return updatedMessage;
+if (manualFullContent) {
+
+    if (updatedMessage.content_loaded === true) {
+        return updatedMessage;
+    }
+
+    const { data: existingThread, error: threadLookupError } =
+        await supabase
+            .from("email_threads")
+            .select("*")
+            .eq("id", updatedMessage.thread_id)
+            .single();
+
+    if (threadLookupError) {
+        throw threadLookupError;
+    }
+
+    return await completeManualGoogleMessage({
+        gmail,
+        gmailMessageId: gmailMessageIdFinal,
+        message: updatedMessage,
+        thread: existingThread,
+        isSpamOrTrash: isSpam || isTrash,
+        allowClassification:
+            direction === "inbound" && isInbox
+    });
+}
+
+return updatedMessage;
 
 }
 
@@ -9125,11 +9311,21 @@ if (existingMessage) {
         throw messageError;
     }
 
-
     const isSpamOrTrash =
         isSpam ||
         isTrash;
 
+if (manualFullContent) {
+    return await completeManualGoogleMessage({
+        gmail,
+        gmailMessageId: gmailMessageIdFinal,
+        message,
+        thread,
+        isSpamOrTrash,
+        allowClassification:
+            direction === "inbound" && isInbox
+    });
+}
 
     if (!isSpamOrTrash) {
 
