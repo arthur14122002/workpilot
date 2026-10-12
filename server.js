@@ -1558,6 +1558,89 @@ return {
 
 }
 
+async function countNewGoogleMessages(
+    mailbox,
+    gmailMessages
+) {
+    const newMessages = [];
+    let existingCount = 0;
+
+    const seenIds = new Set();
+
+    const batchSize = 100;
+
+    for (
+        let i = 0;
+        i < gmailMessages.length;
+        i += batchSize
+    ) {
+        const batch = gmailMessages.slice(
+            i,
+            i + batchSize
+        );
+
+        const ids = batch
+            .map(message => message.id)
+            .filter(Boolean);
+
+        if (!ids.length) {
+            existingCount += batch.length;
+            continue;
+        }
+
+        const {
+            data: existingRows,
+            error
+        } = await supabase
+            .from("email_messages")
+            .select("external_message_id")
+            .eq("provider", "google")
+            .eq("mailbox_email", mailbox.email)
+            .in("external_message_id", ids);
+
+        if (error) {
+            throw error;
+        }
+
+        const existingIds = new Set(
+            (existingRows || []).map(
+                row => row.external_message_id
+            )
+        );
+
+        for (const message of batch) {
+            const id = message.id;
+
+            if (
+                !id ||
+                seenIds.has(id) ||
+                existingIds.has(id)
+            ) {
+                existingCount++;
+                continue;
+            }
+
+            seenIds.add(id);
+            newMessages.push(message);
+        }
+    }
+
+    console.log(
+        "📊 GOOGLE IMPORT VORPRÜFUNG:",
+        {
+            total: gmailMessages.length,
+            new: newMessages.length,
+            existing: existingCount
+        }
+    );
+
+    return {
+        newMessages,
+        newCount: newMessages.length,
+        existingCount
+    };
+}
+
 app.post("/api/mailbox/import", async (req, res) => {
 
 let lockedMailboxId = null;
@@ -2090,20 +2173,26 @@ const gmailMessages =
         gmailMessageMap.values()
     );
 
+const {
+    newMessages,
+    newCount,
+    existingCount
+} = await countNewGoogleMessages(
+    mailbox,
+    gmailMessages
+);
 
-    mailboxImportProgress.total =
-        gmailMessages.length;
+mailboxImportProgress.total = newCount;
+mailboxImportProgress.processed = 0;
+mailboxImportProgress.saved = 0;
 
+let processedCount = 0;
+let savedCount = 0;
+let failedCount = 0;
 
-    let processedCount = 0;
-    let savedCount = 0;
-    let skippedCount = 0;
+for (const gmailMessage of newMessages) {
 
-
-    for (
-        const gmailMessage
-        of gmailMessages
-    ) {
+    try {
 
         const importedMessage =
             await importSingleGoogleMessage(
@@ -2115,83 +2204,77 @@ const gmailMessages =
                 }
             );
 
-
-        processedCount++;
-
-
         if (importedMessage) {
-
             savedCount++;
-
         } else {
-
-            skippedCount++;
-
+            failedCount++;
         }
 
+    } catch (messageError) {
 
-        mailboxImportProgress.processed =
-            processedCount;
+        failedCount++;
 
-        mailboxImportProgress.saved =
-            savedCount;
+        console.error(
+            "GOOGLE MANUAL IMPORT MESSAGE ERROR:",
+            {
+                messageId: gmailMessage.id,
+                error: messageError
+            }
+        );
 
     }
 
+    processedCount++;
 
-    mailboxImportProgress = {
-        running: false,
+    mailboxImportProgress.processed =
+        processedCount;
 
-        total:
-            gmailMessages.length,
-
-        processed:
-            processedCount,
-
-        saved:
-            savedCount,
-
-        finished:
-            true,
-
-        error:
-            null
-    };
-
+    mailboxImportProgress.saved =
+        savedCount;
 
     console.log(
-        "GOOGLE IMPORT SUCCESS:",
+        "📬 MANUELLER GOOGLE-FORTSCHRITT:",
         {
-            email:
-                mailbox.email,
-
-            fetched:
-                gmailMessages.length,
-
-            saved:
-                savedCount,
-
-            skipped:
-                skippedCount
+            processed: processedCount,
+            total: newCount,
+            saved: savedCount,
+            failed: failedCount
         }
     );
+}
 
+mailboxImportProgress = {
+    running: false,
+    total: newCount,
+    processed: processedCount,
+    saved: savedCount,
+    finished: true,
+    error: null
+};
 
-    return res.json({
-        success: true,
+console.log(
+    "📊 GOOGLE IMPORT ABGESCHLOSSEN:",
+    {
+        email: mailbox.email,
+        fetched: gmailMessages.length,
+        new: newCount,
+        existing: existingCount,
+        processed: processedCount,
+        saved: savedCount,
+        failed: failedCount
+    }
+);
 
-        imported:
-            gmailMessages.length,
-
-        saved:
-            savedCount,
-
-        skipped:
-            skippedCount,
-
-        provider:
-            "google"
-    });
+return res.json({
+    success: true,
+    imported: gmailMessages.length,
+    new: newCount,
+    existing: existingCount,
+    processed: processedCount,
+    saved: savedCount,
+    failed: failedCount,
+    provider: "google"
+});
 
 }
 
