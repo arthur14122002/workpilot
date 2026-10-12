@@ -4822,50 +4822,38 @@ async function collectLiveGoogleMessages({
 
 }
 
+const liveSyncQuery = "newer_than:1d";
 
 await collectLiveGoogleMessages({
-    q: "newer_than:1d"
-});
-
-await collectLiveGoogleMessages({
-    labelIds: [
-        "INBOX"
-    ]
-});
-
-await collectLiveGoogleMessages({
-    labelIds: [
-        "TRASH"
-    ]
-});
-
-await collectLiveGoogleMessages({
-    labelIds: [
-        "SPAM"
-    ]
+    q: liveSyncQuery
 });
 
 const importedFolders =
-    Array.isArray(
-        mailbox.imported_folders
-    )
+    Array.isArray(mailbox.imported_folders)
         ? mailbox.imported_folders
         : [];
 
+const liveSyncFolderIds = [
+    "INBOX",
+    "TRASH",
+    "SPAM",
+    ...importedFolders
+];
 
-for (
-    const folderId
-    of importedFolders
-) {
+for (const folderId of new Set(liveSyncFolderIds)) {
 
     await collectLiveGoogleMessages({
-        labelIds: [
-            folderId
-        ]
+        q: liveSyncQuery,
+        labelIds: [folderId]
     });
 
 }
 
+console.log("📡 GOOGLE LIVE-SYNC ZEITFILTER:", {
+    query: liveSyncQuery,
+    folders: [...new Set(liveSyncFolderIds)],
+    fetched: gmailMessageMap.size
+});
 
 const gmailMessages =
     Array.from(
