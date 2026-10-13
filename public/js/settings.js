@@ -945,116 +945,68 @@ function reportImapProgress(
 
 async function pollMailboxImportProgress() {
 
+    if (!manualMailboxImportRunning) {
+        return;
+    }
+
     try {
 
-        const response =
-            await fetch(
-                "/api/mailbox/import-progress"
+        const response = await fetch(
+            "/api/mailbox/import-progress",
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "Fortschritt konnte nicht geladen werden."
             );
-
-        const result =
-            await response.json();
-
-
-        if (
-            !result.success ||
-            !result.progress
-        ) {
-            return;
         }
 
+        const result = await response.json();
 
-        const progress =
-            result.progress;
+        if (result.success && result.progress) {
 
+            const progress = result.progress;
 
-        const total =
-            Number(
-                progress.total || 0
-            );
+            if (progress.running === true) {
 
-        const processed =
-            Number(
-                progress.processed || 0
-            );
+                const total = Number(
+                    progress.total || 0
+                );
 
+                const processed = Number(
+                    progress.processed || 0
+                );
 
-        if (mailImportProgressCount) {
+                const percent = total > 0
+                    ? Math.min(
+                        100,
+                        (processed / total) * 100
+                    )
+                    : 0;
 
-            mailImportProgressCount.textContent =
-                `${processed} / ${total}`;
+                if (mailImportProgressCount) {
+                    mailImportProgressCount.textContent =
+                        `${processed} / ${total}`;
+                }
 
-        }
+                if (mailImportProgressBar) {
+                    mailImportProgressBar.style.width =
+                        `${percent}%`;
+                }
 
-
-        const percent =
-            total > 0
-                ? Math.min(
-                    100,
-                    (
-                        processed /
-                        total
-                    ) * 100
-                )
-                : 0;
-
-
-        if (mailImportProgressBar) {
-
-            mailImportProgressBar.style.width =
-                `${percent}%`;
-
-        }
-
-
-        if (
-            progress.finished &&
-            !progress.error
-        ) {
-
-            if (mailImportProgressStatus) {
-
-                mailImportProgressStatus.textContent =
-                    "Import abgeschlossen";
+                if (mailImportProgressStatus) {
+                    mailImportProgressStatus.textContent =
+                        total === 0
+                            ? "E-Mails werden geprüft..."
+                            : "E-Mails werden importiert";
+                }
 
             }
 
-
-            if (mailImportProgressBar) {
-
-                mailImportProgressBar.style.width =
-                    "100%";
-
-            }
-
-            return;
-
         }
-
-
-        if (progress.error) {
-
-            if (mailImportProgressStatus) {
-
-                mailImportProgressStatus.textContent =
-                    "Import fehlgeschlagen";
-
-            }
-
-            return;
-
-        }
-
-
-        if (progress.running) {
-
-            setTimeout(
-                pollMailboxImportProgress,
-                400
-            );
-
-        }
-
 
     } catch (error) {
 
@@ -1062,6 +1014,17 @@ async function pollMailboxImportProgress() {
             "IMPORT PROGRESS ERROR:",
             error
         );
+
+    } finally {
+
+        if (manualMailboxImportRunning) {
+
+            setTimeout(
+                pollMailboxImportProgress,
+                400
+            );
+
+        }
 
     }
 
