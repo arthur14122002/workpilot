@@ -2331,8 +2331,15 @@ return res.json({
         mailboxImportProgress.running = false;
         mailboxImportProgress.finished = true;
         mailboxImportProgress.error =
-        error.message ||
-        "Das Postfach konnte nicht importiert werden."
+            error.message ||
+            "Das Postfach konnte nicht importiert werden.";
+
+        if (!res.headersSent) {
+            return res.status(500).json({
+                success: false,
+                message: mailboxImportProgress.error
+            });
+        }
 
     } finally {
 
@@ -9455,83 +9462,126 @@ if (manualFullContent) {
 }
 
 app.post("/api/gmail/webhook", async (req, res) => {
-try {
+    try {
+        const message = req.body?.message;
 
-const message = req.body?.message;
+        if (!message?.data) {
+            return res.status(200).json({ ok: true });
+        }
 
-if (!message?.data) {
-return res.status(200).json({
-ok: true
-});
-}
+        const payload = JSON.parse(
+            Buffer.from(message.data, "base64").toString("utf8")
+        );
 
-const payload = JSON.parse(
-Buffer.from(message.data, "base64").toString("utf8")
-);
+        const { auth, mailbox } =
+            await getActiveGoogleMailboxAuth();
 
-console.log("GMAIL PAYLOAD:", payload);
+        if (
+            String(payload.emailAddress || "").toLowerCase() !==
+            String(mailbox.email || "").toLowerCase()
+        ) {
+            console.warn(
+                "⚠️ GOOGLE WEBHOOK: Anderes Postfach",
+                payload.emailAddress
+            );
 
-const historyId = payload.historyId;
-const emailAddress = payload.emailAddress;
+            return res.status(200).json({
+                ok: true,
+                skipped: true
+            });
+        }
 
-const { auth, mailbox } = await getActiveGoogleMailboxAuth();
+        const startHistoryId = mailbox.gmail_history_id;
 
-const gmail = google.gmail({
-  version: "v1",
-  auth
-});
+        if (!startHistoryId) {
+            throw new Error(
+                "Gmail-History-Startpunkt fehlt. " +
+                "Bitte Gmail-Watch erneut initialisieren."
+            );
+        }
 
-const startHistoryId =
-mailbox.gmail_history_id ||
-historyId;
+        const gmail = google.gmail({
+            version: "v1",
+            auth
+        });
 
-const historyResponse = await gmail.users.history.list({
-  userId: "me",
-  startHistoryId: startHistoryId,
-  historyTypes: ["messageAdded"]
-});
+        let pageToken = undefined;
+        let latestHistoryId = null;
+        const processedIds = new Set();
 
-const history = historyResponse.data.history || [];
+        do {
+            const historyResponse =
+                await gmail.users.history.list({
+                    userId: "me",
+                    startHistoryId: String(startHistoryId),
+                    historyTypes: ["messageAdded"],
+                    maxResults: 500,
+                    pageToken
+                });
 
-for (const entry of history) {
+            const history =
+                historyResponse.data.history || [];
 
-  const addedMessages = entry.messagesAdded || [];
+            for (const entry of history) {
+                for (const added of entry.messagesAdded || []) {
+                    const id = added.message?.id;
 
-  for (const added of addedMessages) {
+                    if (!id || processedIds.has(id)) {
+                        continue;
+                    }
 
-    await importSingleGoogleMessage(
-      gmail,
-      added.message.id
-    );
+                    await importSingleGoogleMessage(gmail, id);
 
-  }
+                    processedIds.add(id);
+                }
+            }
 
-}
+            latestHistoryId =
+                historyResponse.data.historyId ||
+                latestHistoryId;
 
-await supabase
-.from("mailbox_connections")
-.update({
-  gmail_history_id: String(historyId),
-  updated_at: new Date().toISOString()
-})
-.eq("id", mailbox.id);
+            pageToken =
+                historyResponse.data.nextPageToken ||
+                undefined;
 
-console.log("HISTORY ID:", historyId);
-console.log("EMAIL:", emailAddress);
+        } while (pageToken);
 
-res.status(200).json({
-ok: true
-});
+        if (!latestHistoryId) {
+            throw new Error(
+                "Gmail hat keinen neuen History-Cursor geliefert."
+            );
+        }
 
-} catch (error) {
+        const { error: cursorError } = await supabase
+            .from("mailbox_connections")
+            .update({
+                gmail_history_id: String(latestHistoryId),
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", mailbox.id);
 
-console.error("WEBHOOK ERROR:", error);
+        if (cursorError) {
+            throw cursorError;
+        }
 
-res.status(200).json({
-ok: false
-});
+        console.log("✅ GOOGLE WEBHOOK ABGESCHLOSSEN:", {
+            email: mailbox.email,
+            imported: processedIds.size,
+            historyId: latestHistoryId
+        });
 
-}
+        return res.status(200).json({
+            ok: true
+        });
+
+    } catch (error) {
+        console.error("❌ GOOGLE WEBHOOK ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Gmail-Verarbeitung fehlgeschlagen."
+        });
+    }
 });
 
 app.delete("/api/mailbox/disconnect", async (req, res) => {
