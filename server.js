@@ -4862,11 +4862,50 @@ console.log("📡 GOOGLE LIVE-SYNC ZEITFILTER:", {
     fetched: gmailMessageMap.size
 });
 
+const {
+    data: incompleteGoogleMessages,
+    error: incompleteGoogleError
+} = await supabase
+    .from("email_messages")
+    .select("external_message_id")
+    .eq("provider", "google")
+    .eq("mailbox_email", mailbox.email)
+    .or("content_loaded.is.null,content_loaded.eq.false")
+    .not("external_message_id", "is", null)
+    .limit(50);
+
+if (incompleteGoogleError) {
+    throw incompleteGoogleError;
+}
+
+let retryCount = 0;
+
+for (const incompleteMessage of incompleteGoogleMessages || []) {
+
+    const messageId =
+        incompleteMessage.external_message_id;
+
+    if (!messageId || gmailMessageMap.has(messageId)) {
+        continue;
+    }
+
+    gmailMessageMap.set(messageId, {
+        id: messageId
+    });
+
+    retryCount++;
+}
+
+console.log("🔄 GOOGLE WIEDERHOLUNGSVERSUCHE:", {
+    mailbox: mailbox.email,
+    additionalRetries: retryCount,
+    pendingChecked: (incompleteGoogleMessages || []).length
+});
+
 const gmailMessages =
     Array.from(
         gmailMessageMap.values()
     );
-
 
 let savedCount = 0;
 let skippedCount = 0;
