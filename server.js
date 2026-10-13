@@ -4921,10 +4921,10 @@ for (const gmailMessage of gmailMessages) {
             await importSingleGoogleMessage(
                 gmail,
                 gmailMessage.id,
-                {
-                    createDashboardNotificationEntry: false,
-                    manualFullContent: true
-                }
+{
+    createDashboardNotificationEntry: true,
+    manualFullContent: true
+}
             );
 
         if (importedMessage) {
@@ -8792,7 +8792,8 @@ async function completeManualGoogleMessage({
     message,
     thread,
     isSpamOrTrash,
-    allowClassification
+    allowClassification,
+    createDashboardNotificationEntry = false
 }) {
     const rawResponse = await gmail.users.messages.get({
         userId: "me",
@@ -8918,10 +8919,10 @@ async function completeManualGoogleMessage({
                 body_html: bodyHtml
             },
             thread,
-            {
-                createDashboardNotificationEntry: false,
-                allowClassification
-            }
+{
+    createDashboardNotificationEntry,
+    allowClassification
+}
         );
     }
 
@@ -9187,6 +9188,22 @@ if (isDraft) {
             ? "outbound"
             : "inbound";
 
+const gmailReceivedAt = Number(
+    messageData.internalDate || 0
+);
+
+const isRecentIncomingMessage =
+    direction === "inbound" &&
+    isInbox &&
+    !isSpam &&
+    !isTrash &&
+    gmailReceivedAt > 0 &&
+    gmailReceivedAt >= Date.now() - 24 * 60 * 60 * 1000;
+
+const shouldCreateGoogleNotification =
+    createDashboardNotificationEntry === true &&
+    isRecentIncomingMessage;
+
 
 const {
     data: existingMessage,
@@ -9283,15 +9300,16 @@ if (manualFullContent) {
         throw threadLookupError;
     }
 
-    return await completeManualGoogleMessage({
-        gmail,
-        gmailMessageId: gmailMessageIdFinal,
-        message: updatedMessage,
-        thread: existingThread,
-        isSpamOrTrash: isSpam || isTrash,
-        allowClassification:
-            direction === "inbound" && isInbox
-    });
+return await completeManualGoogleMessage({
+    gmail,
+    gmailMessageId: gmailMessageIdFinal,
+    message: updatedMessage,
+    thread: existingThread,
+    isSpamOrTrash: isSpam || isTrash,
+    allowClassification:
+        direction === "inbound" && isInbox,
+    createDashboardNotificationEntry: false
+});
 }
 
 return updatedMessage;
@@ -9468,15 +9486,17 @@ if (messageError) {
         isTrash;
 
 if (manualFullContent) {
-    return await completeManualGoogleMessage({
-        gmail,
-        gmailMessageId: gmailMessageIdFinal,
-        message,
-        thread,
-        isSpamOrTrash,
-        allowClassification:
-            direction === "inbound" && isInbox
-    });
+return await completeManualGoogleMessage({
+    gmail,
+    gmailMessageId: gmailMessageIdFinal,
+    message,
+    thread,
+    isSpamOrTrash,
+    allowClassification:
+        direction === "inbound" && isInbox,
+    createDashboardNotificationEntry:
+        shouldCreateGoogleNotification
+});
 }
 
     if (!isSpamOrTrash) {
