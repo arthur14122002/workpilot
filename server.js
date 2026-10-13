@@ -1657,15 +1657,6 @@ if (
 
 }
 
-    mailboxImportProgress = {
-        running: true,
-        total: 0,
-        processed: 0,
-        saved: 0,
-        finished: false,
-        error: null
-    };
-
     try {
 
 const mailbox =
@@ -1695,6 +1686,15 @@ console.log(
 );
 
 lockedMailboxId = mailbox.id;
+
+    mailboxImportProgress = {
+        running: true,
+        total: 0,
+        processed: 0,
+        saved: 0,
+        finished: false,
+        error: null
+    };
 
 console.log(
     "MAILBOX IMPORT START:",
@@ -1956,15 +1956,15 @@ if (importedFoldersUpdateError) {
 
 mailboxImportProgress = {
     running: false,
-
+    provider: "imap",
     total: newCount,
-
     processed: manualProcessedCount,
-
     saved: completedCount,
-
+    failed: Math.max(
+        0,
+        manualProcessedCount - completedCount
+    ),
     finished: true,
-
     error: null
 };
 
@@ -2238,9 +2238,11 @@ const importedMessage =
 
 mailboxImportProgress = {
     running: false,
+    provider: "google",
     total: newCount,
     processed: processedCount,
     saved: savedCount,
+    failed: failedCount,
     finished: true,
     error: null
 };
@@ -10249,9 +10251,11 @@ let mailboxLiveSyncRunning = false;
 
 let mailboxImportProgress = {
     running: false,
+    provider: null,
     total: 0,
     processed: 0,
     saved: 0,
+    failed: 0,
     finished: false,
     error: null
 };

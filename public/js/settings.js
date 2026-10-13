@@ -1195,19 +1195,22 @@ body:
                 }
 
 
+const processed = Number(result.processed || 0);
+const successful = Number(
+    result.completed ?? result.saved ?? 0
+);
+const failed = Number(result.failed || 0);
+
 if (mailImportProgressStatus) {
-
     mailImportProgressStatus.textContent =
-        "Import abgeschlossen";
-
+        failed > 0
+            ? `Import abgeschlossen – ${failed} fehlgeschlagen`
+            : "Import abgeschlossen";
 }
 
-
 if (mailImportProgressCount) {
-
     mailImportProgressCount.textContent =
-        `${result.imported || 0} / ${result.imported || 0}`;
-
+        `${processed} / ${processed}`;
 }
 
 
@@ -1238,7 +1241,10 @@ finishImportBtn
 
 
 showToast(
-    `${result.imported || 0} E-Mails wurden verarbeitet.`
+    `${successful} E-Mails erfolgreich importiert` +
+    (failed > 0
+        ? `, ${failed} fehlgeschlagen.`
+        : ".")
 );
 
 
