@@ -10,6 +10,7 @@ const nodemailer = require("nodemailer");
 const { ImapFlow } = require("imapflow");
 const { discoverMailProvider } = require("./public/mail/core/mailDiscovery");
 const {
+    streamImapFolderBatches,
     createImapClient,
     moveImapMessageToTrash,
     discoverImapFolders,
@@ -562,13 +563,18 @@ function reportImapProgress(
 
 }
 
-async function countNewImapMails(mailbox, mails) {
+async function countNewImapMails(
+    mailbox,
+    mails,
+    sharedSeenExternalIds = new Set(),
+    sharedSeenRfcIds = new Set()
+) {
     let newCount = 0;
     let existingCount = 0;
 
     const batchSize = 100;
-    const seenExternalIds = new Set();
-    const seenRfcIds = new Set();
+    const seenExternalIds = sharedSeenExternalIds;
+    const seenRfcIds = sharedSeenRfcIds;
 
     for (let i = 0; i < mails.length; i += batchSize) {
         const batch = mails.slice(i, i + batchSize);
@@ -676,7 +682,10 @@ async function saveImportedImapMails({
     mails,
     onProgress,
     createDashboardNotificationEntry = true,
-    manualImportNewCount = null
+    manualImportNewCount = null,
+    manualProgressOffset = 0,
+    manualProgressTotal = manualImportNewCount,
+    completedCountOffset = 0
 }) {
 
 let savedCount = 0;
@@ -692,17 +701,17 @@ let manualProcessedCount = 0;
 
 function reportCurrentImportProgress() {
 
-    if (isManualImport) {
+if (isManualImport) {
 
-        reportImapProgress(
-            onProgress,
-            manualProcessedCount,
-            manualImportNewCount,
-            completedCount
-        );
+    reportImapProgress(
+        onProgress,
+        manualProgressOffset + manualProcessedCount,
+        manualProgressTotal,
+        completedCountOffset + completedCount
+    );
 
-        return;
-    }
+    return;
+}
 
     reportImapProgress(
         onProgress,
@@ -1927,13 +1936,33 @@ const mails = [
 ...folderMails
 ];
 
-const {
-    newCount,
-    existingCount
-} = await countNewImapMails(
-    mailbox,
-    mails
-);
+let streamingProcessedCount = 0;
+let streamingSavedCount = 0;
+let streamingCompletedCount = 0;
+
+const sharedSeenExternalIds = new Set();
+const sharedSeenRfcIds = new Set();
+
+let streamingNewCount = 0;
+let streamingExistingCount = 0;
+
+for (let i = 0; i < mails.length; i += 100) {
+
+    const batch = mails.slice(i, i + 100);
+
+    const result = await countNewImapMails(
+        mailbox,
+        batch,
+        sharedSeenExternalIds,
+        sharedSeenRfcIds
+    );
+
+    streamingNewCount += result.newCount;
+    streamingExistingCount += result.existingCount;
+}
+
+const newCount = streamingNewCount;
+const existingCount = streamingExistingCount;
 
 console.log("📬 MANUELLER IMPORT – VORPRÜFUNG:", {
     fetched: mails.length,

@@ -199,6 +199,136 @@ async function* fetchImapMessagesInBatches(
     }
 }
 
+async function* streamImapFolderBatches(
+    connection,
+    folderPath = "INBOX",
+    mailboxRole = "custom",
+    range = "all"
+) {
+    const client = createImapClient(connection);
+
+    try {
+        await client.connect();
+
+        const mailbox = await client.mailboxOpen(folderPath);
+
+        if (!mailbox.exists) {
+            return;
+        }
+
+        let searchCriteria = { all: true };
+
+        if (String(range) !== "all") {
+            const days = Number(range);
+
+            if (!Number.isFinite(days) || days <= 0) {
+                throw new Error("Ungültiger IMAP-Importzeitraum.");
+            }
+
+            const sinceDate = new Date();
+
+            sinceDate.setDate(sinceDate.getDate() - days);
+            sinceDate.setHours(0, 0, 0, 0);
+
+            searchCriteria = { since: sinceDate };
+        }
+
+        const uids = await client.search(
+            searchCriteria,
+            { uid: true }
+        );
+
+        console.log("📦 IMAP STREAM START:", {
+            folderPath,
+            mailboxRole,
+            range,
+            total: uids.length
+        });
+
+        const fetchOptions = {
+            uid: true,
+            envelope: true,
+            flags: true,
+            size: true,
+            bodyStructure: true
+        };
+
+        for (
+            let index = 0;
+            index < uids.length;
+            index += IMAP_FETCH_BATCH_SIZE
+        ) {
+            const batchUids = uids.slice(
+                index,
+                index + IMAP_FETCH_BATCH_SIZE
+            );
+
+            const mails = [];
+
+            for await (
+                const message of client.fetch(
+                    batchUids,
+                    fetchOptions,
+                    { uid: true }
+                )
+            ) {
+                const flags = Array.from(message.flags || []);
+
+                mails.push({
+                    provider: "imap",
+                    mailboxPath: folderPath,
+                    mailboxRole,
+
+                    externalId:
+                        `imap:${connection.email}:${folderPath}:${message.uid}`,
+
+                    uid: message.uid,
+                    messageId: message.envelope?.messageId || null,
+                    inReplyTo: message.envelope?.inReplyTo || null,
+                    subject: message.envelope?.subject || "",
+
+                    from: message.envelope?.from || [],
+                    to: message.envelope?.to || [],
+                    cc: message.envelope?.cc || [],
+                    bcc: message.envelope?.bcc || [],
+
+                    date: message.envelope?.date || null,
+                    size: Number(message.size || 0),
+
+                    flags,
+                    isRead: flags.includes("\\Seen"),
+                    isStarred: flags.includes("\\Flagged"),
+
+                    hasAttachments:
+                        bodyStructureHasAttachments(message.bodyStructure),
+
+                    text: null,
+                    html: null,
+                    contentLoaded: false
+                });
+            }
+
+            console.log("📦 IMAP STREAM BATCH:", {
+                folderPath,
+                batch: Math.floor(index / IMAP_FETCH_BATCH_SIZE) + 1,
+                count: mails.length,
+                total: uids.length
+            });
+
+            if (mails.length) {
+                yield {
+                    mails,
+                    folderPath,
+                    mailboxRole,
+                    total: uids.length
+                };
+            }
+        }
+    } finally {
+        await closeImapClient(client);
+    }
+}
+
 async function importImapMailbox(
     connection,
     range = "30"
@@ -1724,6 +1854,7 @@ async function closeImapClient(client) {
 }
 
 module.exports = {
+    streamImapFolderBatches,
     findImapSpamMailbox,
     findImapSentMailbox,
     importImapFolder,
