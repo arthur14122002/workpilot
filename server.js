@@ -2224,11 +2224,7 @@ for (
     of selectedFolders
 ) {
 
-    const folderQuery =
-        String(range) === "all"
-            ? undefined
-            : `newer_than:${Number(range)}d`;
-
+const folderQuery = undefined;
 
     await collectGoogleMessages({
         q: folderQuery,
