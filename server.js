@@ -718,7 +718,78 @@ function reportCurrentImportProgress() {
         );
 
 
-    for (const mail of mails) {
+    const IMAP_SAVE_BATCH_SIZE = 100;
+
+    for (
+        let batchStart = 0;
+        batchStart < mails.length;
+        batchStart += IMAP_SAVE_BATCH_SIZE
+    ) {
+        const batch = mails.slice(
+            batchStart,
+            batchStart + IMAP_SAVE_BATCH_SIZE
+        );
+
+        const externalIds = [...new Set(
+            batch.map(mail =>
+                `imap:${mailbox.email}:${mail.mailboxPath || "INBOX"}:${mail.uid}`
+            )
+        )];
+
+        const rfcIds = [...new Set(
+            batch.map(mail => mail.messageId).filter(Boolean)
+        )];
+
+        const { data: externalRows, error: externalError } =
+            await supabase
+                .from("email_messages")
+                .select("id, external_message_id")
+                .eq("provider", "imap")
+                .eq("mailbox_email", mailbox.email)
+                .in("external_message_id", externalIds);
+
+        if (externalError) {
+            throw externalError;
+        }
+
+        let rfcRows = [];
+
+        if (rfcIds.length) {
+            const { data, error } = await supabase
+                .from("email_messages")
+                .select("id, rfc_message_id")
+                .eq("provider", "imap")
+                .eq("mailbox_email", mailbox.email)
+                .in("rfc_message_id", rfcIds);
+
+            if (error) {
+                throw error;
+            }
+
+            rfcRows = data || [];
+        }
+
+        const existingExternalMap = new Map(
+            (externalRows || []).map(row => [
+                row.external_message_id,
+                row
+            ])
+        );
+
+        const existingRfcMap = new Map(
+            rfcRows.map(row => [
+                row.rfc_message_id,
+                row
+            ])
+        );
+
+        console.log("📦 IMAP SAVE BATCH:", {
+            batch: Math.floor(batchStart / IMAP_SAVE_BATCH_SIZE) + 1,
+            count: batch.length,
+            total: mails.length
+        });
+
+        for (const mail of batch) {
 
     processedCount++;
 
@@ -738,40 +809,8 @@ const rfcMessageId =
     mail.messageId ||
     null;
 
-const {
-    data: existingMessage,
-    error: existingMessageError
-} = await supabase
-    .from("email_messages")
-    .select("id")
-    .eq(
-        "external_message_id",
-        externalMessageId
-    )
-    .maybeSingle();
-
-
-if (existingMessageError) {
-
-    console.error(
-        "EMAIL EXISTENCE CHECK ERROR:",
-        {
-            uid:
-                mail.uid,
-
-            subject:
-                mail.subject,
-
-            error:
-                existingMessageError
-        }
-    );
-
-reportCurrentImportProgress();
-
-    continue;
-}
-
+const existingMessage =
+    existingExternalMap.get(externalMessageId) || null;
 
 if (existingMessage) {
 
@@ -796,18 +835,8 @@ reportCurrentImportProgress();
 
 if (rfcMessageId) {
 
-    const {
-        data: existingRfcMessage,
-        error: existingRfcMessageError
-    } = await supabase
-        .from("email_messages")
-        .select("id")
-        .eq(
-            "rfc_message_id",
-            rfcMessageId
-        )
-        .maybeSingle();
-
+    const existingRfcMessage =
+        existingRfcMap.get(rfcMessageId) || null;
 
     if (existingRfcMessageError) {
 
@@ -1189,6 +1218,18 @@ external_thread_id:
 }
 
 savedCount++;
+
+existingExternalMap.set(externalMessageId, {
+    id: message.id,
+    external_message_id: externalMessageId
+});
+
+if (rfcMessageId) {
+    existingRfcMap.set(rfcMessageId, {
+        id: message.id,
+        rfc_message_id: rfcMessageId
+    });
+}
 
 try {
 
@@ -1574,6 +1615,7 @@ reportCurrentImportProgress();
 
     }
 
+    }
 
 return {
     savedCount,
