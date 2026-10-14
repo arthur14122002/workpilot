@@ -563,74 +563,100 @@ function reportImapProgress(
 }
 
 async function countNewImapMails(mailbox, mails) {
-
     let newCount = 0;
     let existingCount = 0;
 
+    const batchSize = 100;
     const seenExternalIds = new Set();
     const seenRfcIds = new Set();
 
-    for (const mail of mails) {
+    for (let i = 0; i < mails.length; i += batchSize) {
+        const batch = mails.slice(i, i + batchSize);
 
-        const mailboxPath =
-            mail.mailboxPath || "INBOX";
+        const externalIds = [...new Set(
+            batch.map(mail => {
+                const path = mail.mailboxPath || "INBOX";
+                return `imap:${mailbox.email}:${path}:${mail.uid}`;
+            })
+        )];
 
-        const externalMessageId =
-            `imap:${mailbox.email}:${mailboxPath}:${mail.uid}`;
+        const rfcIds = [...new Set(
+            batch.map(mail => mail.messageId).filter(Boolean)
+        )];
 
-        const rfcMessageId =
-            mail.messageId || null;
-
-        if (
-            seenExternalIds.has(externalMessageId) ||
-            (rfcMessageId && seenRfcIds.has(rfcMessageId))
-        ) {
-            existingCount++;
-            continue;
-        }
-
-        const { data: existingExternal, error: externalError } =
+        const { data: externalRows, error: externalError } =
             await supabase
                 .from("email_messages")
-                .select("id")
-                .eq("external_message_id", externalMessageId)
-                .maybeSingle();
+                .select("external_message_id")
+                .in("external_message_id", externalIds);
 
         if (externalError) {
             throw externalError;
         }
 
-        if (existingExternal) {
-            existingCount++;
-            continue;
-        }
+        let rfcRows = [];
 
-        if (rfcMessageId) {
+        if (rfcIds.length) {
+            const { data, error } = await supabase
+                .from("email_messages")
+                .select("rfc_message_id")
+                .in("rfc_message_id", rfcIds);
 
-            const { data: existingRfc, error: rfcError } =
-                await supabase
-                    .from("email_messages")
-                    .select("id")
-                    .eq("rfc_message_id", rfcMessageId)
-                    .maybeSingle();
-
-            if (rfcError) {
-                throw rfcError;
+            if (error) {
+                throw error;
             }
 
-            if (existingRfc) {
+            rfcRows = data || [];
+        }
+
+        const existingExternalIds = new Set(
+            (externalRows || []).map(
+                row => row.external_message_id
+            )
+        );
+
+        const existingRfcIds = new Set(
+            rfcRows.map(row => row.rfc_message_id)
+        );
+
+        for (const mail of batch) {
+            const path = mail.mailboxPath || "INBOX";
+
+            const externalId =
+                `imap:${mailbox.email}:${path}:${mail.uid}`;
+
+            const rfcId = mail.messageId || null;
+
+            const alreadyExists =
+                seenExternalIds.has(externalId) ||
+                existingExternalIds.has(externalId) ||
+                (
+                    rfcId &&
+                    (
+                        seenRfcIds.has(rfcId) ||
+                        existingRfcIds.has(rfcId)
+                    )
+                );
+
+            if (alreadyExists) {
                 existingCount++;
                 continue;
             }
+
+            newCount++;
+
+            seenExternalIds.add(externalId);
+
+            if (rfcId) {
+                seenRfcIds.add(rfcId);
+            }
         }
 
-        newCount++;
-
-        seenExternalIds.add(externalMessageId);
-
-        if (rfcMessageId) {
-            seenRfcIds.add(rfcMessageId);
-        }
+        console.log("📦 IMAP DB CHECK BATCH:", {
+            batch: Math.floor(i / batchSize) + 1,
+            checked: Math.min(i + batch.length, mails.length),
+            total: mails.length
+        });
     }
 
     console.log("📊 IMAP IMPORT VORPRÜFUNG:", {
