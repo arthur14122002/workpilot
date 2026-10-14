@@ -162,6 +162,43 @@ async function importMailbox(connection, range = "30") {
 
 }
 
+const IMAP_FETCH_BATCH_SIZE = 100;
+
+async function* fetchImapMessagesInBatches(
+    client,
+    uids,
+    fetchOptions,
+    batchSize = IMAP_FETCH_BATCH_SIZE
+) {
+    for (let index = 0; index < uids.length; index += batchSize) {
+        const batch = uids.slice(
+            index,
+            index + batchSize
+        );
+
+        if (!batch.length) {
+            continue;
+        }
+
+        console.log("📦 IMAP FETCH BATCH:", {
+            batch: Math.floor(index / batchSize) + 1,
+            count: batch.length,
+            processed: index,
+            total: uids.length
+        });
+
+        for await (
+            const message of client.fetch(
+                batch,
+                fetchOptions,
+                { uid: true }
+            )
+        ) {
+            yield message;
+        }
+    }
+}
+
 async function importImapMailbox(
     connection,
     range = "30"
@@ -278,19 +315,17 @@ uids =
 
         for await (
             const message
-            of client.fetch(
-                uids,
-                {
-                    uid: true,
-                    envelope: true,
-                    flags: true,
-                    size: true,
-                    bodyStructure: true
-                },
-                {
-                    uid: true
-                }
-            )
+of fetchImapMessagesInBatches(
+    client,
+    uids,
+    {
+        uid: true,
+        envelope: true,
+        flags: true,
+        size: true,
+        bodyStructure: true
+    }
+)
         ) {
 
             const flags =
@@ -436,19 +471,17 @@ async function importImapFolder(
 
         for await (
             const message
-            of client.fetch(
-                uids,
-                {
-                    uid: true,
-                    envelope: true,
-                    flags: true,
-                    size: true,
-                    bodyStructure: true
-                },
-                {
-                    uid: true
-                }
-            )
+of fetchImapMessagesInBatches(
+    client,
+    uids,
+    {
+        uid: true,
+        envelope: true,
+        flags: true,
+        size: true,
+        bodyStructure: true
+    }
+)
         ) {
 
             const flags =
