@@ -838,30 +838,6 @@ if (rfcMessageId) {
     const existingRfcMessage =
         existingRfcMap.get(rfcMessageId) || null;
 
-    if (existingRfcMessageError) {
-
-        console.error(
-            "RFC MESSAGE EXISTENCE CHECK ERROR:",
-            {
-                uid:
-                    mail.uid,
-
-                subject:
-                    mail.subject,
-
-                rfcMessageId,
-
-                error:
-                    existingRfcMessageError
-            }
-        );
-
-reportCurrentImportProgress();
-
-        continue;
-    }
-
-
 if (existingRfcMessage) {
 
 if (
