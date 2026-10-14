@@ -1805,12 +1805,6 @@ const connection = {
         mailbox.smtp_secure
 };
 
-const inboxMails =
-    await importMailbox(
-        connection,
-        range
-    );
-
 const discoveryClient =
     createImapClient(
         connection
@@ -1861,147 +1855,159 @@ discoveryClient
 
 }
 
-const sentMails =
-    sentMailbox
-        ? await importImapFolder(
-            connection,
-            sentMailbox,
-            "sent"
-        )
-        : [];
-
-const trashMails =
-trashMailbox
-? await importImapFolder(
-connection,
-trashMailbox,
-"trash"
-)
-: [];
-
-const spamMails =
-spamMailbox
-? await importImapFolder(
-connection,
-spamMailbox,
-"spam"
-)
-: [];
-
-const folderMails = [];
-
-for (
-    const folderPath
-    of selectedFolders
-) {
-
-if (
-folderPath === sentMailbox ||
-folderPath === trashMailbox ||
-folderPath === spamMailbox
-) {
-continue;
-}
-
-const importedFolderMails =
-    await importImapFolder(
-        connection,
-        folderPath
-    );
-
-console.log(
-    "📁 CUSTOM FOLDER IMPORT:",
+const folderJobs = [
     {
-        folderPath,
-        mails:
-            importedFolderMails.length,
-        subjects:
-            importedFolderMails.map(
-                mail => mail.subject
-            )
+        path: "INBOX",
+        role: "inbox",
+        range
     }
-);
-
-folderMails.push(
-    ...importedFolderMails
-);
-
-}
-
-const mails = [
-...inboxMails,
-...sentMails,
-...trashMails,
-...spamMails,
-...folderMails
 ];
 
-let streamingProcessedCount = 0;
-let streamingSavedCount = 0;
-let streamingCompletedCount = 0;
+const scheduledPaths = new Set(["INBOX"]);
+
+function addImportFolder(folderPath, role) {
+    if (!folderPath || typeof folderPath !== "string") {
+        return;
+    }
+
+    const normalized = folderPath.trim().toUpperCase();
+
+    if (!normalized || scheduledPaths.has(normalized)) {
+        return;
+    }
+
+    scheduledPaths.add(normalized);
+
+    folderJobs.push({
+        path: folderPath,
+        role,
+        range: "all"
+    });
+}
+
+addImportFolder(sentMailbox, "sent");
+addImportFolder(trashMailbox, "trash");
+addImportFolder(spamMailbox, "spam");
+
+for (const folderPath of selectedFolders) {
+    addImportFolder(folderPath, "custom");
+}
 
 const sharedSeenExternalIds = new Set();
 const sharedSeenRfcIds = new Set();
 
-let streamingNewCount = 0;
-let streamingExistingCount = 0;
+let newCount = 0;
+let existingCount = 0;
+let fetchedCount = 0;
 
-for (let i = 0; i < mails.length; i += 100) {
+for (const job of folderJobs) {
 
-    const batch = mails.slice(i, i + 100);
+    for await (
+        const { mails: batch }
+        of streamImapFolderBatches(
+            connection,
+            job.path,
+            job.role,
+            job.range
+        )
+    ) {
 
-    const result = await countNewImapMails(
-        mailbox,
-        batch,
-        sharedSeenExternalIds,
-        sharedSeenRfcIds
-    );
+        fetchedCount += batch.length;
 
-    streamingNewCount += result.newCount;
-    streamingExistingCount += result.existingCount;
+        const result = await countNewImapMails(
+            mailbox,
+            batch,
+            sharedSeenExternalIds,
+            sharedSeenRfcIds
+        );
+
+        newCount += result.newCount;
+        existingCount += result.existingCount;
+    }
 }
 
-const newCount = streamingNewCount;
-const existingCount = streamingExistingCount;
-
-console.log("📬 MANUELLER IMPORT – VORPRÜFUNG:", {
-    fetched: mails.length,
-    new: newCount,
-    existing: existingCount
-});
+console.log(
+    "📬 MANUELLER IMAP STREAM – VORPRÜFUNG:",
+    {
+        fetched: fetchedCount,
+        new: newCount,
+        existing: existingCount
+    }
+);
 
 mailboxImportProgress.total = newCount;
 mailboxImportProgress.processed = 0;
 mailboxImportProgress.saved = 0;
 
-const {
-    savedCount,
-    manualProcessedCount,
-    completedCount
-} = await saveImportedImapMails({
-    mailbox,
-    mails,
+let streamingProcessedCount = 0;
+let streamingSavedCount = 0;
+let streamingCompletedCount = 0;
 
-    manualImportNewCount: newCount,
+for (const job of folderJobs) {
 
-    createDashboardNotificationEntry: false,
+    for await (
+        const { mails: batch }
+        of streamImapFolderBatches(
+            connection,
+            job.path,
+            job.role,
+            job.range
+        )
+    ) {
 
-    onProgress: ({
-        processed,
-        total,
-        saved
-    }) => {
+        const result = await saveImportedImapMails({
+            mailbox,
+            mails: batch,
 
-        mailboxImportProgress.processed =
-            processed;
+            manualImportNewCount: newCount,
 
-        mailboxImportProgress.total =
-            total;
+            manualProgressOffset:
+                streamingProcessedCount,
 
-        mailboxImportProgress.saved =
-            saved;
+            manualProgressTotal:
+                newCount,
+
+            completedCountOffset:
+                streamingCompletedCount,
+
+            createDashboardNotificationEntry: false,
+
+            onProgress: ({
+                processed,
+                total,
+                saved
+            }) => {
+
+                mailboxImportProgress.processed =
+                    processed;
+
+                mailboxImportProgress.total =
+                    total;
+
+                mailboxImportProgress.saved =
+                    saved;
+            }
+        });
+
+        streamingProcessedCount +=
+            result.manualProcessedCount;
+
+        streamingSavedCount +=
+            result.savedCount;
+
+        streamingCompletedCount +=
+            result.completedCount;
     }
-});
+}
+
+const manualProcessedCount =
+    streamingProcessedCount;
+
+const savedCount =
+    streamingSavedCount;
+
+const completedCount =
+    streamingCompletedCount;
 
 const updatedImportedFolders =
     Array.from(
@@ -2045,7 +2051,7 @@ console.log(
     "📊 IMAP IMPORT ABGESCHLOSSEN:",
     {
         email: mailbox.email,
-        fetched: mails.length,
+        fetched: fetchedCount,
         new: newCount,
         existing: existingCount,
         processed: manualProcessedCount,
@@ -2061,7 +2067,7 @@ console.log(
 return res.json({
     success: true,
 
-    imported: mails.length,
+    imported: fetchedCount,
     new: newCount,
     existing: existingCount,
 

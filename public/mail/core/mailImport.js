@@ -279,8 +279,10 @@ async function* streamImapFolderBatches(
                     mailboxPath: folderPath,
                     mailboxRole,
 
-                    externalId:
-                        `imap:${connection.email}:${folderPath}:${message.uid}`,
+                   externalId:
+    String(folderPath).toUpperCase() === "INBOX"
+        ? `imap:${connection.email}:${message.uid}`
+        : `imap:${connection.email}:${folderPath}:${message.uid}`,
 
                     uid: message.uid,
                     messageId: message.envelope?.messageId || null,
