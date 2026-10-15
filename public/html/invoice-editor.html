@@ -49,13 +49,20 @@ Prüfe die Rechnung und trage Mengen, Preise und Leistungen ein.
 </header>
 
 <div class="editorActions">
-<a class="btn btnSecondary" href="/invoices">Zurück</a>
-<button class="btn btnSecondary" id="addPositionBtn">Position hinzufügen</button>
-<button class="btn btnSecondary" id="printBtn">Drucken / PDF</button>
-<button class="btn btnPrimary" id="saveOfferBtn">Speichern</button>
+    <a class="btn btnSecondary" href="/invoices">Zurück</a>
+    <button class="btn btnSecondary" id="addPositionBtn">Position hinzufügen</button>
+    <button class="btn btnSecondary" id="printBtn">Drucken / PDF</button>
+    <button class="btn btnPrimary" id="saveOfferBtn">Speichern</button>
+</div>
+
+<div id="offerDocument" class="offerDocument"></div>
+
+<div class="notice" id="editorNotice">
+    Rechnung wurde gespeichert.
 </div>
 
 <div id="invoiceSaveModal" class="invoiceSaveOverlay hidden">
+
   <div class="invoiceSaveCard">
 
     <h2>Rechnung speichern</h2>
