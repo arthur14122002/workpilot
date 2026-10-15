@@ -5496,6 +5496,35 @@ async function findDocumentContact(recipientEmail, recipientPhone) {
 app.post("/api/offers", async (req, res) => {
 const offer = req.body;
 
+const { data: existingOffer, error: lookupError } = await supabase
+    .from("offers")
+    .select("id, contact_id")
+    .eq("id", offer.id)
+    .maybeSingle();
+
+if (lookupError) {
+    return res.status(500).json({
+        ok: false,
+        error: lookupError.message
+    });
+}
+
+if (existingOffer) {
+    offer.contactId = existingOffer.contact_id;
+} else if (!offer.contactId) {
+    try {
+        offer.contactId = await findDocumentContact(
+            offer.recipientEmail,
+            offer.recipientPhone
+        );
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            error: "Kontaktzuordnung konnte nicht geprüft werden."
+        });
+    }
+}
+
 try {
     if (!offer.contactId) {
         offer.contactId = await findDocumentContact(
