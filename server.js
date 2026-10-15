@@ -5525,21 +5525,6 @@ if (existingOffer) {
     }
 }
 
-try {
-    if (!offer.contactId) {
-        offer.contactId = await findDocumentContact(
-            offer.recipientEmail,
-            offer.recipientPhone
-        );
-    }
-} catch (error) {
-    console.error("OFFER CONTACT MATCH ERROR:", error);
-    return res.status(500).json({
-        ok: false,
-        error: "Kontaktzuordnung konnte nicht geprüft werden."
-    });
-}
-
 const { data, error } = await supabase
 .from("offers")
 .upsert(
