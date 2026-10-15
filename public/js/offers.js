@@ -213,12 +213,29 @@ Erstellt am ${offer.offerDate || "-"}
 <option value="rejected" ${offer.status === "rejected" ? "selected" : ""}>Abgelehnt</option>
 </select>
 
-<button
-class="contactAssignBtn"
-data-assign="${offer.id}"
->
-${contactLabel}
-</button>
+<div class="contactAssignWrap">
+
+  <button
+    type="button"
+    class="contactAssignBtn"
+    data-assign="${offer.id}"
+  >
+    ${contactLabel}
+  </button>
+
+  ${offer.contactId ? `
+    <button
+      type="button"
+      class="contactRemoveBtn"
+      data-unassign="${offer.id}"
+      title="Kontaktzuordnung entfernen"
+      aria-label="Kontaktzuordnung entfernen"
+    >
+      ×
+    </button>
+  ` : ""}
+
+</div>
 
 <button class="btn btnSecondary" data-open="${offer.id}">Öffnen</button>
 <button
@@ -406,6 +423,34 @@ document.querySelectorAll("[data-assign]").forEach((button) => {
 button.addEventListener("click", () => {
 openContactAssignModal(button.dataset.assign);
 });
+});
+
+document.querySelectorAll("[data-unassign]").forEach((button) => {
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+
+    const offerId = button.dataset.unassign;
+
+    try {
+      const offers = await apiGetOffers();
+      const offer = offers.find((entry) => entry.id === offerId);
+
+      if (!offer) {
+        showToast("Angebot wurde nicht gefunden.");
+        return;
+      }
+
+      offer.contactId = null;
+
+      await apiSaveOffer(offer);
+
+      showToast("Kontaktzuordnung entfernt.");
+      await renderOffers();
+
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
 });
 
 document.querySelectorAll(".sendOfferMailBtn").forEach((button) => {
