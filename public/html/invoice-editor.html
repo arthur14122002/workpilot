@@ -55,9 +55,44 @@ Prüfe die Rechnung und trage Mengen, Preise und Leistungen ein.
 <button class="btn btnPrimary" id="saveOfferBtn">Speichern</button>
 </div>
 
-<div id="offerDocument" class="offerDocument"></div>
+<div id="invoiceSaveModal" class="invoiceSaveOverlay hidden">
+  <div class="invoiceSaveCard">
 
-<div class="notice" id="editorNotice">Rechnung wurde gespeichert.</div>
+    <h2>Rechnung speichern</h2>
+
+    <p>
+      Möchtest du zusätzlich eine Erinnerung
+      für diese Rechnung erstellen?
+    </p>
+
+    <div class="invoiceSaveActions">
+      <button
+        type="button"
+        class="btn btnSecondary"
+        id="saveInvoiceOnlyBtn"
+      >
+        Nur speichern
+      </button>
+
+      <button
+        type="button"
+        class="btn btnPrimary"
+        id="saveInvoiceReminderBtn"
+      >
+        Speichern + Erinnerung
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="invoiceSaveCancel"
+      id="cancelInvoiceSaveBtn"
+    >
+      Abbrechen
+    </button>
+
+  </div>
+</div>
 </main>
 </div>
 

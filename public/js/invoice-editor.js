@@ -13,6 +13,16 @@ const addPositionBtn = document.getElementById("addPositionBtn");
 const saveOfferBtn = document.getElementById("saveOfferBtn");
 const editorNotice = document.getElementById("editorNotice");
 const printBtn = document.getElementById("printBtn");
+const invoiceSaveModal = document.getElementById("invoiceSaveModal");
+
+const saveInvoiceOnlyBtn =
+document.getElementById("saveInvoiceOnlyBtn");
+
+const saveInvoiceReminderBtn =
+document.getElementById("saveInvoiceReminderBtn");
+
+const cancelInvoiceSaveBtn =
+document.getElementById("cancelInvoiceSaveBtn");
 
 function euro(value) {
 const number = Number(value) || 0;
@@ -424,54 +434,84 @@ if (closing) currentDraft.closingText = closing.textContent.trim();
 localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 }
 
-async function saveOffer() {
-persistDraft();
+async function saveOffer(withReminder = false) {
+    persistDraft();
 
-const isExistingInvoice = loadedFromDatabase;
+    const isExistingInvoice = loadedFromDatabase;
 
-ensureInvoiceId();
+    ensureInvoiceId();
 
-const saved = {
-...currentDraft,
-companySettings,
-savedAt: new Date().toISOString()
-};
+    const saved = {
+        ...currentDraft,
+        companySettings,
+        savedAt: new Date().toISOString()
+    };
 
-const response = await fetch(
-isExistingInvoice ? `/api/invoices/${currentDraft.id}` : "/api/invoices",
-{
-method: isExistingInvoice ? "PUT" : "POST",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify(saved)
-}
-);
+    const response = await fetch(
+        isExistingInvoice
+            ? `/api/invoices/${currentDraft.id}`
+            : "/api/invoices",
+        {
+            method: isExistingInvoice ? "PUT" : "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(saved)
+        }
+    );
 
-const result = await response.json();
+    const result = await response.json();
 
-if (!result.ok) {
-showToast(result.error || "Rechnung konnte nicht gespeichert werden.");
-return;
-}
+    if (!response.ok || !result.ok) {
+        throw new Error(
+            result.error || "Rechnung konnte nicht gespeichert werden."
+        );
+    }
 
-currentDraft = {
-...result.invoice.data,
-id: result.invoice.id,
-contactId: result.invoice.contact_id,
-status: result.invoice.status,
-invoiceNumber: result.invoice.invoice_number
-};
+    currentDraft = {
+        ...result.invoice.data,
+        id: result.invoice.id,
+        contactId: result.invoice.contact_id,
+        status: result.invoice.status,
+        invoiceNumber: result.invoice.invoice_number
+    };
 
-loadedFromDatabase = true;
+    loadedFromDatabase = true;
 
-localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(currentDraft));
 
-showToast("Rechnung wurde gespeichert.");
+    showToast("Rechnung wurde gespeichert.");
 
-setTimeout(() => {
-window.location.href = "/invoices";
-}, 500);
+    if (withReminder) {
+        const dueDate = currentDraft.dueDate || "";
+        const dateParts = dueDate.split(".");
+
+        let calendarDate = "";
+
+        if (dateParts.length === 3) {
+            calendarDate =
+                `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+        }
+
+        const params = new URLSearchParams({
+            title: `Zahlung prüfen – Rechnung ${currentDraft.invoiceNumber || ""}`,
+            description:
+                `Zahlungseingang prüfen.\n` +
+                `Rechnung: ${currentDraft.invoiceNumber || ""}\n` +
+                `Kunde: ${currentDraft.recipientName || ""}\n` +
+                `Fällig am: ${dueDate}`,
+            time: "09:00"
+        });
+
+        if (calendarDate) {
+            params.set("date", calendarDate);
+        }
+
+        window.location.href = `/calendar-create?${params.toString()}`;
+        return;
+    }
+
+    window.location.href = "/invoices";
 }
 
 function bindEvents() {
@@ -527,11 +567,45 @@ return;
 
 addPositionBtn.addEventListener("click", addPosition);
 
-saveOfferBtn.addEventListener("click", async () => {
-await saveOffer();
+saveOfferBtn.addEventListener("click", () => {
+    invoiceSaveModal.classList.remove("hidden");
 });
 
 printBtn.addEventListener("click", () => window.print());
 }
+
+let invoiceSaving = false;
+
+async function handleInvoiceSave(withReminder) {
+    if (invoiceSaving) return;
+
+    invoiceSaving = true;
+
+    saveInvoiceOnlyBtn.disabled = true;
+    saveInvoiceReminderBtn.disabled = true;
+
+    try {
+        await saveOffer(withReminder);
+    } catch (error) {
+        showToast(error.message || "Rechnung konnte nicht gespeichert werden.");
+    } finally {
+        invoiceSaving = false;
+
+        saveInvoiceOnlyBtn.disabled = false;
+        saveInvoiceReminderBtn.disabled = false;
+    }
+}
+
+saveInvoiceOnlyBtn.addEventListener("click", () => {
+    handleInvoiceSave(false);
+});
+
+saveInvoiceReminderBtn.addEventListener("click", () => {
+    handleInvoiceSave(true);
+});
+
+cancelInvoiceSaveBtn.addEventListener("click", () => {
+    invoiceSaveModal.classList.add("hidden");
+});
 
 document.addEventListener("DOMContentLoaded", init);
