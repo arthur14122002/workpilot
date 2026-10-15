@@ -4,6 +4,17 @@ const invoiceCreateForm = document.getElementById("invoiceCreateForm");
 const invoicePoints = document.getElementById("invoicePoints");
 const addInvoicePointBtn = document.getElementById("addInvoicePointBtn");
 
+const serviceDateType = document.getElementById("serviceDateType");
+const serviceDateSingle = document.getElementById("serviceDateSingle");
+const serviceDatePeriod = document.getElementById("serviceDatePeriod");
+
+serviceDateType.addEventListener("change", () => {
+    const isPeriod = serviceDateType.value === "period";
+
+    serviceDateSingle.style.display = isPeriod ? "none" : "block";
+    serviceDatePeriod.style.display = isPeriod ? "block" : "none";
+});
+
 function getContactIdFromUrl() {
 const params = new URLSearchParams(window.location.search);
 return params.get("contactId");
@@ -101,7 +112,19 @@ recipientEmail: document.getElementById("recipientEmail").value.trim(),
 invoiceNumber: createInvoiceNumber(),
 invoiceDate: formatDate(today),
 dueDate: formatDate(addDays(today, dueDays)),
-serviceDate: document.getElementById("serviceDate").value,
+serviceDateType: serviceDateType.value,
+
+serviceDate: serviceDateType.value === "date"
+    ? document.getElementById("serviceDate").value
+    : "",
+
+servicePeriodStart: serviceDateType.value === "period"
+    ? document.getElementById("servicePeriodStart").value
+    : "",
+
+servicePeriodEnd: serviceDateType.value === "period"
+    ? document.getElementById("servicePeriodEnd").value
+    : "",
 
 introText: "vielen Dank für Ihren Auftrag. Für die erbrachten Leistungen stellen wir Ihnen folgende Rechnung:",
 closingText: "Bitte überweisen Sie den Rechnungsbetrag innerhalb des angegebenen Zahlungsziels.",

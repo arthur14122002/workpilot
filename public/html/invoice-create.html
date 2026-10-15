@@ -78,8 +78,24 @@ Gib Empfänger und Leistungen ein. WorkPilot erstellt daraus eine Rechnung.
 </div>
 
 <div class="formField">
-<label for="serviceDate">Leistungsdatum</label>
-<input id="serviceDate" type="date" />
+<label for="serviceDateType">Art der Leistungserbringung</label>
+<select id="serviceDateType">
+    <option value="date">Einzelnes Leistungsdatum</option>
+    <option value="period">Leistungszeitraum</option>
+</select>
+
+<div id="serviceDateSingle">
+    <label for="serviceDate">Leistungsdatum</label>
+    <input id="serviceDate" type="date" />
+</div>
+
+<div id="serviceDatePeriod" style="display: none;">
+    <label for="servicePeriodStart">Von</label>
+    <input id="servicePeriodStart" type="date" />
+
+    <label for="servicePeriodEnd">Bis</label>
+    <input id="servicePeriodEnd" type="date" />
+</div>
 </div>
 
 <div class="formField full">
