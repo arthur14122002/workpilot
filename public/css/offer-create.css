@@ -25,3 +25,9 @@ border-radius: 12px;
 .addPointBtn {
 margin-top: 6px;
 }
+
+.requestPointInput {
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+}
