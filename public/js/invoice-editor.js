@@ -507,7 +507,9 @@ async function saveOffer(withReminder = false) {
             params.set("date", calendarDate);
         }
 
-        window.location.href = `/calendar-create?${params.toString()}`;
+        params.set("source", "invoice");
+
+window.location.href = `/calendar-create?${params.toString()}`;
         return;
     }
 

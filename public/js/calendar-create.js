@@ -99,6 +99,12 @@ document.getElementById("description").value = description;
 const cancelLink = document.querySelector(".buttonRow .btnSecondary");
 
 if (cancelLink) {
-cancelLink.href = window.getCalendarReturnUrl();
+    const source = params.get("source");
+
+    if (source === "invoice") {
+        cancelLink.href = "/invoices";
+    } else {
+        cancelLink.href = window.getCalendarReturnUrl();
+    }
 }
 });
