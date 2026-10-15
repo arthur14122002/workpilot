@@ -5456,8 +5456,60 @@ contact: data
 });
 });
 
+
+async function findDocumentContact(recipientEmail, recipientPhone) {
+    const email = String(recipientEmail || "").trim().toLowerCase();
+    const phone = String(recipientPhone || "").replace(/\D/g, "");
+
+    if (!email && !phone) return null;
+
+    const { data: contacts, error } = await supabase
+        .from("contacts")
+        .select("id, email, phone");
+
+    if (error) {
+        throw error;
+    }
+
+    const emailMatches = email
+        ? contacts.filter(contact =>
+            String(contact.email || "").trim().toLowerCase() === email
+        )
+        : [];
+
+    if (emailMatches.length > 0) {
+        return emailMatches.length === 1 ? emailMatches[0].id : null;
+    }
+
+    if (phone) {
+        const phoneMatches = contacts.filter(contact =>
+            String(contact.phone || "").replace(/\D/g, "") === phone
+        );
+
+        return phoneMatches.length === 1 ? phoneMatches[0].id : null;
+    }
+
+    return null;
+}
+
+
 app.post("/api/offers", async (req, res) => {
 const offer = req.body;
+
+try {
+    if (!offer.contactId) {
+        offer.contactId = await findDocumentContact(
+            offer.recipientEmail,
+            offer.recipientPhone
+        );
+    }
+} catch (error) {
+    console.error("OFFER CONTACT MATCH ERROR:", error);
+    return res.status(500).json({
+        ok: false,
+        error: "Kontaktzuordnung konnte nicht geprüft werden."
+    });
+}
 
 const { data, error } = await supabase
 .from("offers")
@@ -5564,8 +5616,24 @@ invoice: data
 });
 });
 
+
 app.post("/api/invoices", async (req, res) => {
 const invoice = req.body;
+
+try {
+    if (!invoice.contactId) {
+        invoice.contactId = await findDocumentContact(
+            invoice.recipientEmail,
+            invoice.recipientPhone
+        );
+    }
+} catch (error) {
+    console.error("INVOICE CONTACT MATCH ERROR:", error);
+    return res.status(500).json({
+        ok: false,
+        error: "Kontaktzuordnung konnte nicht geprüft werden."
+    });
+}
 
 const { data, error } = await supabase
 .from("invoices")
