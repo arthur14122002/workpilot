@@ -472,3 +472,7 @@ text-overflow: ellipsis;
 .contactAssignBtn:hover {
 background: var(--wp-orange-soft);
 }
+
+.offersHeader a.btn {
+    text-decoration: none;
+}
