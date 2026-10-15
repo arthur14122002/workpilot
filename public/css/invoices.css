@@ -277,3 +277,59 @@ text-overflow: ellipsis;
 .contactAssignBtn:hover {
 background: var(--wp-orange-soft);
 }
+
+.contactAssignWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.contactAssignWrap .contactAssignBtn {
+    padding-right: 36px;
+}
+
+.contactRemoveBtn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    width: 22px;
+    height: 22px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #fee2e2;
+    color: #b91c1c;
+
+    font-size: 18px;
+    line-height: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.contactAssignWrap:hover .contactRemoveBtn,
+.contactRemoveBtn:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.contactRemoveBtn:hover {
+    background: #fecaca;
+}
+
+@media (hover: none) {
+    .contactRemoveBtn {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}

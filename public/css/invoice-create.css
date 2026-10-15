@@ -9,7 +9,10 @@ margin-bottom: 12px;
 }
 
 .invoicePoint textarea {
-min-height: 54px;
+    min-height: 54px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .invoicePointRemove {

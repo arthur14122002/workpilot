@@ -232,12 +232,29 @@ item.innerHTML = `
 <option value="overdue" ${invoice.status === "overdue" ? "selected" : ""}>Überfällig</option>
 </select>
 
-<button
-class="contactAssignBtn"
-data-assign="${invoice.id}"
->
-${contactLabel}
-</button>
+<div class="contactAssignWrap">
+
+  <button
+    type="button"
+    class="contactAssignBtn"
+    data-assign="${invoice.id}"
+  >
+    ${contactLabel}
+  </button>
+
+  ${invoice.contactId ? `
+    <button
+      type="button"
+      class="contactRemoveBtn"
+      data-unassign="${invoice.id}"
+      title="Kontaktzuordnung entfernen"
+      aria-label="Kontaktzuordnung entfernen"
+    >
+      ×
+    </button>
+  ` : ""}
+
+</div>
 
 <button class="btn btnSecondary" data-open="${invoice.id}">Öffnen</button>
 
@@ -415,6 +432,34 @@ document.querySelectorAll("[data-assign]").forEach((button) => {
 button.addEventListener("click", () => {
 openContactAssignModal(button.dataset.assign);
 });
+});
+
+document.querySelectorAll("[data-unassign]").forEach((button) => {
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+
+    const invoiceId = button.dataset.unassign;
+
+    try {
+      const invoices = await apiGetInvoices();
+      const invoice = invoices.find((entry) => entry.id === invoiceId);
+
+      if (!invoice) {
+        showToast("Rechnung wurde nicht gefunden.");
+        return;
+      }
+
+      invoice.contactId = null;
+
+      await apiSaveInvoice(invoice);
+
+      showToast("Kontaktzuordnung entfernt.");
+      await renderInvoices();
+
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
 });
 }
 
