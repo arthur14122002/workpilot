@@ -76,6 +76,31 @@ let connectedGoogleTokens = null;
 
 app.use(express.json());
 
+const WORKPILOT_ORIGIN = "https://workpilot-app.de";
+
+app.use((req, res, next) => {
+    const safeMethods = ["GET", "HEAD", "OPTIONS"];
+
+    if (safeMethods.includes(req.method)) {
+        return next();
+    }
+
+    if (!req.path.startsWith("/api/")) {
+        return next();
+    }
+
+    const origin = req.get("Origin");
+
+    if (origin !== WORKPILOT_ORIGIN) {
+        return res.status(403).json({
+            ok: false,
+            error: "Anfrage aus Sicherheitsgründen blockiert."
+        });
+    }
+
+    next();
+});
+
 const AUTH_COOKIE_OPTIONS = {
     httpOnly: true,
     secure: true,
