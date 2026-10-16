@@ -76,7 +76,10 @@ let connectedGoogleTokens = null;
 
 app.use(express.json());
 
-const WORKPILOT_ORIGIN = "https://workpilot-app.de";
+const WORKPILOT_ORIGINS = new Set([
+    "https://workpilot-app.de",
+    "https://www.workpilot-app.de"
+]);
 
 app.use((req, res, next) => {
     const safeMethods = ["GET", "HEAD", "OPTIONS"];
@@ -91,7 +94,7 @@ app.use((req, res, next) => {
 
     const origin = req.get("Origin");
 
-    if (origin !== WORKPILOT_ORIGIN) {
+    if (!WORKPILOT_ORIGINS.has(origin)) {
         return res.status(403).json({
             ok: false,
             error: "Anfrage aus Sicherheitsgründen blockiert."
