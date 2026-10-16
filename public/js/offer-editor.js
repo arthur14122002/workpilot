@@ -454,10 +454,23 @@ if (!result.ok) {
 throw new Error(result.error || "Angebot konnte nicht gespeichert werden.");
 }
 
+currentDraft = {
+    ...result.offer.data,
+    id: result.offer.id,
+    contactId: result.offer.contact_id,
+    status: result.offer.status,
+    offerNumber: result.offer.offer_number
+};
+
+localStorage.setItem(
+    DRAFT_KEY,
+    JSON.stringify(currentDraft)
+);
+
 showToast("Angebot wurde gespeichert.");
 
 setTimeout(() => {
-window.location.href = "/offers";
+    window.location.href = "/offers";
 }, 500);
 } catch (error) {
 showToast(error.message);
