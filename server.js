@@ -55,6 +55,18 @@ process.env.SUPABASE_URL,
 process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const supabaseAuth = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+        }
+    }
+);
+
 const {
     createGoogleAuthUrl,
     exchangeGoogleCode
@@ -64,9 +76,291 @@ let connectedGoogleTokens = null;
 
 app.use(express.json());
 
+const AUTH_COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/"
+};
+
+function getCookie(req, name) {
+    const cookieHeader = req.headers.cookie || "";
+
+    const cookies = cookieHeader.split(";");
+
+    for (const cookie of cookies) {
+        const separator = cookie.indexOf("=");
+
+        if (separator === -1) continue;
+
+        const key = cookie.slice(0, separator).trim();
+        const value = cookie.slice(separator + 1).trim();
+
+        if (key === name) {
+            try {
+                return decodeURIComponent(value);
+            } catch {
+                return null;
+            }
+        }
+    }
+
+    return null;
+}
+
 app.use((req, res, next) => {
 console.log("REQUEST:", req.method, req.url);
 next();
+});
+
+async function requireAuth(req, res, next) {
+    try {
+
+const token = getCookie(req, "wp_access_token");
+
+if (!token) {
+    return res.status(401).json({
+        ok: false,
+        error: "Bitte melde dich zuerst an."
+    });
+}
+
+        const { data, error } = await supabase.auth.getUser(token);
+
+        if (error || !data?.user) {
+            return res.status(401).json({
+                ok: false,
+                error: "Deine Anmeldung ist ungültig oder abgelaufen."
+            });
+        }
+
+        req.user = data.user;
+
+        next();
+
+    } catch (error) {
+        console.error("AUTH ERROR:", error.message);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Anmeldung konnte nicht überprüft werden."
+        });
+    }
+}
+
+app.get("/api/auth/me", requireAuth, (req, res) => {
+    res.json({
+        ok: true,
+        user: {
+            id: req.user.id,
+            email: req.user.email,
+            emailConfirmed: Boolean(req.user.email_confirmed_at)
+        }
+    });
+});
+
+app.post("/api/auth/setup-company", requireAuth, async (req, res) => {
+    try {
+        const user = req.user;
+
+        if (!user.email_confirmed_at) {
+            return res.status(403).json({
+                ok: false,
+                error: "Bitte bestätige zuerst deine E-Mail-Adresse."
+            });
+        }
+
+        const companyName = String(
+            req.body?.companyName || ""
+        ).trim();
+
+        if (companyName.length < 2 || companyName.length > 150) {
+            return res.status(400).json({
+                ok: false,
+                error: "Bitte gib einen gültigen Firmennamen ein."
+            });
+        }
+
+        const { data: existingMember, error: memberCheckError } =
+            await supabase
+                .from("company_members")
+                .select("company_id, role")
+                .eq("user_id", user.id)
+                .limit(1)
+                .maybeSingle();
+
+        if (memberCheckError) {
+            throw memberCheckError;
+        }
+
+        if (existingMember) {
+            return res.json({
+                ok: true,
+                alreadyExists: true,
+                companyId: existingMember.company_id
+            });
+        }
+
+        const trialEndsAt = new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString();
+
+        const { data: company, error: companyError } =
+            await supabase
+                .from("companies")
+                .insert({
+                    name: companyName,
+                    plan: "starter",
+                    subscription_status: "trialing",
+                    trial_ends_at: trialEndsAt
+                })
+                .select("id, name")
+                .single();
+
+        if (companyError) {
+            throw companyError;
+        }
+
+        const { error: membershipError } =
+            await supabase
+                .from("company_members")
+                .insert({
+                    company_id: company.id,
+                    user_id: user.id,
+                    role: "owner"
+                });
+
+        if (membershipError) {
+            await supabase
+                .from("companies")
+                .delete()
+                .eq("id", company.id);
+
+            throw membershipError;
+        }
+
+        return res.status(201).json({
+            ok: true,
+            company: company,
+            role: "owner",
+            trialEndsAt: trialEndsAt
+        });
+
+    } catch (error) {
+        console.error("COMPANY SETUP ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Firmenkonto konnte nicht eingerichtet werden."
+        });
+    }
+});
+
+app.post("/api/auth/register", async (req, res) => {
+    try {
+        const name = String(req.body?.name || "").trim();
+        const companyName = String(req.body?.companyName || "").trim();
+        const email = String(req.body?.email || "").trim().toLowerCase();
+        const password = String(req.body?.password || "");
+
+        if (
+            name.length < 2 ||
+            name.length > 100 ||
+            companyName.length < 2 ||
+            companyName.length > 150 ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+            password.length < 12
+        ) {
+            return res.status(400).json({
+                ok: false,
+                error: "Bitte überprüfe deine Registrierungsdaten."
+            });
+        }
+
+        const { error } = await supabaseAuth.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: "https://workpilot-app.de/login",
+                data: {
+                    full_name: name,
+                    company_name: companyName
+                }
+            }
+        });
+
+        if (error) {
+            console.error("REGISTER ERROR:", error.message);
+
+            return res.status(400).json({
+                ok: false,
+                error: "Registrierung konnte nicht abgeschlossen werden."
+            });
+        }
+
+        return res.json({
+            ok: true,
+            message: "Bitte prüfe dein E-Mail-Postfach."
+        });
+
+    } catch (error) {
+        console.error("REGISTER ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Registrierung derzeit nicht möglich."
+        });
+    }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+    try {
+        const email = String(req.body?.email || "").trim();
+        const password = String(req.body?.password || "");
+
+        if (!email || !password) {
+            return res.status(400).json({
+                ok: false,
+                error: "E-Mail und Passwort fehlen."
+            });
+        }
+
+        const { data, error } =
+            await supabaseAuth.auth.signInWithPassword({
+                email,
+                password
+            });
+
+        if (error || !data?.session) {
+            return res.status(401).json({
+                ok: false,
+                error: "Anmeldung fehlgeschlagen. Prüfe deine Zugangsdaten und E-Mail-Bestätigung."
+            });
+        }
+
+res.cookie("wp_access_token", data.session.access_token, {
+    ...AUTH_COOKIE_OPTIONS,
+    maxAge: data.session.expires_in * 1000
+});
+
+res.cookie("wp_refresh_token", data.session.refresh_token, {
+    ...AUTH_COOKIE_OPTIONS,
+    maxAge: 30 * 24 * 60 * 60 * 1000
+});
+
+return res.json({
+    ok: true,
+    message: "Anmeldung erfolgreich."
+});
+
+    } catch (error) {
+        console.error("LOGIN ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Anmeldung derzeit nicht möglich."
+        });
+    }
 });
 
 async function verifyImapConnection({
