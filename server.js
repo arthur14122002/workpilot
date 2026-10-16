@@ -113,6 +113,42 @@ console.log("REQUEST:", req.method, req.url);
 next();
 });
 
+const pendingSessionRefreshes = new Map();
+
+async function refreshSupabaseToken(refreshToken) {
+    const tokenKey = crypto
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
+
+    if (pendingSessionRefreshes.has(tokenKey)) {
+        return pendingSessionRefreshes.get(tokenKey);
+    }
+
+    const refreshPromise = (async () => {
+        const { data, error } =
+            await supabaseAuth.auth.refreshSession({
+                refresh_token: refreshToken
+            });
+
+        if (error || !data?.session) {
+            return null;
+        }
+
+        return data.session;
+    })();
+
+    pendingSessionRefreshes.set(tokenKey, refreshPromise);
+
+    try {
+        return await refreshPromise;
+    } finally {
+        if (pendingSessionRefreshes.get(tokenKey) === refreshPromise) {
+            pendingSessionRefreshes.delete(tokenKey);
+        }
+    }
+}
+
 async function refreshAuthSession(req, res) {
     const refreshToken = getCookie(req, "wp_refresh_token");
 
@@ -121,18 +157,13 @@ async function refreshAuthSession(req, res) {
     }
 
     try {
-        const { data, error } =
-            await supabaseAuth.auth.refreshSession({
-                refresh_token: refreshToken
-            });
+const session = await refreshSupabaseToken(refreshToken);
 
-        if (error || !data?.session) {
-            res.clearCookie("wp_access_token", AUTH_COOKIE_OPTIONS);
-            res.clearCookie("wp_refresh_token", AUTH_COOKIE_OPTIONS);
-            return null;
-        }
-
-        const session = data.session;
+if (!session) {
+    res.clearCookie("wp_access_token", AUTH_COOKIE_OPTIONS);
+    res.clearCookie("wp_refresh_token", AUTH_COOKIE_OPTIONS);
+    return null;
+}
 
         res.cookie("wp_access_token", session.access_token, {
             ...AUTH_COOKIE_OPTIONS,
@@ -411,6 +442,39 @@ return res.json({
         return res.status(500).json({
             ok: false,
             error: "Anmeldung derzeit nicht möglich."
+        });
+    }
+});
+
+app.post("/api/auth/logout", async (req, res) => {
+    try {
+        const accessToken = getCookie(req, "wp_access_token");
+
+        res.clearCookie("wp_access_token", AUTH_COOKIE_OPTIONS);
+        res.clearCookie("wp_refresh_token", AUTH_COOKIE_OPTIONS);
+
+        if (accessToken) {
+            const { error } = await supabase.auth.admin.signOut(
+                accessToken,
+                "local"
+            );
+
+            if (error) {
+                console.error("LOGOUT REVOCATION ERROR:", error.message);
+            }
+        }
+
+        return res.json({
+            ok: true,
+            message: "Du wurdest abgemeldet."
+        });
+
+    } catch (error) {
+        console.error("LOGOUT ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Abmeldung konnte nicht vollständig abgeschlossen werden."
         });
     }
 });
