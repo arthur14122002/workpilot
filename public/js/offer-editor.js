@@ -129,7 +129,7 @@ const net = currentDraft.positions.reduce((sum, position) => {
 return sum + parseMoney(position.total);
 }, 0);
 
-const vatRate = Number(companySettings.vatRate || 19);
+const vatRate = Number(companySettings.vatRate ?? 19);
 const vat = net * (vatRate / 100);
 const gross = net + vat;
 
@@ -387,15 +387,11 @@ textarea.style.height = "34px";
 textarea.style.height = textarea.scrollHeight + "px";
 }
 
-
-
 function updateRowTotal(index) {
 const position = currentDraft.positions[index];
 
 const quantity = parseMoney(position.quantity);
 const unitPrice = parseMoney(position.unitPrice);
-
-if (!quantity || !unitPrice) return;
 
 const total = quantity * unitPrice;
 position.total = total.toFixed(2).replace(".", ",");
