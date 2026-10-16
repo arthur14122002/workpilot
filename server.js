@@ -113,30 +113,82 @@ console.log("REQUEST:", req.method, req.url);
 next();
 });
 
+async function refreshAuthSession(req, res) {
+    const refreshToken = getCookie(req, "wp_refresh_token");
+
+    if (!refreshToken) {
+        return null;
+    }
+
+    try {
+        const { data, error } =
+            await supabaseAuth.auth.refreshSession({
+                refresh_token: refreshToken
+            });
+
+        if (error || !data?.session) {
+            res.clearCookie("wp_access_token", AUTH_COOKIE_OPTIONS);
+            res.clearCookie("wp_refresh_token", AUTH_COOKIE_OPTIONS);
+            return null;
+        }
+
+        const session = data.session;
+
+        res.cookie("wp_access_token", session.access_token, {
+            ...AUTH_COOKIE_OPTIONS,
+            maxAge: session.expires_in * 1000
+        });
+
+        res.cookie("wp_refresh_token", session.refresh_token, {
+            ...AUTH_COOKIE_OPTIONS,
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+
+        return session.access_token;
+
+    } catch (error) {
+        console.error("SESSION REFRESH ERROR:", error.message);
+        return null;
+    }
+}
+
 async function requireAuth(req, res, next) {
     try {
 
-const token = getCookie(req, "wp_access_token");
+let token = getCookie(req, "wp_access_token");
 
-if (!token) {
+let user = null;
+
+if (token) {
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (!error && data?.user) {
+        user = data.user;
+    }
+}
+
+if (!user) {
+    token = await refreshAuthSession(req, res);
+
+    if (token) {
+        const { data, error } = await supabase.auth.getUser(token);
+
+        if (!error && data?.user) {
+            user = data.user;
+        }
+    }
+}
+
+if (!user) {
     return res.status(401).json({
         ok: false,
-        error: "Bitte melde dich zuerst an."
+        error: "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
     });
 }
 
-        const { data, error } = await supabase.auth.getUser(token);
+req.user = user;
 
-        if (error || !data?.user) {
-            return res.status(401).json({
-                ok: false,
-                error: "Deine Anmeldung ist ungültig oder abgelaufen."
-            });
-        }
-
-        req.user = data.user;
-
-        next();
+return next();
 
     } catch (error) {
         console.error("AUTH ERROR:", error.message);
