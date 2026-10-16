@@ -256,6 +256,23 @@ return next();
     }
 }
 
+app.use("/api", (req, res, next) => {
+
+    const publicRoutes = new Set([
+        "POST /auth/register",
+        "POST /auth/login"
+    ]);
+
+    const routeKey = `${req.method} ${req.path}`;
+
+    if (publicRoutes.has(routeKey)) {
+        return next();
+    }
+
+    return requireAuth(req, res, next);
+
+});
+
 app.get("/api/auth/me", requireAuth, (req, res) => {
     res.json({
         ok: true,
