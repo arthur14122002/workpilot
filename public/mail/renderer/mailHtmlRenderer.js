@@ -5,28 +5,20 @@ function renderHtmlMail(parsedMail) {
         parsedMail.analysis
     );
 
-    let html =
-        parsedMail.body_html || "";
+    let html = sanitizeMailHtml(
+        parsedMail.body_html || ""
+    );
 
-    if (
-        !parsedMail.analysis
-    ) {
+    if (!parsedMail.analysis) {
+        html = renderMailCodeBlocks(html);
 
-        html =
-            sanitizeMailHtml(html);
-
-        html =
-            renderMailCodeBlocks(html);
-
-        html =
-            resolveMailImages(
-                html,
-                parsedMail.attachments || []
-            );
-
+        html = resolveMailImages(
+            html,
+            parsedMail.attachments || []
+        );
     }
 
-    return html;
+    return sanitizeMailHtml(html);
 
 }
 

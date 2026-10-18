@@ -11,7 +11,16 @@ function createGoogleOAuthClient() {
 }
 
 
-function createGoogleAuthUrl() {
+function createGoogleAuthUrl(state) {
+
+    if (
+        typeof state !== "string" ||
+        !state.trim()
+    ) {
+        throw new Error(
+            "Google OAuth State fehlt."
+        );
+    }
 
     const oauth2Client =
         createGoogleOAuthClient();
@@ -20,6 +29,8 @@ function createGoogleAuthUrl() {
         access_type: "offline",
 
         prompt: "consent",
+
+        state,
 
         scope: [
             "https://www.googleapis.com/auth/gmail.readonly",
@@ -30,7 +41,6 @@ function createGoogleAuthUrl() {
     });
 
 }
-
 
 async function exchangeGoogleCode(code) {
 

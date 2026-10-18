@@ -210,11 +210,31 @@ async function* streamImapFolderBatches(
     try {
         await client.connect();
 
-        const mailbox = await client.mailboxOpen(folderPath);
+const mailbox = await client.mailboxOpen(folderPath);
 
-        if (!mailbox.exists) {
-            return;
-        }
+if (!mailbox.exists) {
+    return;
+}
+
+const rawUidValidity = mailbox.uidValidity;
+
+if (
+    rawUidValidity === undefined ||
+    rawUidValidity === null ||
+    !/^\d+$/.test(String(rawUidValidity))
+) {
+    throw new Error(
+        `IMAP UIDVALIDITY fehlt für Ordner: ${folderPath}`
+    );
+}
+
+const uidValidity = String(rawUidValidity);
+
+if (BigInt(uidValidity) <= 0n) {
+    throw new Error(
+        `Ungültige UIDVALIDITY für Ordner: ${folderPath}`
+    );
+}
 
         let searchCriteria = { all: true };
 
@@ -274,10 +294,11 @@ async function* streamImapFolderBatches(
             ) {
                 const flags = Array.from(message.flags || []);
 
-                mails.push({
-                    provider: "imap",
-                    mailboxPath: folderPath,
-                    mailboxRole,
+mails.push({
+    provider: "imap",
+    mailboxPath: folderPath,
+    mailboxRole,
+    uidValidity,
 
                    externalId:
     String(folderPath).toUpperCase() === "INBOX"
@@ -1569,66 +1590,40 @@ async function findImapSpamMailbox(client) {
     return spamByName?.path || null;
 }
 
-async function moveImapMessageToTrash(
-    connection,
-    mailboxPath,
-    uid
-) {
-
-    const client =
-        createImapClient(connection);
-
+async function moveImapMessageToTrash(connection, mailboxPath, uid, expectedUidValidity) {
+    const client = createImapClient(connection);
     try {
-
         await client.connect();
-
-        const trashMailbox =
-            await findImapTrashMailbox(
-                client
-            );
-
-        if (!trashMailbox) {
-            throw new Error(
-                "Kein Papierkorb im Postfach gefunden."
-            );
+        const trashMailbox = await findImapTrashMailbox(client);
+        if (!trashMailbox) throw new Error("Kein Papierkorb im Postfach gefunden.");
+        const sourceMailbox = mailboxPath || "INBOX";
+        const sourceUid = Number(uid);
+        if (!Number.isSafeInteger(sourceUid) || sourceUid <= 0) throw new Error("Ungültige IMAP-UID.");
+        const sourceInfo = await client.mailboxOpen(sourceMailbox);
+        const sourceValidity = sourceInfo?.uidValidity;
+        if (sourceValidity == null || !/^\d+$/.test(String(sourceValidity)) || BigInt(String(sourceValidity)) <= 0n ||
+            expectedUidValidity == null || String(expectedUidValidity) !== String(sourceValidity)) {
+            const error = new Error("IMAP-Identität nicht bestätigt. Bitte das Postfach sicher neu synchronisieren.");
+            error.code = "IMAP_IDENTITY_UNVERIFIED";
+            throw error;
         }
-
-        const sourceMailbox =
-            mailboxPath || "INBOX";
-
-        if (
-            String(sourceMailbox) ===
-            String(trashMailbox)
-        ) {
-            return {
-                trashMailbox
-            };
+        const found = await client.fetchOne(sourceUid, { uid: true }, { uid: true });
+        if (!found || Number(found.uid) !== sourceUid) throw new Error("IMAP-Nachricht nicht gefunden.");
+        let destinationUid = sourceUid;
+        if (sourceMailbox !== trashMailbox) {
+            const result = await client.messageMove(sourceUid, trashMailbox, { uid: true });
+            const mapped = result?.uidMap instanceof Map ? Number(result.uidMap.get(sourceUid)) : null;
+            destinationUid = Number.isSafeInteger(mapped) && mapped > 0 ? mapped : null;
         }
-
-        await client.mailboxOpen(
-            sourceMailbox
-        );
-
-        await client.messageMove(
-            Number(uid),
-            trashMailbox,
-            {
-                uid: true
-            }
-        );
-
-        return {
-            trashMailbox
-        };
-
+        const destinationInfo = await client.mailboxOpen(trashMailbox);
+        const validity = destinationInfo?.uidValidity;
+        if (validity == null || !/^\d+$/.test(String(validity)) || BigInt(String(validity)) <= 0n) {
+            throw new Error("UIDVALIDITY des Papierkorbs konnte nicht ermittelt werden.");
+        }
+        return { trashMailbox, destinationUid, destinationUidValidity: String(validity) };
     } finally {
-
-        await closeImapClient(
-            client
-        );
-
+        await closeImapClient(client);
     }
-
 }
 
 async function discoverImapFolders(
@@ -1765,16 +1760,24 @@ async function discoverImapFolders(
 async function loadImapMessage(
     connection,
     uid,
-    mailboxPath = "INBOX"
+    mailboxPath = "INBOX",
+    expectedUidValidity = null
 ) {
     const client = createImapClient(connection);
 
     try {
         await client.connect();
 
-        await client.mailboxOpen(
-            mailboxPath
-        );
+        const mailboxInfo = await client.mailboxOpen(mailboxPath);
+        const actualValidity = mailboxInfo?.uidValidity;
+        if (actualValidity == null || !/^\d+$/.test(String(actualValidity)) ||
+            BigInt(String(actualValidity)) <= 0n ||
+            expectedUidValidity == null ||
+            String(expectedUidValidity) !== String(actualValidity)) {
+            const error = new Error("IMAP-Identität nicht bestätigt. Bitte das Postfach sicher neu synchronisieren.");
+            error.code = "IMAP_IDENTITY_UNVERIFIED";
+            throw error;
+        }
 
         const message = await client.fetchOne(
             String(uid),

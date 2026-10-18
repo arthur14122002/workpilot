@@ -259,21 +259,92 @@ return next();
     }
 }
 
-app.use("/api", (req, res, next) => {
 
+async function requireCompany(req, res, next) {
+    try {
+        if (!req.user?.id) {
+            return res.status(401).json({
+                ok: false,
+                error: "Bitte melde dich an."
+            });
+        }
+
+        if (!req.user.email_confirmed_at) {
+            return res.status(403).json({
+                ok: false,
+                error: "Bitte bestätige deine E-Mail-Adresse."
+            });
+        }
+
+        const { data, error } = await supabase
+            .from("company_members")
+            .select("company_id, role")
+            .eq("user_id", req.user.id)
+            .limit(2);
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(403).json({
+                ok: false,
+                code: "COMPANY_SETUP_REQUIRED",
+                error: "Bitte richte zuerst dein Firmenkonto ein."
+            });
+        }
+
+        if (data.length !== 1) {
+            return res.status(403).json({
+                ok: false,
+                error: "Die Firmenzuordnung ist nicht eindeutig."
+            });
+        }
+
+        req.companyId = data[0].company_id;
+        req.companyRole = data[0].role;
+
+        return next();
+
+    } catch (error) {
+        console.error("COMPANY AUTH ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Firmenzugriff konnte nicht überprüft werden."
+        });
+    }
+}
+
+app.use("/api", (req, res, next) => {
     const publicRoutes = new Set([
         "POST /auth/register",
         "POST /auth/login"
     ]);
 
-    const routeKey = `${req.method} ${req.path}`;
+    const authOnlyRoutes = new Set([
+        "GET /auth/me",
+        "POST /auth/setup-company",
+        "POST /auth/logout"
+    ]);
 
-    if (publicRoutes.has(routeKey)) {
-        return next();
-    }
+const routeKey = `${req.method} ${req.path}`;
 
-    return requireAuth(req, res, next);
+if (routeKey === "GET /mailbox/google/callback") {
+    return next();
+}
 
+if (publicRoutes.has(routeKey)) {
+    return next();
+}
+
+requireAuth(req, res, () => {
+        if (authOnlyRoutes.has(routeKey)) {
+            return next();
+        }
+
+        return requireCompany(req, res, next);
+    });
 });
 
 app.get("/api/auth/me", requireAuth, (req, res) => {
@@ -596,186 +667,199 @@ async function verifySmtpConnection({
     await transporter.verify();
 }
 
-app.get(
-    "/api/mailbox/google/start",
-    (req, res) => {
 
-        try {
-
-            const url =
-                createGoogleAuthUrl();
-
-            res.json({
-                ok: true,
-                url
-            });
-
-        } catch (error) {
-
-            console.error(
-                "GOOGLE AUTH START ERROR:",
-                error
-            );
-
-            res.status(500).json({
+app.get("/api/mailbox/google/start", async (req, res) => {
+    try {
+        if (!req.companyId || !req.user?.id) {
+            return res.status(403).json({
                 ok: false,
-                error:
-                    "Google-Verbindung konnte nicht gestartet werden."
+                error: "Firmenzuordnung fehlt."
             });
-
         }
 
+        const state = crypto.randomBytes(32).toString("hex");
+        const stateHash = crypto
+            .createHash("sha256")
+            .update(state)
+            .digest("hex");
+
+        const expiresAt = new Date(
+            Date.now() + 10 * 60 * 1000
+        ).toISOString();
+
+        const { error } = await supabase
+            .from("google_oauth_states")
+            .insert({
+                state_hash: stateHash,
+                company_id: req.companyId,
+                user_id: req.user.id,
+                expires_at: expiresAt
+            });
+
+        if (error) throw error;
+
+        const url = createGoogleAuthUrl(state);
+
+        return res.json({
+            ok: true,
+            url
+        });
+
+    } catch (error) {
+        console.error("GOOGLE AUTH START ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Google-Verbindung konnte nicht gestartet werden."
+        });
     }
-);
+});
 
 app.get(
     "/api/mailbox/google/callback",
+    requireAuth,
     async (req, res) => {
+        try {
+            const code = req.query.code;
+            const state = req.query.state;
 
-        const code =
-            req.query.code;
+            if (
+                typeof code !== "string" ||
+                !code ||
+                typeof state !== "string" ||
+                !/^[a-f0-9]{64}$/.test(state)
+            ) {
+                return res.redirect("/settings?google=error");
+            }
 
-        if (!code) {
+            const stateHash = crypto
+                .createHash("sha256")
+                .update(state)
+                .digest("hex");
+
+            const { data: states, error: stateError } =
+                await supabase
+                    .from("google_oauth_states")
+                    .delete()
+                    .eq("state_hash", stateHash)
+                    .eq("user_id", req.user.id)
+                    .gt("expires_at", new Date().toISOString())
+                    .select("company_id, user_id");
+
+            if (stateError) throw stateError;
+
+            if (!states || states.length !== 1) {
+                return res.redirect("/settings?google=error");
+            }
+
+            const companyId = states[0].company_id;
+
+            const { data: membership, error: membershipError } =
+                await supabase
+                    .from("company_members")
+                    .select("company_id")
+                    .eq("company_id", companyId)
+                    .eq("user_id", req.user.id)
+                    .maybeSingle();
+
+            if (membershipError) throw membershipError;
+
+            if (!membership) {
+                return res.redirect("/settings?google=error");
+            }
+
+            const { email, tokens } =
+                await exchangeGoogleCode(code);
+
+            if (!email || !tokens) {
+                throw new Error("Ungültige Google-Antwort.");
+            }
+
+            const normalizedEmail =
+                String(email).trim().toLowerCase();
+
+            const { data: existing, error: existingError } =
+                await supabase
+                    .from("mailbox_connections")
+                    .select("id, refresh_token")
+                    .eq("company_id", companyId)
+                    .eq("provider", "google")
+                    .eq("email", normalizedEmail)
+                    .maybeSingle();
+
+            if (existingError) throw existingError;
+
+            const refreshToken =
+                tokens.refresh_token ||
+                existing?.refresh_token ||
+                null;
+
+            if (!refreshToken) {
+                throw new Error(
+                    "Google hat keinen Refresh-Token zurückgegeben."
+                );
+            }
+
+            const mailboxData = {
+                company_id: companyId,
+                provider: "google",
+                provider_name: "Google",
+                email: normalizedEmail,
+                auth_method: "oauth",
+                access_token: tokens.access_token || null,
+                refresh_token: refreshToken,
+                scope: tokens.scope || null,
+                token_type: tokens.token_type || null,
+                expiry_date: tokens.expiry_date || null,
+                is_active: true,
+                updated_at: new Date().toISOString()
+            };
+
+            const { error: mailboxError } =
+                await supabase
+                    .from("mailbox_connections")
+                    .upsert(mailboxData, {
+                        onConflict: "company_id,provider,email"
+                    });
+
+            if (mailboxError) throw mailboxError;
+
+            console.log("GOOGLE MAILBOX SAVED:", {
+                companyId,
+                email: normalizedEmail
+            });
 
             return res.redirect(
-                "/settings?google=error"
+                `/settings?google=connected&email=${encodeURIComponent(normalizedEmail)}`
             );
-
-        }
-
-        try {
-
-            const {
-                email,
-                tokens
-            } =
-                await exchangeGoogleCode(
-                    code
-                );
-
-
-            if (!email) {
-
-                throw new Error(
-                    "Google hat keine E-Mail-Adresse zurückgegeben."
-                );
-
-            }
-
-
-            const {
-                error: mailboxError
-            } = await supabase
-                .from(
-                    "mailbox_connections"
-                )
-                .upsert(
-                    [
-                        {
-                            provider:
-                                "google",
-
-                            provider_name:
-                                "Google",
-
-                            email,
-
-                            auth_method:
-                                "oauth",
-
-                            access_token:
-                                tokens.access_token ||
-                                null,
-
-                            refresh_token:
-                                tokens.refresh_token ||
-                                null,
-
-                            scope:
-                                tokens.scope ||
-                                null,
-
-                            token_type:
-                                tokens.token_type ||
-                                null,
-
-                            expiry_date:
-                                tokens.expiry_date ||
-                                null,
-
-                            is_active:
-                                true,
-
-                            updated_at:
-                                new Date()
-                                    .toISOString()
-                        }
-                    ],
-                    {
-                        onConflict:
-                            "provider,email"
-                    }
-                );
-
-
-            if (mailboxError) {
-                throw mailboxError;
-            }
-
-
-            console.log(
-                "GOOGLE MAILBOX SAVED:",
-                {
-                    email,
-                    provider:
-                        "google"
-                }
-            );
-
-
-            res.redirect(
-                `/settings?google=connected&email=${encodeURIComponent(email)}`
-            );
-
 
         } catch (error) {
+            console.error("GOOGLE AUTH CALLBACK ERROR:", {
+                message: error.message,
+                code: error.code
+            });
 
-            console.error(
-                "GOOGLE AUTH CALLBACK ERROR:",
-                {
-                    message:
-                        error.message,
-
-                    details:
-                        error.details,
-
-                    hint:
-                        error.hint,
-
-                    code:
-                        error.code
-                }
-            );
-
-
-            res.redirect(
-                "/settings?google=error"
-            );
-
+            return res.redirect("/settings?google=error");
         }
-
     }
 );
 
+
+
 async function sendEmailFromActiveMailbox({
+    companyId,
     to,
     subject,
     html,
     attachments = []
 }) {
+    if (!companyId) {
+        throw new Error("Firmenzuordnung beim E-Mail-Versand fehlt.");
+    }
 
-    const mailbox =
-        await getActiveMailboxConnection();
+
+const mailbox =
+    await getActiveMailboxConnection(companyId);
 
     if (!mailbox) {
         throw new Error(
@@ -786,12 +870,13 @@ async function sendEmailFromActiveMailbox({
 if (mailbox.provider === "google") {
 
 const googleResult =
-    await sendEmailWithGoogle({
-        to,
-        subject,
-        html,
-        attachments
-    });
+await sendEmailWithGoogle({
+    companyId,
+    to,
+    subject,
+    html,
+    attachments
+});
 
     return {
         sender:
@@ -950,20 +1035,31 @@ function extractFirstEmail(addresses) {
 }
 
 async function getLastImapUid(
+    companyId,
     mailboxEmail,
     mailboxPath = "INBOX"
 ) {
+
+    if (!companyId) {
+        throw new Error(
+            "companyId fehlt bei getLastImapUid."
+        );
+    }
 
     const {
         data,
         error
     } = await supabase
-        .from("email_messages")
-        .select("imap_uid")
-        .eq(
-            "provider",
-            "imap"
-        )
+.from("email_messages")
+.select("imap_uid")
+.eq(
+    "company_id",
+    companyId
+)
+.eq(
+    "provider",
+    "imap"
+)
         .eq(
             "mailbox_email",
             mailboxEmail
@@ -1024,6 +1120,9 @@ async function countNewImapMails(
     sharedSeenExternalIds = new Set(),
     sharedSeenRfcIds = new Set()
 ) {
+    if (!mailbox?.company_id) {
+        throw new Error("Firmenzuordnung beim IMAP-Import fehlt.");
+    }
     let newCount = 0;
     let existingCount = 0;
 
@@ -1048,8 +1147,9 @@ async function countNewImapMails(
         const { data: externalRows, error: externalError } =
             await supabase
                 .from("email_messages")
-                .select("external_message_id")
-                .in("external_message_id", externalIds);
+.select("external_message_id")
+.eq("company_id", mailbox.company_id)
+.in("external_message_id", externalIds);
 
         if (externalError) {
             throw externalError;
@@ -1060,8 +1160,9 @@ async function countNewImapMails(
         if (rfcIds.length) {
             const { data, error } = await supabase
                 .from("email_messages")
-                .select("rfc_message_id")
-                .in("rfc_message_id", rfcIds);
+.select("rfc_message_id")
+.eq("company_id", mailbox.company_id)
+.in("rfc_message_id", rfcIds);
 
             if (error) {
                 throw error;
@@ -1088,16 +1189,9 @@ async function countNewImapMails(
 
             const rfcId = mail.messageId || null;
 
-            const alreadyExists =
-                seenExternalIds.has(externalId) ||
-                existingExternalIds.has(externalId) ||
-                (
-                    rfcId &&
-                    (
-                        seenRfcIds.has(rfcId) ||
-                        existingRfcIds.has(rfcId)
-                    )
-                );
+const alreadyExists =
+    seenExternalIds.has(externalId) ||
+    existingExternalIds.has(externalId);
 
             if (alreadyExists) {
                 existingCount++;
@@ -1142,6 +1236,9 @@ async function saveImportedImapMails({
     manualProgressTotal = manualImportNewCount,
     completedCountOffset = 0
 }) {
+    if (!mailbox?.company_id) {
+        throw new Error("Firmenzuordnung beim IMAP-Speichern fehlt.");
+    }
 
 let savedCount = 0;
 let analyzedCount = 0;
@@ -1207,10 +1304,11 @@ if (isManualImport) {
         const { data: externalRows, error: externalError } =
             await supabase
                 .from("email_messages")
-                .select("id, external_message_id")
-                .eq("provider", "imap")
-                .eq("mailbox_email", mailbox.email)
-                .in("external_message_id", externalIds);
+.select("id, external_message_id")
+.eq("company_id", mailbox.company_id)
+.eq("provider", "imap")
+.eq("mailbox_email", mailbox.email)
+.in("external_message_id", externalIds);
 
         if (externalError) {
             throw externalError;
@@ -1221,10 +1319,11 @@ if (isManualImport) {
         if (rfcIds.length) {
             const { data, error } = await supabase
                 .from("email_messages")
-                .select("id, rfc_message_id")
-                .eq("provider", "imap")
-                .eq("mailbox_email", mailbox.email)
-                .in("rfc_message_id", rfcIds);
+.select("id, rfc_message_id")
+.eq("company_id", mailbox.company_id)
+.eq("provider", "imap")
+.eq("mailbox_email", mailbox.email)
+.in("rfc_message_id", rfcIds);
 
             if (error) {
                 throw error;
@@ -1297,120 +1396,19 @@ reportCurrentImportProgress();
     continue;
 }
 
-if (rfcMessageId) {
-
-    const existingRfcMessage =
-        existingRfcMap.get(rfcMessageId) || null;
-
-if (existingRfcMessage) {
-
-if (
-    mail.mailboxRole === "trash" ||
-    mail.mailboxRole === "spam" ||
-    mail.mailboxRole === "custom"
-) {
-
-        const {
-            error: folderUpdateError
-        } = await supabase
-            .from("email_messages")
-            .update({
-                deleted_at:
-                    mail.mailboxRole === "trash"
-                        ? new Date().toISOString()
-                        : null,
-
-                imap_mailbox:
-                    mailboxPath,
-
-                imap_uid:
-                    mail.uid,
-
-                mailbox_email:
-                    mailbox.email,
-
-                provider:
-                    "imap"
-            })
-            .eq(
-                "id",
-                existingRfcMessage.id
-            );
-
-
-        if (folderUpdateError) {
-
-            console.error(
-                "SYSTEM FOLDER SYNC UPDATE ERROR:",
-                {
-                    messageId:
-                        existingRfcMessage.id,
-
-                    uid:
-                        mail.uid,
-
-                    subject:
-                        mail.subject,
-
-                    mailboxRole:
-                        mail.mailboxRole,
-
-                    error:
-                        folderUpdateError
-                }
-            );
-
-        } else {
-
-            console.log(
-                "📁 EMAIL SYSTEM FOLDER UPDATED:",
-                {
-                    messageId:
-                        existingRfcMessage.id,
-
-                    subject:
-                        mail.subject,
-
-                    mailboxRole:
-                        mail.mailboxRole,
-
-                    mailbox:
-                        mailboxPath
-                }
-            );
-
-        }
-
-    } else {
-
-        console.log(
-            "EMAIL ALREADY EXISTS:",
-            {
-                uid:
-                    mail.uid,
-
-                subject:
-                    mail.subject,
-
-                rfcMessageId,
-
-                reason:
-                    "rfc_message_id"
-            }
-        );
-
-    }
-
-
-reportCurrentImportProgress();
-
-    continue;
-}
-
-}
-
-// Diese E-Mail hat die Duplikatprüfung bestanden.
-// Der Fortschritt wird erst nach dem Speicherversuch erhöht.
+// Eine RFC-Message-ID ist kein eindeutiger
+// IMAP-Nachrichtenschlüssel.
+//
+// Insbesondere bei Kopien in mehreren Ordnern
+// oder nach einem MOVE darf sie nicht allein
+// zum Überschreiben bestehender Datensätze
+// verwendet werden.
+//
+// Die bereits vorhandene Prüfung über
+// external_message_id bleibt aktiv.
+//
+// Eine sichere Wiederzuordnung nach einem MOVE
+// erfolgt separat anhand der Provider-Identität.
 
         const senderEmail =
             extractFirstEmail(
@@ -1431,7 +1429,8 @@ const contactEmail =
 const matchedContact =
     contactEmail
         ? await findMatchingContact(
-            contactEmail
+            contactEmail,
+            mailbox.company_id
         )
         : null;
 
@@ -1445,14 +1444,15 @@ const matchedContact =
     error: parentMessageError
 } = await supabase
     .from("email_messages")
-    .select(`
-        thread_id
-    `)
-    .eq(
-        "rfc_message_id",
-        mail.inReplyTo
-    )
-    .maybeSingle();
+.select(`
+    thread_id
+`)
+.eq("company_id", mailbox.company_id)
+.eq(
+    "rfc_message_id",
+    mail.inReplyTo
+)
+.maybeSingle();
 
 
             if (parentMessageError) {
@@ -1471,12 +1471,13 @@ const matchedContact =
                     error: existingThreadError
                 } = await supabase
                     .from("email_threads")
-                    .select("*")
-                    .eq(
-                        "id",
-                        parentMessage.thread_id
-                    )
-                    .maybeSingle();
+.select("*")
+.eq("company_id", mailbox.company_id)
+.eq(
+    "id",
+    parentMessage.thread_id
+)
+.maybeSingle();
 
 
                 if (
@@ -1496,11 +1497,12 @@ const matchedContact =
             const {
                 data: newThread,
                 error: threadError
-            } = await supabase
-                .from("email_threads")
-                .insert([
-                    {
-                        contact_id:
+} = await supabase
+    .from("email_threads")
+    .insert([
+        {
+            company_id: mailbox.company_id,
+            contact_id:
                             matchedContact?.id ||
                             null,
 
@@ -1562,11 +1564,12 @@ continue;
         const {
             data: message,
             error: messageError
-        } = await supabase
-            .from("email_messages")
-            .insert([
-                {
-                    thread_id:
+} = await supabase
+    .from("email_messages")
+    .insert([
+        {
+            company_id: mailbox.company_id,
+            thread_id:
                         thread.id,
 
                     contact_id:
@@ -1607,11 +1610,14 @@ external_thread_id:
     mail.inReplyTo ||
     null,
 
-                    imap_uid:
-                        mail.uid,
+imap_uid:
+    mail.uid,
 
-                    imap_mailbox:
-                        mailboxPath,
+imap_mailbox:
+    mailboxPath,
+
+imap_uidvalidity:
+    mail.uidValidity || null,
 
                     deleted_at:
     mail.mailboxRole === "trash"
@@ -1699,7 +1705,8 @@ try {
                     },
 
                     mail.uid,
-                    mailboxPath
+                    mailboxPath,
+                    mail.uidValidity
                 );
 
 
@@ -1822,12 +1829,13 @@ for (
         const {
             error: attachmentError
         } = await supabase
-            .from(
-                "email_attachments"
-            )
-            .insert([
-                {
-                    message_id:
+.from(
+    "email_attachments"
+)
+.insert([
+    {
+        company_id: mailbox.company_id,
+        message_id:
                         message.id,
 
                     file_name:
@@ -1926,10 +1934,14 @@ for (
                     content_loaded:
                         true
                 })
-                .eq(
-                    "id",
-                    message.id
-                );
+.eq(
+    "id",
+    message.id
+)
+.eq(
+    "company_id",
+    mailbox.company_id
+);
 
 
             if (contentUpdateError) {
@@ -2067,6 +2079,10 @@ return {
 }
 
 async function countNewGoogleMessages(mailbox, gmailMessages) {
+    if (!mailbox?.company_id) {
+        throw new Error("Firmenzuordnung beim Google-Import fehlt.");
+    }
+
     const newMessages = [];
     let existingCount = 0;
     let incompleteCount = 0;
@@ -2088,10 +2104,11 @@ async function countNewGoogleMessages(mailbox, gmailMessages) {
 
         const { data: existingRows, error } = await supabase
             .from("email_messages")
-            .select("external_message_id, content_loaded")
-            .eq("provider", "google")
-            .eq("mailbox_email", mailbox.email)
-            .in("external_message_id", ids);
+.select("external_message_id, content_loaded")
+.eq("company_id", mailbox.company_id)
+.eq("provider", "google")
+.eq("mailbox_email", mailbox.email)
+.in("external_message_id", ids);
 
         if (error) {
             throw error;
@@ -2144,6 +2161,8 @@ async function countNewGoogleMessages(mailbox, gmailMessages) {
 
 app.post("/api/mailbox/import", async (req, res) => {
 
+let mailboxImportProgress = createEmptyMailboxImportProgress();
+let mailboxProgressKey = null;
 let lockedMailboxId = null;
 
 const {
@@ -2167,8 +2186,21 @@ if (
 
     try {
 
+
 const mailbox =
-    await getActiveMailboxConnection();
+    await getActiveMailboxConnection(req.companyId);
+
+if (!mailbox) {
+    return res.status(404).json({
+        success: false,
+        message: "Kein aktives Postfach gefunden."
+    });
+}
+
+mailboxProgressKey = getMailboxImportProgressKey(
+    req.companyId,
+    mailbox.id
+);
 
 if (
     activeManualMailboxImports.has(mailbox.id)
@@ -2203,6 +2235,11 @@ lockedMailboxId = mailbox.id;
         finished: false,
         error: null
     };
+
+mailboxImportProgressByMailbox.set(
+    mailboxProgressKey,
+    mailboxImportProgress
+);
 
 console.log(
     "MAILBOX IMPORT START:",
@@ -2479,6 +2516,7 @@ const {
         imported_folders:
             updatedImportedFolders
     })
+    .eq("company_id", req.companyId)
     .eq(
         "id",
         mailbox.id
@@ -2501,6 +2539,11 @@ mailboxImportProgress = {
     finished: true,
     error: null
 };
+
+mailboxImportProgressByMailbox.set(
+    mailboxProgressKey,
+    mailboxImportProgress
+);
 
 console.log(
     "📊 IMAP IMPORT ABGESCHLOSSEN:",
@@ -2574,19 +2617,20 @@ return res.json({
         );
 
 
-    const {
-        error: importedFoldersUpdateError
-    } =
-        await supabase
-            .from("mailbox_connections")
-            .update({
-                imported_folders:
-                    updatedImportedFolders
-            })
-            .eq(
-                "id",
-                mailbox.id
-            );
+const {
+    error: importedFoldersUpdateError
+} =
+    await supabase
+        .from("mailbox_connections")
+        .update({
+            imported_folders:
+                updatedImportedFolders
+        })
+        .eq("company_id", req.companyId)
+        .eq(
+            "id",
+            mailbox.id
+        );
 
 
     if (importedFoldersUpdateError) {
@@ -2594,10 +2638,10 @@ return res.json({
     }
 
 
-    const {
-        auth
-    } =
-        await getActiveGoogleMailboxAuth();
+const {
+    auth
+} =
+    await getActiveGoogleMailboxAuth(req.companyId);
 
 
     const gmail =
@@ -2722,6 +2766,7 @@ const importedMessage =
         gmail,
         gmailMessage.id,
         {
+            companyId: req.companyId,
             createDashboardNotificationEntry: false,
             manualFullContent: true
         }
@@ -2777,6 +2822,11 @@ mailboxImportProgress = {
     error: null
 };
 
+mailboxImportProgressByMailbox.set(
+    mailboxProgressKey,
+    mailboxImportProgress
+);
+
 console.log(
     "📊 GOOGLE IMPORT ABGESCHLOSSEN:",
     {
@@ -2817,6 +2867,11 @@ return res.json({
                     "Der Microsoft-Import ist noch nicht implementiert."
             };
 
+mailboxImportProgressByMailbox.set(
+    mailboxProgressKey,
+    mailboxImportProgress
+);
+
 
             return res.status(501).json({
                 success: false,
@@ -2840,6 +2895,11 @@ return res.json({
             error:
                 providerError
         };
+
+mailboxImportProgressByMailbox.set(
+    mailboxProgressKey,
+    mailboxImportProgress
+);
 
 
         return res.status(400).json({
@@ -2894,15 +2954,62 @@ return res.json({
 
 app.get(
     "/api/mailbox/import-progress",
-    (req, res) => {
+    async (req, res) => {
+        try {
+            const requestedMailboxId =
+                String(req.query.mailboxId || "").trim();
 
-        res.json({
-            success: true,
+            let mailbox;
 
-            progress:
-                mailboxImportProgress
-        });
+            if (requestedMailboxId) {
+                const { data, error } = await supabase
+                    .from("mailbox_connections")
+                    .select("id")
+                    .eq("company_id", req.companyId)
+                    .eq("id", requestedMailboxId)
+                    .maybeSingle();
 
+                if (error) throw error;
+
+                mailbox = data;
+            } else {
+                mailbox =
+                    await getActiveMailboxConnection(req.companyId);
+            }
+
+            if (!mailbox) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Postfach nicht gefunden."
+                });
+            }
+
+            const key = getMailboxImportProgressKey(
+                req.companyId,
+                mailbox.id
+            );
+
+            const progress =
+                mailboxImportProgressByMailbox.get(key) ||
+                createEmptyMailboxImportProgress();
+
+            return res.json({
+                success: true,
+                mailboxId: mailbox.id,
+                progress
+            });
+
+        } catch (error) {
+            console.error(
+                "MAILBOX IMPORT PROGRESS ERROR:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Importfortschritt konnte nicht geladen werden."
+            });
+        }
     }
 );
 
@@ -2953,6 +3060,7 @@ const { error: mailboxError } = await supabase
     .upsert(
         [
             {
+                company_id: req.companyId,
                 provider: "imap",
                 provider_name: configuration.providerName,
                 email,
@@ -2973,7 +3081,7 @@ const { error: mailboxError } = await supabase
             }
         ],
         {
-            onConflict: "provider,email"
+            onConflict: "company_id,provider,email"
         }
     );
 
@@ -3128,49 +3236,57 @@ return res.status(500).json({ ok: false, error: error.message });
 res.json({ ok: true, data });
 });
 
-async function getActiveGoogleMailboxAuth() {
-const { data: mailbox, error } = await supabase
-.from("mailbox_connections")
-.select("*")
-.eq("provider", "google")
-.eq("is_active", true)
-.order("updated_at", { ascending: false })
-.limit(1)
-.single();
+async function getActiveGoogleMailboxAuth(companyId) {
+    if (!companyId) {
+        throw new Error("Firmenzuordnung für Google-Postfach fehlt.");
+    }
 
-if (error || !mailbox) {
-throw new Error("Bitte verbinde zuerst ein Postfach.");
+    const { data: mailbox, error } = await supabase
+        .from("mailbox_connections")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("provider", "google")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    if (!mailbox) {
+        throw new Error("Bitte verbinde zuerst ein Google-Postfach.");
+    }
+
+    const auth = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+    );
+
+    auth.setCredentials({
+        access_token: mailbox.access_token,
+        refresh_token: mailbox.refresh_token,
+        scope: mailbox.scope,
+        token_type: mailbox.token_type,
+        expiry_date: mailbox.expiry_date
+    });
+
+    return { auth, mailbox };
 }
 
-const auth = new google.auth.OAuth2(
-process.env.GOOGLE_CLIENT_ID,
-process.env.GOOGLE_CLIENT_SECRET,
-process.env.GOOGLE_REDIRECT_URI
-);
-
-auth.setCredentials({
-access_token: mailbox.access_token,
-refresh_token: mailbox.refresh_token,
-scope: mailbox.scope,
-token_type: mailbox.token_type,
-expiry_date: mailbox.expiry_date
-});
-
-return {
-auth,
-mailbox
-};
-}
-
-async function getActiveMailboxConnection() {
+async function getActiveMailboxConnection(companyId) {
+    if (!companyId) {
+        throw new Error("Firmenzuordnung für Postfachzugriff fehlt.");
+    }
 
     const { data: mailboxes, error } = await supabase
         .from("mailbox_connections")
         .select("*")
+        .eq("company_id", companyId)
         .eq("is_active", true)
-        .order("updated_at", {
-            ascending: false
-        });
+        .order("updated_at", { ascending: false });
 
     if (error) {
         throw error;
@@ -3181,20 +3297,22 @@ async function getActiveMailboxConnection() {
     }
 
     if (mailboxes.length > 1) {
-
         console.warn(
-            "⚠️ Mehrere aktive Mailboxen gefunden:",
-            mailboxes.map(mailbox => mailbox.email)
+            "Mehrere aktive Postfächer innerhalb der Firma:",
+            companyId
         );
-
-        return mailboxes[0];
     }
 
     return mailboxes[0];
 }
 
-async function startGoogleMailboxWatch() {
-const { auth, mailbox } = await getActiveGoogleMailboxAuth();
+async function startGoogleMailboxWatch(companyId) {
+    if (!companyId) {
+        throw new Error("Firmenzuordnung für Google-Watch fehlt.");
+    }
+
+    const { auth, mailbox } =
+        await getActiveGoogleMailboxAuth(companyId);
 
 const gmail = google.gmail({
 version: "v1",
@@ -3216,14 +3334,15 @@ gmail_history_id: String(response.data.historyId),
 watch_expiration: Number(response.data.expiration),
 updated_at: new Date().toISOString()
 })
-.eq("id", mailbox.id);
+.eq("id", mailbox.id)
+.eq("company_id", companyId);
 
 return response.data;
 }
 
 app.post("/api/mailbox/google/watch", async (req, res) => {
 try {
-const watch = await startGoogleMailboxWatch();
+const watch = await startGoogleMailboxWatch(req.companyId);
 
 res.json({
 ok: true,
@@ -3248,17 +3367,21 @@ return Buffer.from(input)
 }
 
 async function sendEmailWithGoogle({
+    companyId,
     to,
     subject,
     html,
     attachments = []
 }) {
+    if (!companyId) {
+        throw new Error("Firmenzuordnung beim Google-Versand fehlt.");
+    }
 
     const {
         auth,
         mailbox
     } =
-        await getActiveGoogleMailboxAuth();
+        await getActiveGoogleMailboxAuth(companyId);
 
 
     const gmail =
@@ -3453,8 +3576,8 @@ app.get(
 
         try {
 
-            const mailbox =
-                await getActiveMailboxConnection();
+const mailbox =
+    await getActiveMailboxConnection(req.companyId);
 
 if (
     mailbox.provider === "google"
@@ -3463,7 +3586,7 @@ if (
     const {
         auth
     } =
-        await getActiveGoogleMailboxAuth();
+await getActiveGoogleMailboxAuth(req.companyId);
 
     const gmail =
         google.gmail({
@@ -3736,7 +3859,7 @@ app.post(
         try {
 
             const mailbox =
-                await getActiveMailboxConnection();
+                await getActiveMailboxConnection(req.companyId);
 
 
 
@@ -3790,7 +3913,7 @@ app.post(
                 const {
                     auth
                 } =
-                    await getActiveGoogleMailboxAuth();
+                    await getActiveGoogleMailboxAuth(req.companyId);
 
 
                 const gmail =
@@ -4109,7 +4232,7 @@ app.delete(
         try {
 
             const mailbox =
-                await getActiveMailboxConnection();
+                await getActiveMailboxConnection(req.companyId);
 
             const rawFolderPath =
                 typeof req.body?.folderPath === "string"
@@ -4147,7 +4270,7 @@ app.delete(
                 const {
                     auth
                 } =
-                    await getActiveGoogleMailboxAuth();
+                    await getActiveGoogleMailboxAuth(req.companyId);
 
 
                 const gmail =
@@ -4431,7 +4554,7 @@ app.put(
         try {
 
             const mailbox =
-                await getActiveMailboxConnection();
+                await getActiveMailboxConnection(req.companyId);
 
             const rawFolderPath =
                 typeof req.body?.folderPath === "string"
@@ -4461,7 +4584,7 @@ app.put(
                 const {
                     auth
                 } =
-                    await getActiveGoogleMailboxAuth();
+                    await getActiveGoogleMailboxAuth(req.companyId);
 
 
                 const gmail =
@@ -4823,7 +4946,7 @@ app.put(
         try {
 
             const mailbox =
-                await getActiveMailboxConnection();
+                await getActiveMailboxConnection(req.companyId);
 
             const rawOldPath =
                 typeof req.body?.oldPath === "string"
@@ -4896,7 +5019,7 @@ app.put(
                 const {
                     auth
                 } =
-                    await getActiveGoogleMailboxAuth();
+                    await getActiveGoogleMailboxAuth(req.companyId);
 
 
                 const gmail =
@@ -5282,7 +5405,7 @@ app.post("/api/mailbox/import-new", async (req, res) => {
     try {
 
         const mailbox =
-            await getActiveMailboxConnection();
+            await getActiveMailboxConnection(req.companyId);
 
         if (
             activeManualMailboxImports.has(mailbox.id)
@@ -5306,10 +5429,10 @@ if (
     mailbox.provider === "google"
 ) {
 
-    const {
-        auth
-    } =
-        await getActiveGoogleMailboxAuth();
+const {
+    auth
+} =
+    await getActiveGoogleMailboxAuth(req.companyId);
 
 
     const gmail =
@@ -5447,15 +5570,16 @@ for (const gmailMessage of gmailMessages) {
 
     try {
 
-        const importedMessage =
-            await importSingleGoogleMessage(
-                gmail,
-                gmailMessage.id,
-{
-    createDashboardNotificationEntry: true,
-    manualFullContent: true
-}
-            );
+const importedMessage =
+    await importSingleGoogleMessage(
+        gmail,
+        gmailMessage.id,
+        {
+            companyId: req.companyId,
+            createDashboardNotificationEntry: true,
+            manualFullContent: true
+        }
+    );
 
         if (importedMessage) {
             savedCount++;
@@ -5521,10 +5645,11 @@ if (
             );
 
 
-        const lastUid =
-            await getLastImapUid(
-                mailbox.email
-            );
+const lastUid =
+    await getLastImapUid(
+        req.companyId,
+        mailbox.email
+    );
 
 
         console.log(
@@ -5636,7 +5761,7 @@ error: "Ungültiger Importzeitraum."
 }
 
 try {
-const { auth } = await getActiveGoogleMailboxAuth();
+const { auth } = await getActiveGoogleMailboxAuth(req.companyId);
 
 const gmail = google.gmail({
 version: "v1",
@@ -5667,8 +5792,11 @@ foundCount += gmailMessages.length;
 
 for (const gmailMessage of gmailMessages) {
 const importedMessage = await importSingleGoogleMessage(
-gmail,
-gmailMessage.id
+    gmail,
+    gmailMessage.id,
+    {
+        companyId: req.companyId
+    }
 );
 
 if (importedMessage) {
@@ -5704,8 +5832,10 @@ error.message ||
 
 app.get("/api/contacts", async (req, res) => {
 const { data, error } = await supabase
+
 .from("contacts")
 .select("*")
+.eq("company_id", req.companyId)
 .order("created_at", { ascending: false });
 
 if (error) {
@@ -5725,9 +5855,11 @@ app.delete("/api/contacts/:id", async (req, res) => {
 const { id } = req.params;
 
 const { error } = await supabase
+
 .from("contacts")
 .delete()
-.eq("id", id);
+.eq("id", id)
+.eq("company_id", req.companyId);
 
 if (error) {
 return res.status(500).json({
@@ -5745,9 +5877,11 @@ app.get("/api/contacts/:id", async (req, res) => {
 const { id } = req.params;
 
 const { data, error } = await supabase
+
 .from("contacts")
 .select("*")
 .eq("id", id)
+.eq("company_id", req.companyId)
 .single();
 
 if (error) {
@@ -5778,7 +5912,9 @@ city,
 data: data || {},
 updated_at: new Date().toISOString()
 })
+
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -5799,6 +5935,7 @@ app.get("/api/offers", async (req, res) => {
 const { data, error } = await supabase
 .from("offers")
 .select("*")
+.eq("company_id", req.companyId)
 .order("created_at", { ascending: false });
 
 if (error) {
@@ -5812,9 +5949,11 @@ app.get("/api/offers/:id", async (req, res) => {
 const { id } = req.params;
 
 let { data, error } = await supabase
+
 .from("offers")
 .select("*")
 .eq("id", id)
+.eq("company_id", req.companyId)
 .maybeSingle();
 
 if (error) {
@@ -5826,9 +5965,11 @@ error: error.message
 
 if (!data) {
 const fallback = await supabase
+
 .from("offers")
 .select("*")
 .eq("offer_number", id)
+.eq("company_id", req.companyId)
 .maybeSingle();
 
 data = fallback.data;
@@ -5868,13 +6009,16 @@ city
 const { data, error } = await supabase
 .from("contacts")
 .insert([
+
 {
+company_id: req.companyId,
 name,
 email,
 phone: phone || null,
 street: street || null,
 city: city || null
 }
+
 ])
 .select()
 .single();
@@ -5893,10 +6037,14 @@ await supabase
 .update({
 contact_id: data.id
 })
+
+.eq("company_id", req.companyId)
 .or(`sender.eq.${email},recipient.eq.${email}`);
+
 }
 
 await createDashboardEvent({
+companyId: req.companyId,
 type: "contact_created",
 title: "Kontakt erstellt",
 description: `${name || email} wurde als Kontakt angelegt.`,
@@ -5912,15 +6060,16 @@ contact: data
 });
 
 
-async function findDocumentContact(recipientEmail, recipientPhone) {
+async function findDocumentContact(companyId, recipientEmail, recipientPhone) {
     const email = String(recipientEmail || "").trim().toLowerCase();
     const phone = String(recipientPhone || "").replace(/\D/g, "");
 
     if (!email && !phone) return null;
 
     const { data: contacts, error } = await supabase
-        .from("contacts")
-        .select("id, email, phone");
+.from("contacts")
+.select("id, email, phone")
+.eq("company_id", companyId);
 
     if (error) {
         throw error;
@@ -5947,62 +6096,108 @@ async function findDocumentContact(recipientEmail, recipientPhone) {
     return null;
 }
 
-
 app.post("/api/offers", async (req, res) => {
-const offer = req.body;
-
-const { data: existingOffer, error: lookupError } = await supabase
-    .from("offers")
-    .select("id, contact_id")
-    .eq("id", offer.id)
-    .maybeSingle();
-
-if (lookupError) {
-    return res.status(500).json({
-        ok: false,
-        error: lookupError.message
-    });
-}
-
-if (existingOffer) {
-    offer.contactId = existingOffer.contact_id;
-} else if (!offer.contactId) {
     try {
-        offer.contactId = await findDocumentContact(
-            offer.recipientEmail,
-            offer.recipientPhone
-        );
+        const offer = req.body || {};
+
+        if (!offer.id || typeof offer.id !== "string") {
+            return res.status(400).json({
+                ok: false,
+                error: "Angebots-ID fehlt."
+            });
+        }
+
+        const { data: existing, error: lookupError } =
+            await supabase
+                .from("offers")
+                .select("id, contact_id")
+                .eq("id", offer.id)
+                .eq("company_id", req.companyId)
+                .maybeSingle();
+
+        if (lookupError) throw lookupError;
+
+        let contactId = existing?.contact_id || null;
+
+        if (!existing && offer.contactId) {
+            const { data: contact, error } = await supabase
+                .from("contacts")
+                .select("id")
+                .eq("id", offer.contactId)
+                .eq("company_id", req.companyId)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!contact) {
+                return res.status(403).json({
+                    ok: false,
+                    error: "Kontakt gehört nicht zu deiner Firma."
+                });
+            }
+
+            contactId = contact.id;
+        }
+
+        if (!existing && !contactId) {
+            contactId = await findDocumentContact(
+                req.companyId,
+                offer.recipientEmail,
+                offer.recipientPhone
+            );
+        }
+
+        const values = {
+            contact_id: contactId,
+            offer_number: offer.offerNumber || null,
+            status: offer.status || "open",
+            data: offer,
+            updated_at: new Date().toISOString()
+        };
+
+        let query;
+
+        if (existing) {
+            query = supabase
+                .from("offers")
+                .update(values)
+                .eq("id", offer.id)
+                .eq("company_id", req.companyId);
+        } else {
+            query = supabase
+                .from("offers")
+                .insert({
+                    id: offer.id,
+                    company_id: req.companyId,
+                    ...values
+                });
+        }
+
+        const { data, error } = await query
+            .select()
+            .single();
+
+        if (error) {
+            if (error.code === "23505") {
+                return res.status(409).json({
+                    ok: false,
+                    error: "Angebots-ID ist bereits vergeben."
+                });
+            }
+
+            throw error;
+        }
+
+        return res.json({ ok: true, offer: data });
+
     } catch (error) {
+        console.error("OFFER SAVE ERROR:", error);
+
         return res.status(500).json({
             ok: false,
-            error: "Kontaktzuordnung konnte nicht geprüft werden."
+            error: "Angebot konnte nicht gespeichert werden."
         });
     }
-}
-
-const { data, error } = await supabase
-.from("offers")
-.upsert(
-{
-id: offer.id,
-contact_id: offer.contactId || null,
-offer_number: offer.offerNumber || null,
-status: offer.status || "open",
-data: offer,
-updated_at: new Date().toISOString()
-},
-{
-onConflict: "id"
-}
-)
-.select()
-.single();
-
-if (error) {
-return res.status(500).json({ ok: false, error: error.message });
-}
-
-res.json({ ok: true, offer: data });
 });
 
 app.put("/api/offers/:id", async (req, res) => {
@@ -6019,6 +6214,7 @@ data: offer,
 updated_at: new Date().toISOString()
 })
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -6048,6 +6244,7 @@ app.get("/api/invoices", async (req, res) => {
 const { data, error } = await supabase
 .from("invoices")
 .select("*")
+.eq("company_id", req.companyId)
 .order("created_at", { ascending: false });
 
 if (error) {
@@ -6070,6 +6267,7 @@ const { data, error } = await supabase
 .from("invoices")
 .select("*")
 .eq("id", id)
+.eq("company_id", req.companyId)
 .single();
 
 if (error) {
@@ -6091,10 +6289,11 @@ const invoice = req.body;
 
 try {
     if (!invoice.contactId) {
-        invoice.contactId = await findDocumentContact(
-            invoice.recipientEmail,
-            invoice.recipientPhone
-        );
+invoice.contactId = await findDocumentContact(
+    req.companyId,
+    invoice.recipientEmail,
+    invoice.recipientPhone
+);
     }
 } catch (error) {
     console.error("INVOICE CONTACT MATCH ERROR:", error);
@@ -6145,6 +6344,7 @@ data: invoice,
 updated_at: new Date().toISOString()
 })
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -6167,7 +6367,8 @@ const { id } = req.params;
 const { error } = await supabase
 .from("invoices")
 .delete()
-.eq("id", id);
+.eq("id", id)
+.eq("company_id", req.companyId);
 
 if (error) {
 return res.status(500).json({
@@ -6185,8 +6386,10 @@ app.get("/api/notes/:contactId", async (req, res) => {
 const { contactId } = req.params;
 
 const { data, error } = await supabase
+
 .from("notes")
 .select("*")
+.eq("company_id", req.companyId)
 .eq("contact_id", contactId)
 .order("created_at", { ascending: false });
 
@@ -6204,42 +6407,73 @@ notes: data
 });
 
 app.post("/api/notes", async (req, res) => {
-const note = req.body;
+    try {
+        const note = req.body || {};
 
-const { data, error } = await supabase
-.from("notes")
-.insert([
-{
-contact_id: note.contactId,
-type: note.type || "note",
-text: note.text,
-source: note.source || "manual",
-data: note.data || {}
-}
-])
-.select()
-.single();
+        if (!note.contactId || typeof note.text !== "string" ||
+            !note.text.trim()) {
+            return res.status(400).json({
+                ok: false,
+                error: "Kontakt und Notiztext fehlen."
+            });
+        }
 
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
+        const { data: contact, error: contactError } =
+            await supabase
+                .from("contacts")
+                .select("id")
+                .eq("id", note.contactId)
+                .eq("company_id", req.companyId)
+                .maybeSingle();
 
-res.json({
-ok: true,
-note: data
-});
+        if (contactError) throw contactError;
+
+        if (!contact) {
+            return res.status(404).json({
+                ok: false,
+                error: "Kontakt nicht gefunden."
+            });
+        }
+
+        const { data, error } = await supabase
+            .from("notes")
+            .insert([{
+                company_id: req.companyId,
+                contact_id: contact.id,
+                type: note.type || "note",
+                text: note.text.trim(),
+                source: note.source || "manual",
+                data: note.data || {}
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+            ok: true,
+            note: data
+        });
+
+    } catch (error) {
+        console.error("NOTE CREATE ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Notiz konnte nicht gespeichert werden."
+        });
+    }
 });
 
 app.delete("/api/notes/:id", async (req, res) => {
 const { id } = req.params;
 
 const { error } = await supabase
+
 .from("notes")
 .delete()
-.eq("id", id);
+.eq("id", id)
+.eq("company_id", req.companyId);
 
 if (error) {
 return res.status(500).json({
@@ -6272,11 +6506,13 @@ error: "Ungültiger Zielordner."
 }
 
 const { data, error } = await supabase
+
 .from("email_threads")
 .update({
 manual_folder: folder
 })
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -6295,8 +6531,10 @@ thread: data
 
 app.get("/api/email-threads", async (req, res) => {
 const { data, error } = await supabase
+
 .from("email_threads")
 .select("*")
+.eq("company_id", req.companyId)
 .order("created_at", { ascending: false });
 
 if (error) {
@@ -6312,106 +6550,91 @@ threads: data
 });
 });
 
+
 app.post("/api/email-threads", async (req, res) => {
-const thread = req.body;
+    try {
+        const thread = req.body || {};
 
-const { data, error } = await supabase
-.from("email_threads")
-.insert([
-{
-contact_id: thread.contactId || null,
-related_type: thread.relatedType || "general",
-related_id: thread.relatedId || null,
-subject: thread.subject || "Ohne Betreff",
-status: thread.status || "open",
-ai_summary: thread.aiSummary || null,
-ai_category: thread.aiCategory || null
-}
-])
-.select()
-.single();
+        let contactId = null;
 
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
+        if (thread.contactId) {
+            const { data: contact, error: contactError } =
+                await supabase
+                    .from("contacts")
+                    .select("id")
+                    .eq("id", thread.contactId)
+                    .eq("company_id", req.companyId)
+                    .maybeSingle();
 
-res.json({
-ok: true,
-thread: data
+            if (contactError) throw contactError;
+
+            if (!contact) {
+                return res.status(404).json({
+                    ok: false,
+                    error: "Kontakt nicht gefunden."
+                });
+            }
+
+            contactId = contact.id;
+        }
+
+        if (thread.relatedId) {
+            return res.status(400).json({
+                ok: false,
+                error: "Dokumentverknüpfungen sind vorübergehend gesperrt."
+            });
+        }
+
+        const { data, error } = await supabase
+            .from("email_threads")
+            .insert([{
+                company_id: req.companyId,
+                contact_id: contactId,
+                related_type: "general",
+                related_id: null,
+                subject: thread.subject || "Ohne Betreff",
+                status: thread.status || "open",
+                ai_summary: null,
+                ai_category: null
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+            ok: true,
+            thread: data
+        });
+
+    } catch (error) {
+        console.error("EMAIL THREAD CREATE ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "E-Mail-Thread konnte nicht erstellt werden."
+        });
+    }
 });
-});
+
 
 app.post("/api/email-messages", async (req, res) => {
-const message = req.body;
-
-const { data: originalMessage } = await supabase
-.from("email_messages")
-.select("contact_id")
-.eq("thread_id", threadId)
-.eq("direction", "inbound")
-.not("contact_id", "is", null)
-.order("created_at", { ascending: true })
-.limit(1)
-.maybeSingle();
-
-const matchedContact = recipient
-? await findMatchingContact(recipient)
-: null;
-
-const finalContactId =
-originalMessage?.contact_id ||
-matchedContact?.id ||
-null;
-
-const sentEmail = await sendEmailWithGoogle({
-to: recipient,
-subject: replySubject,
-html: body.replaceAll("\n", "<br>")
-});
-
-const { data, error } = await supabase
-.from("email_messages")
-.insert([
-{
-
-thread_id: message.threadId,
-contact_id: matchedContact?.id || null,
-direction: message.direction || "outbound",
-sender: message.sender || null,
-recipient: message.recipient || null,
-subject: message.subject || null,
-body: message.body || "",
-ai_detected_intent: message.aiDetectedIntent || null,
-ai_suggested_reply: message.aiSuggestedReply || null,
-message_status: message.messageStatus || "sent"
-}
-])
-.select()
-.single();
-
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
-
-res.json({
-ok: true,
-message: data
-});
+    return res.status(503).json({
+        ok: false,
+        code: "EMAIL_WRITE_TEMPORARILY_DISABLED",
+        error: "Das Speichern von E-Mail-Nachrichten wird sicherheitstechnisch überarbeitet."
+    });
 });
 
 app.get("/api/email-messages/:threadId", async (req, res) => {
 const { threadId } = req.params;
 
 const { data, error } = await supabase
+
 .from("email_messages")
 .select("*")
 .eq("thread_id", threadId)
+.eq("company_id", req.companyId)
 .order("created_at", { ascending: true });
 
 if (error) {
@@ -6431,11 +6654,13 @@ app.put("/api/email-messages/:id/read", async (req, res) => {
 const { id } = req.params;
 
 const { data, error } = await supabase
+
 .from("email_messages")
 .update({
 read_at: new Date().toISOString()
 })
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -6471,6 +6696,7 @@ app.put(
                     provider,
                     mailbox_email,
                     imap_uid,
+                    imap_uidvalidity,
                     imap_mailbox,
                     external_message_id
                 `)
@@ -6478,25 +6704,51 @@ app.put(
                     "id",
                     id
                 )
-                .single();
+                .eq(
+                    "company_id",
+                    req.companyId
+                )
+                .maybeSingle();
 
 
             if (messageLoadError) {
+                throw messageLoadError;
+            }
 
-                return res
-                    .status(500)
-                    .json({
-                        ok: false,
-                        error:
-                            messageLoadError.message
-                    });
-
+            if (!message) {
+                return res.status(404).json({
+                    ok: false,
+                    error: "E-Mail nicht gefunden."
+                });
             }
 
 
-            let providerTrashMailbox =
-                message.imap_mailbox ||
-                null;
+if (
+    message.provider !== "google" &&
+    message.provider !== "imap"
+) {
+    return res.status(400).json({
+        ok: false,
+        error: "Dieser Mailprovider wird nicht unterstützt."
+    });
+}
+
+if (
+    message.provider === "imap" &&
+    (
+        !Number.isSafeInteger(Number(message.imap_uid)) ||
+        Number(message.imap_uid) <= 0
+    )
+) {
+    return res.status(400).json({
+        ok: false,
+        error: "Für diese IMAP-E-Mail fehlt eine gültige UID."
+    });
+}
+
+let providerTrashMailbox =
+    message.imap_mailbox ||
+    null;
 
                             if (
                 message.provider === "google"
@@ -6510,21 +6762,49 @@ app.put(
                     );
                 }
 
-                const {
-                    auth,
-                    mailbox
-                } =
-                    await getActiveGoogleMailboxAuth();
+if (!message.mailbox_email) {
+    return res.status(400).json({
+        ok: false,
+        error: "Die Postfachzuordnung dieser E-Mail fehlt."
+    });
+}
 
-                if (
-                    message.mailbox_email &&
-                    mailbox.email !==
-                        message.mailbox_email
-                ) {
-                    throw new Error(
-                        "Die Mail gehört nicht zum aktuell verbundenen Google-Postfach."
-                    );
-                }
+const { data: googleMailboxes, error: mailboxError } =
+    await supabase
+        .from("mailbox_connections")
+        .select("*")
+        .eq("company_id", req.companyId)
+        .eq("provider", "google")
+        .eq("email", message.mailbox_email)
+        .eq("is_active", true)
+        .limit(2);
+
+if (mailboxError) {
+    throw mailboxError;
+}
+
+if (!googleMailboxes || googleMailboxes.length !== 1) {
+    return res.status(404).json({
+        ok: false,
+        error: "Das zugehörige Google-Postfach wurde nicht gefunden."
+    });
+}
+
+const mailbox = googleMailboxes[0];
+
+const auth = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+);
+
+auth.setCredentials({
+    access_token: mailbox.access_token,
+    refresh_token: mailbox.refresh_token,
+    scope: mailbox.scope,
+    token_type: mailbox.token_type,
+    expiry_date: mailbox.expiry_date
+});
 
                 const gmail =
                     google.gmail({
@@ -6548,21 +6828,35 @@ app.put(
                 message.imap_uid
             ) {
 
-                const mailbox =
-                    await getActiveMailboxConnection();
+if (!message.mailbox_email) {
+    return res.status(400).json({
+        ok: false,
+        error: "Die Postfachzuordnung dieser E-Mail fehlt."
+    });
+}
 
+const { data: imapMailboxes, error: mailboxError } =
+    await supabase
+        .from("mailbox_connections")
+        .select("*")
+        .eq("company_id", req.companyId)
+        .eq("provider", "imap")
+        .eq("email", message.mailbox_email)
+        .eq("is_active", true)
+        .limit(2);
 
-                if (
-                    message.mailbox_email &&
-                    mailbox.email !==
-                        message.mailbox_email
-                ) {
+if (mailboxError) {
+    throw mailboxError;
+}
 
-                    throw new Error(
-                        "Die Mail gehört nicht zum aktuell verbundenen Postfach."
-                    );
+if (!imapMailboxes || imapMailboxes.length !== 1) {
+    return res.status(404).json({
+        ok: false,
+        error: "Das zugehörige IMAP-Postfach wurde nicht gefunden."
+    });
+}
 
-                }
+const mailbox = imapMailboxes[0];
 
 
                 const password =
@@ -6609,15 +6903,27 @@ app.put(
                         connection,
                         message.imap_mailbox ||
                             "INBOX",
-                        message.imap_uid
+                        message.imap_uid,
+                        message.imap_uidvalidity
                     );
 
 
-                providerTrashMailbox =
-                    moveResult.trashMailbox;
+providerTrashMailbox =
+    moveResult.trashMailbox;
+
+message.imap_uid =
+    moveResult.destinationUid;
+
+message.imap_uidvalidity = moveResult.destinationUidValidity;
 
             }
 
+
+            if (message.provider === "imap" &&
+                (!Number.isSafeInteger(Number(message.imap_uid)) || Number(message.imap_uid) <= 0)) {
+                return res.status(409).json({ ok: false,
+                    error: "Provider-MOVE erfolgt, aber Ziel-UID fehlt. Bitte Postfach synchronisieren." });
+            }
 
             const {
                 data,
@@ -6628,12 +6934,27 @@ app.put(
                     deleted_at:
                         new Date().toISOString(),
 
-                    imap_mailbox:
-                        providerTrashMailbox
+imap_mailbox:
+    providerTrashMailbox,
+
+imap_uid:
+    message.imap_uid,
+
+imap_uidvalidity:
+    message.imap_uidvalidity,
+
+external_message_id:
+    message.provider === "imap"
+        ? `imap:${message.mailbox_email}:${providerTrashMailbox}:${Number(message.imap_uid)}`
+        : message.external_message_id
                 })
                 .eq(
                     "id",
                     id
+                )
+                .eq(
+                    "company_id",
+                    req.companyId
                 )
                 .select()
                 .single();
@@ -6677,73 +6998,53 @@ app.put(
     }
 );
 
-async function moveImapMessageToFolder(
-    connection,
-    sourceMailbox,
-    uid,
-    destinationMailbox
-) {
-
-    const client =
-        createImapClient(
-            connection
-        );
-
-    try {
-
-        await client.connect();
-
-        await client.mailboxOpen(
-            sourceMailbox
-        );
-
-        const sourceUid =
-            Number(uid);
-
-        const moveResult =
-            await client.messageMove(
-                sourceUid,
-                destinationMailbox,
-                {
-                    uid: true
-                }
-            );
-
-        let destinationUid =
-            null;
-
-        if (
-            moveResult &&
-            moveResult.uidMap instanceof Map
-        ) {
-
-            destinationUid =
-                moveResult.uidMap.get(
-                    sourceUid
-                ) ||
-                null;
-
-        }
-
-        return {
-            sourceMailbox,
-            destinationMailbox,
-            sourceUid,
-            destinationUid
-        };
-
-    } finally {
-
-        try {
-
-            await client.logout();
-
-        } catch (error) {
-
-        }
-
+function requireImapUidValidity(info, folder) {
+    const value = info?.uidValidity;
+    if (value == null || !/^\d+$/.test(String(value)) || BigInt(String(value)) <= 0n) {
+        const error = new Error(`IMAP UIDVALIDITY fehlt oder ist ungültig: ${folder}`);
+        error.code = "IMAP_UIDVALIDITY_INVALID";
+        throw error;
     }
+    return String(value);
+}
 
+function verifyImapUidValidity(actual, expected) {
+    if (expected == null || String(expected) !== actual) {
+        const error = new Error("IMAP-Identität nicht bestätigt. Bitte das Postfach sicher neu synchronisieren.");
+        error.code = "IMAP_IDENTITY_UNVERIFIED";
+        throw error;
+    }
+}
+
+async function moveImapMessageToFolder(connection, sourceMailbox, uid, destinationMailbox, expectedUidValidity) {
+    const client = createImapClient(connection);
+    try {
+        await client.connect();
+        const sourceUid = Number(uid);
+        if (!Number.isSafeInteger(sourceUid) || sourceUid <= 0) {
+            throw new Error("Ungültige IMAP-UID.");
+        }
+        const sourceInfo = await client.mailboxOpen(sourceMailbox);
+        const sourceUidValidity = requireImapUidValidity(sourceInfo, sourceMailbox);
+        verifyImapUidValidity(sourceUidValidity, expectedUidValidity);
+        const found = await client.fetchOne(sourceUid, { uid: true }, { uid: true });
+        if (!found || Number(found.uid) !== sourceUid) {
+            throw new Error("IMAP-Nachricht im Quellordner nicht gefunden.");
+        }
+        if (sourceMailbox === destinationMailbox) {
+            return { sourceMailbox, destinationMailbox, sourceUid,
+                destinationUid: sourceUid, destinationUidValidity: sourceUidValidity };
+        }
+        const result = await client.messageMove(sourceUid, destinationMailbox, { uid: true });
+        const mapped = result?.uidMap instanceof Map ? Number(result.uidMap.get(sourceUid)) : null;
+        const destinationUid = Number.isSafeInteger(mapped) && mapped > 0 ? mapped : null;
+        const targetInfo = await client.mailboxOpen(destinationMailbox);
+        const destinationUidValidity = requireImapUidValidity(targetInfo, destinationMailbox);
+        return { sourceMailbox, destinationMailbox, sourceUid, sourceUidValidity,
+            destinationUid, destinationUidValidity };
+    } finally {
+        await client.logout().catch(() => {});
+    }
 }
 
 app.put(
@@ -6784,6 +7085,7 @@ app.put(
     provider,
     mailbox_email,
     imap_uid,
+                    imap_uidvalidity,
     imap_mailbox,
     external_message_id
 `)
@@ -6791,19 +7093,22 @@ app.put(
                     "id",
                     id
                 )
-                .single();
+                .eq(
+                    "company_id",
+                    req.companyId
+                )
+                .maybeSingle();
 
 
             if (messageLoadError) {
+                throw messageLoadError;
+            }
 
-                return res
-                    .status(500)
-                    .json({
-                        ok: false,
-                        error:
-                            messageLoadError.message
-                    });
-
+            if (!message) {
+                return res.status(404).json({
+                    ok: false,
+                    error: "E-Mail nicht gefunden."
+                });
             }
 
 
@@ -6825,17 +7130,15 @@ if (
 
 if (
     message.provider === "imap" &&
-    !message.imap_uid
+    (
+        !Number.isSafeInteger(Number(message.imap_uid)) ||
+        Number(message.imap_uid) <= 0
+    )
 ) {
-
-    return res
-        .status(400)
-        .json({
-            ok: false,
-            error:
-                "Für diese IMAP-E-Mail fehlt die Provider-ID."
-        });
-
+    return res.status(400).json({
+        ok: false,
+        error: "Für diese IMAP-E-Mail fehlt eine gültige UID."
+    });
 }
 
 
@@ -6854,21 +7157,35 @@ if (
 
 }
 
-            const mailbox =
-                await getActiveMailboxConnection();
+if (!message.mailbox_email) {
+    return res.status(400).json({
+        ok: false,
+        error: "Die Postfachzuordnung dieser E-Mail fehlt."
+    });
+}
 
+const { data: mailboxes, error: mailboxError } =
+    await supabase
+        .from("mailbox_connections")
+        .select("*")
+        .eq("company_id", req.companyId)
+        .eq("provider", message.provider)
+        .eq("email", message.mailbox_email)
+        .eq("is_active", true)
+        .limit(2);
 
-            if (
-                message.mailbox_email &&
-                mailbox.email !==
-                    message.mailbox_email
-            ) {
+if (mailboxError) {
+    throw mailboxError;
+}
 
-                throw new Error(
-                    "Die Mail gehört nicht zum aktuell verbundenen Postfach."
-                );
+if (!mailboxes || mailboxes.length !== 1) {
+    return res.status(404).json({
+        ok: false,
+        error: "Das zugehörige Postfach wurde nicht eindeutig gefunden."
+    });
+}
 
-            }
+const mailbox = mailboxes[0];
 
 
             const importedFolders =
@@ -6903,17 +7220,24 @@ if (
     message.provider === "google"
 ) {
 
-    const {
-        auth
-    } =
-        await getActiveGoogleMailboxAuth();
+const auth = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+);
 
+auth.setCredentials({
+    access_token: mailbox.access_token,
+    refresh_token: mailbox.refresh_token,
+    scope: mailbox.scope,
+    token_type: mailbox.token_type,
+    expiry_date: mailbox.expiry_date
+});
 
-    const gmail =
-        google.gmail({
-            version: "v1",
-            auth
-        });
+const gmail = google.gmail({
+    version: "v1",
+    auth
+});
 
 
     const currentFolder =
@@ -6969,11 +7293,15 @@ if (
                 deleted_at:
                     null
             })
-            .eq(
-                "id",
-                id
-            )
-            .select();
+.eq(
+    "id",
+    id
+)
+.eq(
+    "company_id",
+    req.companyId
+)
+.select();
 
 
     if (error) {
@@ -7058,11 +7386,15 @@ if (
                 deleted_at:
                     null
             })
-            .eq(
-                "id",
-                id
-            )
-            .select();
+.eq(
+    "id",
+    id
+)
+.eq(
+    "company_id",
+    req.companyId
+)
+.select();
 
 
     if (error) {
@@ -7166,11 +7498,15 @@ if (
                 deleted_at:
                     null
             })
-            .eq(
-                "id",
-                id
-            )
-            .select();
+.eq(
+    "id",
+    id
+)
+.eq(
+    "company_id",
+    req.companyId
+)
+.select();
 
 
     if (error) {
@@ -7358,8 +7694,33 @@ const moveResult =
         connection,
         sourceMailbox,
         message.imap_uid,
-        destinationMailbox
+        destinationMailbox,
+        message.imap_uidvalidity
     );
+
+if (
+    !Number.isSafeInteger(
+        Number(moveResult.destinationUid)
+    ) ||
+    Number(moveResult.destinationUid) <= 0
+) {
+    console.error(
+        "IMAP MOVE COMPLETED WITHOUT DESTINATION UID",
+        {
+            messageId: id,
+            sourceMailbox,
+            destinationMailbox
+        }
+    );
+
+    return res.status(409).json({
+        ok: false,
+        error:
+            "Die E-Mail wurde beim Anbieter verschoben, " +
+            "aber die neue UID konnte nicht ermittelt werden. " +
+            "Bitte synchronisiere das Postfach erneut."
+    });
+}
 
 
 const {
@@ -7371,18 +7732,27 @@ const {
 imap_mailbox:
     destinationMailbox,
 
-        imap_uid:
-            moveResult.destinationUid ||
-            message.imap_uid,
+imap_uid:
+    Number(moveResult.destinationUid),
 
-        deleted_at:
-            null
+imap_uidvalidity:
+    moveResult.destinationUidValidity,
+
+external_message_id:
+    `imap:${mailbox.email}:${destinationMailbox}:${Number(moveResult.destinationUid)}`,
+
+deleted_at:
+    null
     })
-    .eq(
-        "id",
-        id
-    )
-    .select();
+.eq(
+    "id",
+    id
+)
+.eq(
+    "company_id",
+    req.companyId
+)
+.select();
 
 if (error) {
 
@@ -7441,102 +7811,355 @@ if (!data) {
 );
 
 app.post("/api/email-messages/:id/restore", async (req, res) => {
-const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-const { error } = await supabase
-.from("email_messages")
-.update({
-deleted_at: null
-})
-.eq("id", id);
+        const { data: message, error: messageError } =
+            await supabase
+                .from("email_messages")
+                .select(
+                    "id, provider, mailbox_email, imap_mailbox, " +
+                    "imap_uid, imap_uidvalidity, external_message_id, deleted_at"
+                )
+                .eq("id", id)
+                .eq("company_id", req.companyId)
+                .maybeSingle();
 
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
+        if (messageError) throw messageError;
 
-res.json({
-ok: true
+        if (!message) {
+            return res.status(404).json({
+                ok: false,
+                error: "E-Mail nicht gefunden."
+            });
+        }
+
+        if (!message.deleted_at) {
+            return res.status(409).json({
+                ok: false,
+                error: "Diese E-Mail befindet sich nicht im Papierkorb."
+            });
+        }
+
+        if (
+            !["google", "imap"].includes(message.provider) ||
+            !message.mailbox_email
+        ) {
+            return res.status(400).json({
+                ok: false,
+                error: "Die E-Mail kann nicht beim Anbieter wiederhergestellt werden."
+            });
+        }
+
+        const { data: mailboxes, error: mailboxError } =
+            await supabase
+                .from("mailbox_connections")
+                .select("*")
+                .eq("company_id", req.companyId)
+                .eq("provider", message.provider)
+                .eq("email", message.mailbox_email)
+                .eq("is_active", true)
+                .limit(2);
+
+        if (mailboxError) throw mailboxError;
+
+        if (!mailboxes || mailboxes.length !== 1) {
+            return res.status(404).json({
+                ok: false,
+                error: "Das zugehörige Postfach wurde nicht eindeutig gefunden."
+            });
+        }
+
+        const mailbox = mailboxes[0];
+
+        let newUid = message.imap_uid;
+        let newUidValidity = message.imap_uidvalidity;
+        let newExternalId = message.external_message_id;
+
+        if (message.provider === "google") {
+            if (!message.external_message_id) {
+                return res.status(400).json({
+                    ok: false,
+                    error: "Die Gmail-Nachrichten-ID fehlt."
+                });
+            }
+
+            const auth = new google.auth.OAuth2(
+                process.env.GOOGLE_CLIENT_ID,
+                process.env.GOOGLE_CLIENT_SECRET,
+                process.env.GOOGLE_REDIRECT_URI
+            );
+
+            auth.setCredentials({
+                access_token: mailbox.access_token,
+                refresh_token: mailbox.refresh_token,
+                scope: mailbox.scope,
+                token_type: mailbox.token_type,
+                expiry_date: mailbox.expiry_date
+            });
+
+            const gmail = google.gmail({
+                version: "v1",
+                auth
+            });
+
+            await gmail.users.messages.untrash({
+                userId: "me",
+                id: message.external_message_id
+            });
+
+            await gmail.users.messages.modify({
+                userId: "me",
+                id: message.external_message_id,
+                requestBody: {
+                    addLabelIds: ["INBOX"],
+                    removeLabelIds: ["TRASH"]
+                }
+            });
+        } else {
+            const sourceUid = Number(message.imap_uid);
+
+            if (
+                !Number.isSafeInteger(sourceUid) ||
+                sourceUid <= 0
+            ) {
+                return res.status(409).json({
+                    ok: false,
+                    error: "Die IMAP-UID fehlt. Bitte zuerst synchronisieren."
+                });
+            }
+
+            const connection = {
+                provider: "imap",
+                email: mailbox.email,
+                username: mailbox.username || mailbox.email,
+                password: decryptMailPassword(
+                    mailbox.encrypted_password
+                ),
+                imap_host: mailbox.imap_host,
+                imap_port: mailbox.imap_port,
+                imap_secure: mailbox.imap_secure
+            };
+
+            const client = createImapClient(connection);
+            let trashMailbox;
+
+            try {
+                await client.connect();
+                trashMailbox = await findImapTrashMailbox(client);
+            } finally {
+                await client.logout().catch(() => {});
+            }
+
+            if (!trashMailbox) {
+                return res.status(409).json({
+                    ok: false,
+                    error: "Der Papierkorb des IMAP-Providers wurde nicht gefunden."
+                });
+            }
+
+            const moveResult = await moveImapMessageToFolder(
+                connection,
+                trashMailbox,
+                sourceUid,
+                "INBOX",
+                message.imap_uidvalidity
+            );
+
+            newUid = Number(moveResult.destinationUid);
+            newUidValidity = moveResult.destinationUidValidity;
+
+            if (
+                !Number.isSafeInteger(newUid) ||
+                newUid <= 0
+            ) {
+                return res.status(409).json({
+                    ok: false,
+                    error:
+                        "Die Nachricht wurde beim Provider verschoben, " +
+                        "aber die neue UID fehlt. Bitte Postfach synchronisieren."
+                });
+            }
+
+            newExternalId =
+                `imap:${mailbox.email}:INBOX:${newUid}`;
+        }
+
+        const { data: updated, error: updateError } =
+            await supabase
+                .from("email_messages")
+                .update({
+                    deleted_at: null,
+                    imap_mailbox: "INBOX",
+                    imap_uid: newUid,
+                    imap_uidvalidity: message.provider === "imap" ? newUidValidity : message.imap_uidvalidity,
+                    external_message_id: newExternalId
+                })
+                .eq("id", id)
+                .eq("company_id", req.companyId)
+                .select("id")
+                .single();
+
+        if (updateError) throw updateError;
+
+        return res.json({
+            ok: true,
+            message: "E-Mail wurde wiederhergestellt.",
+            id: updated.id
+        });
+
+    } catch (error) {
+        console.error("EMAIL RESTORE ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error:
+                "Wiederherstellung konnte nicht vollständig abgeschlossen werden. " +
+                "Bitte Postfachstatus prüfen."
+        });
+    }
 });
-});
+
 
 app.post("/api/email-reply", async (req, res) => {
-const { threadId, body, subject, recipient, fromDisplayEmail } = req.body;
+    const { threadId, body, subject, recipient } = req.body || {};
 
-if (!threadId || !body) {
-return res.status(400).json({
-ok: false,
-error: "Thread oder Antworttext fehlt."
-});
-}
+    if (
+        typeof threadId !== "string" ||
+        !threadId.trim() ||
+        typeof body !== "string" ||
+        !body.trim() ||
+        typeof recipient !== "string" ||
+        !recipient.trim()
+    ) {
+        return res.status(400).json({
+            ok: false,
+            error: "Thread, Antworttext oder Empfänger fehlt."
+        });
+    }
 
-try {
-const senderEmail =
-fromDisplayEmail ||
-process.env.RESEND_FROM_EMAIL;
+    try {
+        const { data: thread, error: threadError } =
+            await supabase
+                .from("email_threads")
+                .select("id, contact_id")
+                .eq("id", threadId)
+                .eq("company_id", req.companyId)
+                .maybeSingle();
 
-const replySubject = subject?.startsWith("RE:")
-? subject
-: `RE: ${subject || "Ohne Betreff"}`;
+        if (threadError) throw threadError;
 
-const { data: originalMessage } = await supabase
-.from("email_messages")
-.select("contact_id")
-.eq("thread_id", threadId)
-.not("contact_id", "is", null)
-.order("created_at", { ascending: true })
-.limit(1)
-.maybeSingle();
+        if (!thread) {
+            return res.status(404).json({
+                ok: false,
+                error: "E-Mail-Thread nicht gefunden."
+            });
+        }
 
-const matchedContact = recipient
-? await findMatchingContact(recipient)
-: null;
+        const { data: originalMessage, error: originalError } =
+            await supabase
+                .from("email_messages")
+                .select("contact_id")
+                .eq("thread_id", threadId)
+                .eq("company_id", req.companyId)
+                .not("contact_id", "is", null)
+                .order("created_at", { ascending: true })
+                .limit(1)
+                .maybeSingle();
 
-const finalContactId =
-originalMessage?.contact_id ||
-matchedContact?.id ||
-null;
+        if (originalError) throw originalError;
 
-const sentEmail = await sendEmailWithGoogle({
-to: recipient,
-subject: replySubject,
-html: body.replaceAll("\n", "<br>")
-});
+        const matchedContact =
+            await findMatchingContact(
+                recipient,
+                req.companyId
+            );
 
-const { data, error } = await supabase
-.from("email_messages")
-.insert([
-{
-thread_id: threadId,
-contact_id: finalContactId,
-direction: "outbound",
-sender: sentEmail.sender,
-recipient: recipient || "kunde@example.com",
-subject: replySubject,
-body,
-message_status: "sent"
-}
-])
-.select()
-.single();
+        const finalContactId =
+            originalMessage?.contact_id ||
+            thread.contact_id ||
+            matchedContact?.id ||
+            null;
 
-if (error) throw error;
+        if (finalContactId) {
+            const { data: contact, error: contactError } =
+                await supabase
+                    .from("contacts")
+                    .select("id")
+                    .eq("id", finalContactId)
+                    .eq("company_id", req.companyId)
+                    .maybeSingle();
 
-res.json({
-ok: true,
-message: data
-});
+            if (contactError) throw contactError;
 
-} catch (error) {
-console.error("EMAIL REPLY ERROR:", error);
+            if (!contact) {
+                return res.status(403).json({
+                    ok: false,
+                    error: "Kontakt gehört nicht zu dieser Firma."
+                });
+            }
+        }
 
-res.status(500).json({
-ok: false,
-error: error.message || "Antwort konnte nicht gespeichert werden."
-});
-}
+        const replySubject =
+            typeof subject === "string" &&
+            /^re:/i.test(subject.trim())
+                ? subject.trim()
+                : `RE: ${
+                    typeof subject === "string" && subject.trim()
+                        ? subject.trim()
+                        : "Ohne Betreff"
+                }`;
+
+        const escapedBody = body
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\r?\n/g, "<br>");
+
+        const sentEmail = await sendEmailWithGoogle({
+            companyId: req.companyId,
+            to: recipient.trim(),
+            subject: replySubject,
+            html: escapedBody
+        });
+
+        const { data, error } = await supabase
+            .from("email_messages")
+            .insert([{
+                company_id: req.companyId,
+                thread_id: thread.id,
+                contact_id: finalContactId,
+                direction: "outbound",
+                sender: sentEmail.sender,
+                recipient: recipient.trim(),
+                subject: replySubject,
+                body,
+                body_html: escapedBody,
+                content_loaded: true,
+                provider: "google",
+                mailbox_email: sentEmail.sender,
+                external_message_id: sentEmail.email?.id || null,
+                external_thread_id: sentEmail.email?.threadId || null,
+                message_status: "sent"
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+            ok: true,
+            message: data
+        });
+
+    } catch (error) {
+        console.error("EMAIL REPLY ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Antwort konnte nicht verarbeitet werden."
+        });
+    }
 });
 
 app.post("/api/ai/analyze-email", async (req, res) => {
@@ -7583,14 +8206,28 @@ const rawText = response.output_text;
 const analysis = JSON.parse(rawText);
 
 if (messageId) {
-await supabase
-.from("email_messages")
-.update({
-ai_detected_intent: analysis.intent,
-ai_summary: analysis.summary,
-ai_suggested_reply: analysis.suggestedReply
-})
-.eq("id", messageId);
+    const { data: updatedMessages, error: updateError } =
+        await supabase
+            .from("email_messages")
+            .update({
+                ai_detected_intent: analysis.intent,
+                ai_summary: analysis.summary,
+                ai_suggested_reply: analysis.suggestedReply
+            })
+            .eq("id", messageId)
+            .eq("company_id", req.companyId)
+            .select("id");
+
+    if (updateError) {
+        throw updateError;
+    }
+
+    if (!updatedMessages || updatedMessages.length !== 1) {
+        return res.status(404).json({
+            ok: false,
+            error: "E-Mail nicht gefunden."
+        });
+    }
 }
 
 res.json({
@@ -7608,26 +8245,45 @@ error: "KI-Analyse konnte nicht erstellt werden."
 });
 
 app.delete("/api/email-messages/:id", async (req, res) => {
-const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-const { error } = await supabase
-.from("email_messages")
-.delete()
-.eq("id", id);
+        const { data: deletedMessages, error } =
+            await supabase
+                .from("email_messages")
+                .delete()
+                .eq("id", id)
+                .eq("company_id", req.companyId)
+                .select("id");
 
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
+        if (error) {
+            throw error;
+        }
 
-res.json({
-ok: true
+        if (!deletedMessages || deletedMessages.length !== 1) {
+            return res.status(404).json({
+                ok: false,
+                error: "E-Mail nicht gefunden."
+            });
+        }
+
+        return res.json({
+            ok: true
+        });
+
+    } catch (error) {
+        console.error("EMAIL DELETE ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "E-Mail konnte nicht gelöscht werden."
+        });
+    }
 });
-});
+
 
 async function createDashboardEvent({
+companyId,
 type,
 title,
 description = "",
@@ -7642,12 +8298,21 @@ priority = "normal",
 actionType = null,
 
 metadata = {}
+
 }) {
 
+if (!companyId) {
+    console.error("DASHBOARD EVENT BLOCKED: companyId fehlt.");
+    return null;
+}
+
 const { data: event, error } = await supabase
+
 .from("dashboard_events")
 .insert([
+
 {
+company_id: companyId,
 type,
 title,
 description,
@@ -7675,7 +8340,9 @@ return null;
 return event;
 }
 
+
 async function createDashboardNotification({
+companyId,
 eventId,
 
 title,
@@ -7689,12 +8356,21 @@ priority = "normal",
 remindAfterDays = 5,
 
 metadata = {}
+
 }) {
 
+if (!companyId) {
+    console.error("DASHBOARD NOTIFICATION BLOCKED: companyId fehlt.");
+    return null;
+}
+
 const { data, error } = await supabase
+
 .from("dashboard_notifications")
 .insert([
+
 {
+company_id: companyId,
 event_id: eventId,
 
 title,
@@ -7720,146 +8396,59 @@ return null;
 return data;
 }
 
+
 async function triggerDashboardAction({
-actionTarget,
-actionPayload = {}
+    companyId,
+    actionTarget,
+    actionPayload = {}
 }) {
+    if (!companyId) {
+        return {
+            ok: false,
+            error: "Firmenzuordnung fehlt."
+        };
+    }
 
-switch (actionTarget) {
+    switch (actionTarget) {
+        case "create_calendar_entry": {
+            const threadId = actionPayload.threadId;
 
-case "create_calendar_entry":
+            if (!threadId || typeof threadId !== "string") {
+                return {
+                    ok: false,
+                    error: "E-Mail-Thread fehlt."
+                };
+            }
 
-console.log(
-"Kalendereintrag vorbereiten:",
-actionPayload
-);
+            const { data: thread, error } = await supabase
+                .from("email_threads")
+                .select("id")
+                .eq("id", threadId)
+                .eq("company_id", companyId)
+                .maybeSingle();
 
-return {
-ok: true,
-type: "calendar",
-message: "Kalendereintrag wurde vorbereitet."
-};
+            if (error) throw error;
 
-case "create_offer_draft": {
+            if (!thread) {
+                return {
+                    ok: false,
+                    error: "E-Mail-Thread nicht gefunden."
+                };
+            }
 
-const {
-messageId,
-threadId
-} = actionPayload;
+            return {
+                ok: true,
+                type: "navigation",
+                target: `/emails?thread=${encodeURIComponent(thread.id)}`
+            };
+        }
 
-if (!messageId) {
-return {
-ok: false,
-error: "Keine E-Mail für den Angebotsvorschlag gefunden."
-};
-}
-
-const { data: message, error: messageError } = await supabase
-.from("email_messages")
-.select(`
-*,
-contacts (
-id,
-name,
-email,
-phone,
-street,
-city
-)
-`)
-.eq("id", messageId)
-.single();
-
-if (messageError) {
-throw messageError;
-}
-
-const contact = message.contacts || null;
-
-const offerId = crypto.randomUUID();
-
-const offerDraft = {
-id: offerId,
-
-contactId: contact?.id || message.contact_id || null,
-
-offerNumber: `AN-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`,
-
-status: "open",
-
-recipientName: contact?.name || message.sender || "",
-recipientStreet: contact?.street || "",
-recipientCity: contact?.city || "",
-
-offerDate: new Date().toISOString().slice(0, 10),
-validUntil: "",
-
-introText:
-"vielen Dank für Ihre Anfrage. Gerne erstellen wir Ihnen folgendes Angebot:",
-
-positions: [
-{
-id: `pos_${Date.now()}`,
-description: message.subject || "Leistung gemäß Kundenanfrage",
-quantity: "1",
-unit: "Pauschal",
-unitPrice: "0,00",
-total: "0,00"
-}
-],
-
-closingText:
-"Bei Fragen stehen wir Ihnen jederzeit gerne zur Verfügung.",
-
-source: {
-type: "email",
-messageId,
-threadId: threadId || message.thread_id
-}
-};
-
-const { data: offer, error: offerError } = await supabase
-.from("offers")
-.insert([
-{
-id: offerDraft.id,
-contact_id: offerDraft.contactId,
-offer_number: offerDraft.offerNumber,
-status: "open",
-data: offerDraft
-}
-])
-.select()
-.single();
-
-if (offerError) {
-throw offerError;
-}
-
-return {
-ok: true,
-type: "offer_draft",
-message: "Angebotsvorschlag wurde erstellt.",
-target: `/offer-editor?id=${offer.id}`,
-offer
-};
-}
-
-case "open_email_thread":
-
-return {
-ok: true,
-type: "navigation",
-target: `/emails?thread=${actionPayload.threadId}`
-};
-
-default:
-
-return {
-ok: false,
-error: "Unbekannte Dashboard-Aktion."
-};
-}
+        default:
+            return {
+                ok: false,
+                error: "Unbekannte Dashboard-Aktion."
+            };
+    }
 }
 
 app.post("/api/dashboard-actions", async (req, res) => {
@@ -7876,9 +8465,11 @@ error: "Keine Dashboard-Aktion angegeben."
 }
 
 try {
+
 const result = await triggerDashboardAction({
-actionTarget,
-actionPayload: actionPayload || {}
+    companyId: req.companyId,
+    actionTarget,
+    actionPayload: actionPayload || {}
 });
 
 if (!result.ok) {
@@ -7912,6 +8503,8 @@ related_type,
 related_id
 )
 `)
+
+.eq("company_id", req.companyId)
 .is("dismissed_at", null)
 .order("triggered_at", { ascending: false });
 
@@ -7937,7 +8530,9 @@ const { data, error } = await supabase
 status: "read",
 read_at: new Date().toISOString()
 })
+
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -7963,7 +8558,9 @@ const { data, error } = await supabase
 status: "dismissed",
 dismissed_at: new Date().toISOString()
 })
+
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -8020,7 +8617,9 @@ notification.auto_escalate &&
 ? "high"
 : notification.priority
 })
-.eq("id", notification.id);
+
+.eq("id", notification.id)
+.eq("company_id", notification.company_id);
 
 console.log(
 "Reminder verarbeitet:",
@@ -8031,8 +8630,10 @@ notification.title
 
 app.get("/api/dashboard-events", async (req, res) => {
 const { data, error } = await supabase
+
 .from("dashboard_events")
 .select("*")
+.eq("company_id", req.companyId)
 .order("created_at", { ascending: false })
 .limit(50);
 
@@ -8051,9 +8652,12 @@ events: data || []
 
 app.get("/api/calendar-events", async (req, res) => {
 const { data, error } = await supabase
+
 .from("calendar_events")
 .select("*")
+.eq("company_id", req.companyId)
 .order("event_date", { ascending: true })
+
 .order("event_time", { ascending: true });
 
 if (error) {
@@ -8074,9 +8678,12 @@ const event = req.body;
 
 const { data, error } = await supabase
 .from("calendar_events")
+
 .insert([
 {
+company_id: req.companyId,
 title: event.title,
+
 description: event.description || "",
 event_date: event.eventDate,
 event_time: event.eventTime || null,
@@ -8121,7 +8728,9 @@ status: event.status || "open",
 metadata: event.metadata || {},
 updated_at: new Date().toISOString()
 })
+
 .eq("id", id)
+.eq("company_id", req.companyId)
 .select()
 .single();
 
@@ -8142,9 +8751,11 @@ app.delete("/api/calendar-events/:id", async (req, res) => {
 const { id } = req.params;
 
 const { error } = await supabase
+
 .from("calendar_events")
 .delete()
-.eq("id", id);
+.eq("id", id)
+.eq("company_id", req.companyId);
 
 if (error) {
 return res.status(500).json({
@@ -8158,26 +8769,30 @@ ok: true
 });
 });
 
-async function findMatchingContact(email, name = "") {
+async function findMatchingContact(email, companyId, name = "") {
+    if (!companyId) {
+        throw new Error("Firmenzuordnung bei der Kontaktsuche fehlt.");
+    }
 
-if (!email) return null;
+    if (!email || typeof email !== "string") {
+        return null;
+    }
 
-const { data: contacts, error } = await supabase
-.from("contacts")
-.select("*")
-.ilike("email", email)
-.limit(1);
+    const normalizedEmail = email.trim();
 
-if (error) {
-console.error(error);
-return null;
-}
+    const { data: contact, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("company_id", companyId)
+        .ilike("email", normalizedEmail)
+        .limit(1)
+        .maybeSingle();
 
-if (!contacts?.length) {
-return null;
-}
+    if (error) {
+        throw error;
+    }
 
-return contacts[0];
+    return contact || null;
 }
 
 function getFallbackEmailAnalysis(message) {
@@ -8206,6 +8821,19 @@ async function saveEmailAnalysis(
     } = {}
 ) {
 
+    if (
+        !message?.company_id ||
+        !thread?.company_id ||
+        message.company_id !== thread.company_id
+    ) {
+        throw new Error(
+            "Ungültige Firmenzuordnung bei der E-Mail-Analyse."
+        );
+    }
+
+    const companyId = message.company_id;
+
+const { data: updatedMessages, error: messageUpdateError } =
     await supabase
         .from("email_messages")
         .update({
@@ -8221,10 +8849,19 @@ async function saveEmailAnalysis(
             calendar_suggestion:
                 analysis.calendarSuggestion
         })
-        .eq(
-            "id",
-            message.id
-        );
+        .eq("id", message.id)
+        .eq("company_id", companyId)
+        .select("id");
+
+if (messageUpdateError) {
+    throw messageUpdateError;
+}
+
+if (!updatedMessages || updatedMessages.length !== 1) {
+    throw new Error(
+        "E-Mail-Analyse konnte keiner gültigen Firmen-E-Mail zugeordnet werden."
+    );
+}
 
 
     const threadUpdate = {
@@ -8241,15 +8878,23 @@ async function saveEmailAnalysis(
     }
 
 
+const { data: updatedThreads, error: threadUpdateError } =
     await supabase
         .from("email_threads")
-        .update(
-            threadUpdate
-        )
-        .eq(
-            "id",
-            thread.id
-        );
+        .update(threadUpdate)
+        .eq("id", thread.id)
+        .eq("company_id", companyId)
+        .select("id");
+
+if (threadUpdateError) {
+    throw threadUpdateError;
+}
+
+if (!updatedThreads || updatedThreads.length !== 1) {
+    throw new Error(
+        "E-Mail-Konversation konnte keiner gültigen Firma zugeordnet werden."
+    );
+}
 
 
     if (!createDashboardNotificationEntry) {
@@ -8257,10 +8902,12 @@ async function saveEmailAnalysis(
     }
 
 
-    const dashboardEvent =
-        await createDashboardEvent({
-            type:
-                "email_ai_analysis",
+const dashboardEvent =
+    await createDashboardEvent({
+        companyId,
+
+        type:
+            "email_ai_analysis",
 
             title:
                 analysis.dashboardTitle ||
@@ -8309,9 +8956,11 @@ async function saveEmailAnalysis(
 
     if (dashboardEvent) {
 
-        await createDashboardNotification({
-            eventId:
-                dashboardEvent.id,
+await createDashboardNotification({
+    companyId,
+
+    eventId:
+        dashboardEvent.id,
 
             title:
                 analysis.dashboardTitle ||
@@ -8655,6 +9304,7 @@ const { data: offerRow, error: offerError } = await supabase
 .from("offers")
 .select("*")
 .eq("id", offerId)
+.eq("company_id", req.companyId)
 .single();
 
 if (offerError) {
@@ -8673,6 +9323,7 @@ const { data: thread, error: threadError } = await supabase
 .from("email_threads")
 .insert([
 {
+company_id: req.companyId,
 contact_id: offer.contactId || null,
 related_type: "offer",
 related_id: offer.id,
@@ -8710,10 +9361,12 @@ header: Buffer.from(pdfBuffer).slice(0, 5).toString()
 });
 
 const email =
-    await sendEmailFromActiveMailbox({
-        to,
-        subject,
-        html,
+
+await sendEmailFromActiveMailbox({
+    companyId: req.companyId,
+    to,
+    subject,
+    html,
 
         attachments: [
             {
@@ -8864,6 +9517,7 @@ if (attachmentError) {
 }
 
 await createDashboardEvent({
+companyId: req.companyId,
 type: "offer_email_sent",
 title: "Angebot versendet",
 description: `Angebot ${offer.offerNumber || offer.id} wurde an ${to} gesendet.`,
@@ -8900,6 +9554,7 @@ const { data: invoiceRow, error: invoiceError } = await supabase
 .from("invoices")
 .select("*")
 .eq("id", invoiceId)
+.eq("company_id", req.companyId)
 .single();
 
 if (invoiceError) {
@@ -8918,6 +9573,7 @@ const { data: thread, error: threadError } = await supabase
 .from("email_threads")
 .insert([
 {
+company_id: req.companyId,
 contact_id: invoice.contactId || null,
 related_type: "invoice",
 related_id: invoice.id,
@@ -8949,10 +9605,12 @@ Gesendet über WorkPilot
 `;
 
 const email =
-    await sendEmailFromActiveMailbox({
-        to,
-        subject,
-        html,
+
+await sendEmailFromActiveMailbox({
+    companyId: req.companyId,
+    to,
+    subject,
+    html,
 
         attachments: [
             {
@@ -9103,6 +9761,7 @@ if (attachmentError) {
 }
 
 await createDashboardEvent({
+companyId: req.companyId,
 type: "invoice_email_sent",
 title: "Rechnung versendet",
 description: `Rechnung ${invoice.invoiceNumber || invoice.id} wurde an ${to} gesendet.`,
@@ -9143,11 +9802,32 @@ error: "Fehlende E-Mail-Daten."
 try {
 let finalThreadId = threadId;
 
+if (finalThreadId) {
+    const { data: existingThread, error: threadError } =
+        await supabase
+            .from("email_threads")
+            .select("id")
+            .eq("id", finalThreadId)
+            .eq("company_id", req.companyId)
+            .maybeSingle();
+
+    if (threadError) throw threadError;
+
+    if (!existingThread) {
+        return res.status(404).json({
+            ok: false,
+            error: "E-Mail-Thread nicht gefunden."
+        });
+    }
+}
+
 if (!finalThreadId) {
+
 const { data: thread, error: threadError } = await supabase
 .from("email_threads")
 .insert([
 {
+company_id: req.companyId,
 subject,
 related_type: "general",
 status: "sent",
@@ -9163,19 +9843,25 @@ finalThreadId = thread.id;
 }
 
 const email =
-    await sendEmailFromActiveMailbox({
-        to,
-        subject,
-        html,
-        attachments: uploadedFiles
-    });
 
-const matchedContact = await findMatchingContact(to);
+await sendEmailFromActiveMailbox({
+    companyId: req.companyId,
+    to,
+    subject,
+    html,
+    attachments: uploadedFiles
+});
+
+const matchedContact = await findMatchingContact(
+    to,
+    req.companyId
+);
 
 const { data: message, error: messageError } = await supabase
 .from("email_messages")
 .insert([
 {
+    company_id: req.companyId,
     thread_id: finalThreadId,
     contact_id: matchedContact?.id || null,
     direction: "outbound",
@@ -9225,6 +9911,7 @@ imap_mailbox:
 if (messageError) throw messageError;
 
 await createDashboardEvent({
+companyId: req.companyId,
 type: "email_sent",
 title: "E-Mail gesendet",
 description: `E-Mail an ${to}: ${subject}`,
@@ -9248,6 +9935,8 @@ const { error: attachmentError } = await supabase
 .from("email_attachments")
 .insert([
 {
+    company_id: req.companyId,
+
     message_id: message.id,
 
     file_name:
@@ -9315,8 +10004,9 @@ const finalBody = html || text || "";
 const { data: thread, error: threadError } = await supabase
 .from("email_threads")
 .insert([
-{
-contact_id: matchedContact?.id || null,
+    {
+        company_id: mailbox.company_id,
+        contact_id: matchedContact?.id || null,
 
 subject: subject || "Ohne Betreff",
 
@@ -9337,7 +10027,8 @@ throw threadError;
 const { data: message, error: messageError } = await supabase
 .from("email_messages")
 .insert([
-{
+    {
+company_id: mailbox.company_id,
 thread_id: thread.id,
 
 contact_id: matchedContact?.id || null,
@@ -9570,8 +10261,16 @@ async function importSingleGoogleMessage(
     gmailMessageId,
     options = {}
 ) {
+    const companyId = options.companyId;
 
-    const messageKey = String(gmailMessageId);
+    if (!companyId) {
+        throw new Error(
+            "companyId fehlt beim Google-Einzelimport."
+        );
+    }
+
+    const messageKey =
+    `${companyId}:${String(gmailMessageId)}`;
 
     if (activeGoogleMessageImports.has(messageKey)) {
 
@@ -9624,15 +10323,21 @@ async function importSingleGoogleMessageUnlocked(
     gmail,
     gmailMessageId,
     {
+        companyId,
         createDashboardNotificationEntry = true,
         manualFullContent = true
     } = {}
 ) {
+    if (!companyId) {
+        throw new Error(
+            "companyId fehlt beim Google-Import."
+        );
+    }
 
-    const {
-        mailbox
-    } =
-        await getActiveGoogleMailboxAuth();
+const {
+    mailbox
+} =
+    await getActiveGoogleMailboxAuth(companyId);
 
 
     const detailResponse =
@@ -9830,6 +10535,7 @@ const {
             direction,
             message_status
         `)
+        .eq("company_id", companyId)
 .eq(
     "external_message_id",
     gmailMessageIdFinal
@@ -9882,12 +10588,10 @@ if (existingMessage) {
                 provider:
                     "google"
             })
-            .eq(
-                "id",
-                existingMessage.id
-            )
-            .select()
-            .single();
+.eq("id", existingMessage.id)
+.eq("company_id", companyId)
+.select()
+.single();
 
 
     if (updateError) {
@@ -9903,10 +10607,11 @@ if (manualFullContent) {
 
     const { data: existingThread, error: threadLookupError } =
         await supabase
-            .from("email_threads")
-            .select("*")
-            .eq("id", updatedMessage.thread_id)
-            .single();
+.from("email_threads")
+.select("*")
+.eq("id", updatedMessage.thread_id)
+.eq("company_id", companyId)
+.single();
 
     if (threadLookupError) {
         throw threadLookupError;
@@ -9933,13 +10638,11 @@ return updatedMessage;
         data: thread
     } =
         await supabase
-            .from("email_threads")
-            .select("*")
-            .eq(
-                "external_thread_id",
-                gmailThreadId
-            )
-            .maybeSingle();
+.from("email_threads")
+.select("*")
+.eq("company_id", companyId)
+.eq("external_thread_id", gmailThreadId)
+.maybeSingle();
 
 
     if (!thread) {
@@ -9950,11 +10653,12 @@ return updatedMessage;
         } =
             await supabase
                 .from("email_threads")
-                .insert([
-                    {
-                        subject,
-                        related_type:
-                            "gmail",
+.insert([
+    {
+        company_id: companyId,
+        subject,
+        related_type:
+            "gmail",
                         related_id:
                             gmailThreadId,
                         status:
@@ -9982,10 +10686,11 @@ return updatedMessage;
     }
 
 
-    const matchedContact =
-        await findMatchingContact(
-            sender
-        );
+const matchedContact =
+    await findMatchingContact(
+        sender,
+        companyId
+    );
 
 
     const {
@@ -9993,11 +10698,12 @@ return updatedMessage;
         error: messageError
     } =
         await supabase
-            .from("email_messages")
-            .insert([
-                {
-                    thread_id:
-                        thread.id,
+.from("email_messages")
+.insert([
+    {
+        company_id: companyId,
+        thread_id:
+            thread.id,
 
                     contact_id:
                         matchedContact?.id ||
@@ -10057,19 +10763,20 @@ if (messageError) {
             gmailMessageIdFinal
         );
 
-        const {
-            data: concurrentMessage,
-            error: concurrentLookupError
-        } = await supabase
-            .from("email_messages")
-            .select("*")
-            .eq("provider", "google")
-            .eq("mailbox_email", mailbox.email)
-            .eq(
-                "external_message_id",
-                gmailMessageIdFinal
-            )
-            .maybeSingle();
+const {
+    data: concurrentMessage,
+    error: concurrentLookupError
+} = await supabase
+    .from("email_messages")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("provider", "google")
+    .eq("mailbox_email", mailbox.email)
+    .eq(
+        "external_message_id",
+        gmailMessageIdFinal
+    )
+    .maybeSingle();
 
         if (concurrentLookupError) {
             throw concurrentLookupError;
@@ -10135,6 +10842,11 @@ return await completeManualGoogleMessage({
 }
 
 app.post("/api/gmail/webhook", async (req, res) => {
+    return res.status(503).json({
+        ok: false,
+        error: "Gmail-Webhook vorübergehend deaktiviert."
+    });
+
     try {
         const message = req.body?.message;
 
@@ -10262,7 +10974,7 @@ try {
 let auth = null;
 
 try {
-const googleMailbox = await getActiveGoogleMailboxAuth();
+const googleMailbox = await getActiveGoogleMailboxAuth(req.companyId);
 auth = googleMailbox.auth;
 } catch {
 auth = null;
@@ -10400,10 +11112,11 @@ app.get("/api/email-messages/:id/attachments", async (req, res) => {
 const { id } = req.params;
 
 const { data, error } = await supabase
-.from("email_attachments")
-.select("*")
-.eq("message_id", id)
-.order("created_at", { ascending: true });
+    .from("email_attachments")
+    .select("*")
+    .eq("message_id", id)
+    .eq("company_id", req.companyId)
+    .order("created_at", { ascending: true });
 
 if (error) {
 return res.status(500).json({
@@ -10419,36 +11132,49 @@ attachments: data || []
 });
 
 app.get("/api/email-attachments/:id/open", async (req, res) => {
-const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-const { data: attachment, error: attachmentError } = await supabase
-.from("email_attachments")
-.select("*")
-.eq("id", id)
-.single();
+        const { data: attachment, error: attachmentError } =
+            await supabase
+                .from("email_attachments")
+                .select("id, file_path")
+                .eq("id", id)
+                .eq("company_id", req.companyId)
+                .maybeSingle();
 
-if (attachmentError) {
-return res.status(500).json({
-ok: false,
-error: attachmentError.message
-});
-}
+        if (attachmentError) {
+            throw attachmentError;
+        }
 
-const { data, error } = await supabase.storage
-.from("email-attachments")
-.createSignedUrl(attachment.file_path, 60 * 5);
+        if (!attachment) {
+            return res.status(404).json({
+                ok: false,
+                error: "Anhang nicht gefunden."
+            });
+        }
 
-if (error) {
-return res.status(500).json({
-ok: false,
-error: error.message
-});
-}
+        const { data, error } = await supabase.storage
+            .from("email-attachments")
+            .createSignedUrl(attachment.file_path, 60 * 5);
 
-res.json({
-ok: true,
-url: data.signedUrl
-});
+        if (error) {
+            throw error;
+        }
+
+        return res.json({
+            ok: true,
+            url: data.signedUrl
+        });
+
+    } catch (error) {
+        console.error("EMAIL ATTACHMENT OPEN ERROR:", error);
+
+        return res.status(500).json({
+            ok: false,
+            error: "Anhang konnte nicht geöffnet werden."
+        });
+    }
 });
 
 app.get("/calendar-create", (req, res) => {
@@ -10477,9 +11203,11 @@ app.get("/api/calendar-events/:id", async (req, res) => {
 const { id } = req.params;
 
 const { data, error } = await supabase
+
 .from("calendar_events")
 .select("*")
 .eq("id", id)
+.eq("company_id", req.companyId)
 .single();
 
 if (error) {
@@ -10586,10 +11314,11 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
             data: message,
             error: messageError
         } = await supabase
-            .from("email_messages")
-            .select("*")
-            .eq("id", id)
-            .single();
+.from("email_messages")
+.select("*")
+.eq("id", id)
+.eq("company_id", req.companyId)
+.single();
 
         if (messageError || !message) {
             return res.status(404).json({
@@ -10602,9 +11331,10 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
             data: existingAttachments,
             error: existingAttachmentError
         } = await supabase
-            .from("email_attachments")
-            .select("id")
-            .eq("message_id", message.id);
+.from("email_attachments")
+.select("id")
+.eq("message_id", message.id)
+.eq("company_id", req.companyId);
 
         if (existingAttachmentError) {
             throw existingAttachmentError;
@@ -10637,14 +11367,40 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
 
         }
 
-        const mailbox =
-            await getActiveMailboxConnection();
+if (
+    message.provider !== "imap" ||
+    !message.mailbox_email ||
+    !Number.isSafeInteger(Number(message.imap_uid)) ||
+    Number(message.imap_uid) <= 0
+) {
+    return res.status(400).json({
+        success: false,
+        message: "Diese Nachricht kann nicht über IMAP nachgeladen werden."
+    });
+}
 
-        if (!mailbox) {
-            throw new Error(
-                "Keine aktive Mailbox-Verbindung gefunden."
-            );
-        }
+const { data: mailboxes, error: mailboxError } =
+    await supabase
+        .from("mailbox_connections")
+        .select("*")
+        .eq("company_id", req.companyId)
+        .eq("provider", "imap")
+        .eq("email", message.mailbox_email)
+        .eq("is_active", true)
+        .limit(2);
+
+if (mailboxError) {
+    throw mailboxError;
+}
+
+if (!mailboxes || mailboxes.length !== 1) {
+    return res.status(404).json({
+        success: false,
+        message: "Das zugehörige IMAP-Postfach wurde nicht gefunden."
+    });
+}
+
+const mailbox = mailboxes[0];
 
         const password =
             decryptMailPassword(
@@ -10679,7 +11435,8 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
         message.imap_uid,
 
         message.imap_mailbox ||
-            "INBOX"
+            "INBOX",
+        message.imap_uidvalidity
     );
 
 
@@ -10787,9 +11544,12 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
                     error: insertError
                 } = await supabase
                     .from("email_attachments")
-                    .insert({
-                        message_id:
-                            message.id,
+.insert({
+    company_id:
+        req.companyId,
+
+    message_id:
+        message.id,
 
                         file_name:
                             originalFileName,
@@ -10839,10 +11599,14 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
                 body_html,
                 content_loaded: true
             })
-            .eq(
-                "id",
-                message.id
-            );
+.eq(
+    "id",
+    message.id
+)
+.eq(
+    "company_id",
+    req.companyId
+);
 
         if (updateError) {
             throw updateError;
@@ -10881,21 +11645,41 @@ app.get("/api/mailbox/message/:id/content", async (req, res) => {
 let mailboxLiveSyncClient = null;
 let mailboxLiveSyncRunning = false;
 
-let mailboxImportProgress = {
-    running: false,
-    provider: null,
-    total: 0,
-    processed: 0,
-    saved: 0,
-    failed: 0,
-    finished: false,
-    error: null
-};
+function createEmptyMailboxImportProgress() {
+    return {
+        running: false,
+        provider: null,
+        total: 0,
+        processed: 0,
+        saved: 0,
+        failed: 0,
+        finished: false,
+        error: null
+    };
+}
+
+const mailboxImportProgressByMailbox = new Map();
+
+function getMailboxImportProgressKey(companyId, mailboxId) {
+    if (!companyId || !mailboxId) {
+        throw new Error(
+            "Firmen-ID oder Postfach-ID beim Importfortschritt fehlt."
+        );
+    }
+
+    return `${companyId}:${mailboxId}`;
+}
 
 const activeManualMailboxImports =
     new Set();
 
-async function startMailboxLiveSync() {
+async function startMailboxLiveSync(companyId) {
+
+    if (!companyId) {
+        throw new Error(
+            "companyId fehlt beim IMAP-Live-Sync."
+        );
+    }
 
     if (mailboxLiveSyncRunning) {
         console.log("📡 MAIL LIVE SYNC läuft bereits.");
@@ -10907,8 +11691,8 @@ async function startMailboxLiveSync() {
 
     try {
 
-        mailbox =
-            await getActiveMailboxConnection();
+mailbox =
+    await getActiveMailboxConnection(companyId);
 
 
         if (
@@ -10979,10 +11763,11 @@ async function startMailboxLiveSync() {
 
                 try {
 
-                    const lastUid =
-                        await getLastImapUid(
-                            mailbox.email
-                        );
+const lastUid =
+    await getLastImapUid(
+        companyId,
+        mailbox.email
+    );
 
 
                     const mails =
@@ -11079,7 +11864,7 @@ async function startMailboxLiveSync() {
 
                 setTimeout(() => {
 
-                    startMailboxLiveSync()
+                    startMailboxLiveSync(companyId)
                         .catch((error) => {
 
                             console.error(
@@ -11124,7 +11909,7 @@ async function startMailboxLiveSync() {
 
         setTimeout(() => {
 
-            startMailboxLiveSync()
+            startMailboxLiveSync(companyId)
                 .catch((restartError) => {
 
                     console.error(
@@ -11149,24 +11934,14 @@ path: req.url
 });
 });
 
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
 
     console.log(
         `WorkPilot läuft auf Port ${PORT}`
     );
 
-
-    try {
-
-        await startMailboxLiveSync();
-
-    } catch (error) {
-
-        console.error(
-            "MAIL LIVE SYNC STARTUP ERROR:",
-            error
-        );
-
-    }
+    console.log(
+        "📡 IMAP-Live-Sync beim Serverstart vorübergehend deaktiviert."
+    );
 
 });

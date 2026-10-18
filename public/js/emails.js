@@ -376,7 +376,7 @@ item.className = "mailAttachmentItem";
 item.innerHTML = `
 <div>
 <div class="mailAttachmentName">
-${file.name}
+${escapeHtml(file.name)}
 </div>
 
 <div class="mailAttachmentSize">
@@ -1054,6 +1054,9 @@ let mailFrontendSyncTimer = null;
 let mailFrontendSyncRunning = false;
 let manualMailboxImportRunning = false;
 
+let lastAutomaticMailImport = 0;
+const AUTOMATIC_MAIL_IMPORT_INTERVAL = 60000;
+
 async function checkMailFrontendSync() {
 
     if (
@@ -1067,16 +1070,31 @@ async function checkMailFrontendSync() {
 
     try {
 
-        try {
+try {
 
-            await fetch(
-                "/api/mailbox/import-new",
-                {
-                    method: "POST"
-                }
+    const now = Date.now();
+
+    if (
+        now - lastAutomaticMailImport >=
+        AUTOMATIC_MAIL_IMPORT_INTERVAL
+    ) {
+        lastAutomaticMailImport = now;
+
+        const importResponse = await fetch(
+            "/api/mailbox/import-new",
+            {
+                method: "POST"
+            }
+        );
+
+        if (!importResponse.ok) {
+            throw new Error(
+                "Automatischer Mailimport fehlgeschlagen."
             );
+        }
+    }
 
-        } catch (error) {
+} catch (error) {
 
             console.error(
                 "MAIL PROVIDER SYNC ERROR:",
@@ -1396,9 +1414,11 @@ if (!visibleMessages.length) {
 
                     <div class="threadSender">
                         ${
-                            message.direction === "outbound"
-                                ? message.recipient || "Unbekannt"
-                                : message.sender || "Unbekannt"
+escapeHtml(
+    message.direction === "outbound"
+        ? message.recipient || "Unbekannt"
+        : message.sender || "Unbekannt"
+)
                         }
                     </div>
 
@@ -1417,17 +1437,19 @@ if (!visibleMessages.length) {
                 </div>
 
 
-                <div class="threadSubject">
-                    ${subject}
-                </div>
+<div class="threadSubject">
+    ${escapeHtml(subject)}
+</div>
 
 
                 <div class="threadPreview">
                     ${
-                        stripHtml(
-                            message.body || ""
-                        ).slice(0, 120) ||
-                        "Keine Vorschau verfügbar"
+escapeHtml(
+    stripHtml(
+        message.body || ""
+    ).slice(0, 120) ||
+    "Keine Vorschau verfügbar"
+)
                     }
                 </div>
 
@@ -2175,12 +2197,12 @@ mailDetailView.innerHTML = `
             ${folderLabels[getMessageFolder(message)] || "E-Mail"}
         </div>
 
-        <h2>${subject}</h2>
+<h2>${escapeHtml(subject)}</h2>
 
-        <p>
-            Von: ${message.sender || "Unbekannt"}<br>
-            An: ${message.recipient || "Unbekannt"}
-        </p>
+<p>
+    Von: ${escapeHtml(message.sender || "Unbekannt")}<br>
+    An: ${escapeHtml(message.recipient || "Unbekannt")}
+</p>
 
         ${
             matchedContact
@@ -2189,7 +2211,11 @@ mailDetailView.innerHTML = `
 
                     <strong>Kontakt:</strong>
 
-                    ${matchedContact.name || matchedContact.email}
+                    ${escapeHtml(
+    matchedContact.name ||
+    matchedContact.email ||
+    ""
+)}
 
                     <button
                         class="mailOpenContactBtn"
@@ -2209,8 +2235,9 @@ mailDetailView.innerHTML = `
 
                     <button
                         class="mailCreateContactBtn"
-                        data-name="${contactEmail || ""}"
-                        data-email="${contactEmail || ""}"
+                        data-name="${escapeHtml(contactEmail || "")}"
+data-email="${escapeHtml(contactEmail || "")}"
+
                     >
                         Kontakt erstellen
                     </button>
@@ -2524,10 +2551,10 @@ if (useFrame) {
             "mailBodyContainer"
         );
 
-    await renderMailFrame(
-        container,
-        message.body_html
-    );
+await renderMailFrame(
+    container,
+    sanitizeMailHtml(message.body_html || "")
+);
 
 }
 

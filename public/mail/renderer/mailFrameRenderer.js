@@ -15,10 +15,15 @@ async function renderMailFrame(container, html) {
     iframe.className =
         "mailHtmlFrame";
 
-    iframe.setAttribute(
-        "sandbox",
-        "allow-same-origin allow-popups"
-    );
+iframe.setAttribute(
+    "sandbox",
+    "allow-same-origin"
+);
+
+iframe.setAttribute(
+    "referrerpolicy",
+    "no-referrer"
+);
 
     iframe.setAttribute(
         "scrolling",
@@ -48,7 +53,31 @@ async function renderMailFrame(container, html) {
         iframe
     );
 
-iframe.srcdoc = html;
+const safeHtml = sanitizeMailHtml(html);
+
+iframe.srcdoc = `
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'"
+>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-wrap: anywhere;
+}
+img {
+    max-width: 100%;
+    height: auto;
+}
+</style>
+</head>
+<body>${safeHtml}</body>
+</html>`;
 
     iframe.onload = () => {
 

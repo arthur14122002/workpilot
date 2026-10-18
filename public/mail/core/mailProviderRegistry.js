@@ -321,11 +321,24 @@ function getProviderByMx(mxHosts = []) {
 
     for (const rule of mxProviderRules) {
 
-        const matched = normalizedHosts.some(host =>
-            rule.matches.some(match =>
-                host.includes(match)
+const matched = normalizedHosts.some(host =>
+    rule.matches.some(match => {
+        const normalizedHost = host
+            .trim()
+            .replace(/\.$/, "");
+
+        const normalizedMatch = match
+            .trim()
+            .toLowerCase();
+
+        return (
+            normalizedHost === normalizedMatch ||
+            normalizedHost.endsWith(
+                `.${normalizedMatch}`
             )
         );
+    })
+);
 
         if (matched) {
             return rule.provider;
