@@ -115,6 +115,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     password
                 });
 
+                const statusResponse = await fetch("/api/auth/company-status");
+                const status = await statusResponse.json();
+                if (status.ok && !status.hasCompany && status.emailConfirmed) {
+                    showMessage("Anmeldung erfolgreich, aber dein Firmenkonto fehlt noch. Bitte kontaktiere den Support für die Einrichtung.","error");
+                    return;
+                }
                 window.location.href = "/";
             });
         });

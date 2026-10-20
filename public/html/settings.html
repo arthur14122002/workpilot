@@ -7,6 +7,7 @@
 
 <link rel="stylesheet" href="/css/app-layout.css" />
 <link rel="stylesheet" href="/css/settings.css" />
+<link rel="stylesheet" href="/css/auth-extra.css" />
 </head>
 <body>
 <div class="appShell">
@@ -228,6 +229,7 @@ Diese Informationen werden automatisch in Angebote und Rechnungen übernommen.
 <div class="notice" id="settingsNotice">Firmendaten wurden gespeichert.</div>
 </form>
 </section>
+<section class="accountActions" aria-labelledby="accountHeading"><h2 id="accountHeading">Kontoverwaltung</h2><p>Du kannst dich abmelden oder dein Konto dauerhaft löschen.</p><button type="button" class="logoutAction" id="accountLogout">Abmelden</button><button type="button" class="deleteAction" id="accountDeleteToggle">Konto löschen</button><form id="accountDeleteForm" hidden><p>Diese Funktion löscht nur dein Benutzerkonto. Als Firmeninhaber musst du zuerst die Inhaberschaft übertragen oder die separate Firmenlöschung durchführen.</p><label for="deletePassword">Passwort bestätigen</label><input id="deletePassword" type="password" autocomplete="current-password" required><label for="deleteConfirmation">Zur Bestätigung KONTO LÖSCHEN eingeben</label><input id="deleteConfirmation" required autocomplete="off"><button class="deleteAction" type="submit">Endgültig löschen</button></form><h3>Gesamte Firma löschen</h3><p>Nur für Firmeninhaber: Du erhältst einen einmaligen Bestätigungslink an deine verifizierte E-Mail-Adresse. Ohne Bestätigung wird nichts gelöscht.</p><button type="button" class="deleteAction" id="requestCompanyDeletion">Bestätigungs-E-Mail anfordern</button><p id="accountMessage" class="accountMessage" role="status"></p></section>
 </main>
 </div>
 
@@ -629,5 +631,6 @@ Import starten
 
 <script src="/js/app-layout.js"></script>
 <script src="/js/settings.js"></script>
+<script src="/js/account-actions.js"></script>
 </body>
 </html>

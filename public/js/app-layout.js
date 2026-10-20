@@ -20,7 +20,11 @@ try {
 const response = await fetch("/api/email-inbox");
 const result = await response.json();
 
-if (!result.ok) {
+if (!response.ok || !result.ok) {
+if (response.status === 401 || response.status === 403) {
+emailCounter.style.display = "none";
+return;
+}
 throw new Error(result.error || "E-Mail-Zähler konnte nicht geladen werden.");
 }
 
@@ -105,3 +109,48 @@ showToast(pendingToast);
 sessionStorage.removeItem("workpilot_toast");
 }
 });
+
+// Frühe Firmenprüfung für Navigation zu geschützten Arbeitsbereichen.
+// Die serverseitige requireCompany-Prüfung bleibt die verbindliche Zugriffskontrolle.
+(() => {
+    const protectedPaths = new Set([
+        "/offer-create", "/offer-editor", "/invoice-create", "/invoice-editor",
+        "/note-create", "/calendar-create", "/calendar-edit", "/emails",
+        "/offers", "/invoices", "/contacts", "/contact-create", "/contact-detail"
+    ]);
+    let pending = false;
+
+    document.addEventListener("click", async (event) => {
+        const link = event.target.closest?.("a[href]");
+        if (!link || event.defaultPrevented || event.button !== 0 ||
+            event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
+            (link.target && link.target !== "_self") || link.hasAttribute("download")) return;
+
+        const destination = new URL(link.href, location.href);
+        if (destination.origin !== location.origin || !protectedPaths.has(destination.pathname)) return;
+        event.preventDefault();
+        if (pending) return;
+        pending = true;
+        try {
+            const response = await fetch("/api/auth/company-status", { credentials: "same-origin" });
+            if (response.status === 401) {
+                window.showToast?.("Bitte melde dich zuerst an.");
+                location.assign("/login");
+                return;
+            }
+            if (!response.ok) throw new Error("Firmenzugang konnte nicht überprüft werden.");
+            const status = await response.json();
+            if (!status.emailConfirmed) {
+                window.showToast?.("Bitte bestätige zuerst deine E-Mail-Adresse.");
+            } else if (!status.hasCompany) {
+                window.showToast?.("Bitte richte zuerst dein Firmenkonto ein.");
+            } else {
+                location.assign(destination.href);
+            }
+        } catch (error) {
+            window.showToast?.(error.message || "Firmenzugang konnte nicht überprüft werden.");
+        } finally {
+            pending = false;
+        }
+    }, true);
+})();

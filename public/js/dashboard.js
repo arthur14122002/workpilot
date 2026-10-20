@@ -628,6 +628,8 @@ await renderDashboard();
 }
 
 async function renderDashboard() {
+// Calendar grid must render even when an API request fails or takes time.
+renderMonthCalendar(calendarEventsCache);
 try {
 renderGreeting();
 await renderStats();

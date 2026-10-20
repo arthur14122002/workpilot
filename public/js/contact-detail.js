@@ -1,3 +1,10 @@
+// Encode untrusted values before inserting them into HTML templates.
+function escapeContactHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
 const CONTACTS_KEY = "workpilot_contacts";
 const OFFERS_KEY = "workpilot_saved_offers";
 const DRAFT_KEY = "workpilot_current_offer_draft";
@@ -111,7 +118,7 @@ item.className = "noteItem";
 
 item.innerHTML = `
 <div class="noteTop">
-<div class="noteType">${getNoteTypeLabel(note.type)}</div>
+<div class="noteType">${escapeContactHtml(getNoteTypeLabel(note.type))}</div>
 
 <div class="noteDate">
 ${new Date(note.created_at).toLocaleString("de-DE")}
@@ -119,13 +126,13 @@ ${new Date(note.created_at).toLocaleString("de-DE")}
 </div>
 
 <div class="noteText">
-${note.text}
+${escapeContactHtml(note.text)}
 </div>
 
 <div class="noteActions">
 <button
 class="noteEditBtn"
-data-edit-note="${note.id}"
+data-edit-note="${escapeContactHtml(note.id)}"
 title="Notiz bearbeiten"
 >
 ✏️
@@ -133,7 +140,7 @@ title="Notiz bearbeiten"
 
 <button
 class="noteDeleteBtn"
-data-delete-note="${note.id}"
+data-delete-note="${escapeContactHtml(note.id)}"
 title="Notiz löschen"
 >
 🗑
@@ -292,12 +299,12 @@ item.className = "offerItem";
 
 item.innerHTML = `
 <div class="offerInfo">
-<div class="offerTitle">${offer.offerNumber || "Unbenanntes Angebot"}</div>
-<div class="offerMeta">${offer.recipientName || "Kein Kunde"} · ${offer.offerDate || "-"}</div>
+<div class="offerTitle">${escapeContactHtml(offer.offerNumber || "Unbenanntes Angebot")}</div>
+<div class="offerMeta">${escapeContactHtml(offer.recipientName || "Kein Kunde")} · ${escapeContactHtml(offer.offerDate || "-")}</div>
 </div>
 
 <div class="offerActions">
-<button class="btn btnSecondary" data-open="${offer.id}">Öffnen</button>
+<button class="btn btnSecondary" data-open="${escapeContactHtml(offer.id)}">Öffnen</button>
 </div>
 `;
 
@@ -351,12 +358,12 @@ item.className = "offerItem";
 
 item.innerHTML = `
 <div class="offerInfo">
-<div class="offerTitle">${invoice.invoiceNumber || "Unbenannte Rechnung"}</div>
-<div class="offerMeta">${invoice.recipientName || "Kein Kunde"} · ${invoice.invoiceDate || "-"}</div>
+<div class="offerTitle">${escapeContactHtml(invoice.invoiceNumber || "Unbenannte Rechnung")}</div>
+<div class="offerMeta">${escapeContactHtml(invoice.recipientName || "Kein Kunde")} · ${escapeContactHtml(invoice.invoiceDate || "-")}</div>
 </div>
 
 <div class="offerActions">
-<button class="btn btnSecondary" data-open-invoice="${invoice.id}">Öffnen</button>
+<button class="btn btnSecondary" data-open-invoice="${escapeContactHtml(invoice.id)}">Öffnen</button>
 </div>
 `;
 
@@ -404,21 +411,21 @@ item.className = isOutbound
 item.innerHTML = `
 <div class="emailChatCard">
 <div class="emailChatTop">
-<strong>${mail.subject || "Ohne Betreff"}</strong>
+<strong>${escapeContactHtml(mail.subject || "Ohne Betreff")}</strong>
 <span>${new Date(mail.created_at).toLocaleDateString("de-DE")}</span>
 </div>
 
 <div class="emailChatMeta">
-${isOutbound ? `An: ${mail.recipient || "-"}` : `Von: ${mail.sender || "-"}`}
+${isOutbound ? `An: ${escapeContactHtml(mail.recipient || "-")}` : `Von: ${escapeContactHtml(mail.sender || "-")}`}
 </div>
 
 <div class="emailChatPreview">
-${preview || "Keine Vorschau vorhanden."}
+${escapeContactHtml(preview || "Keine Vorschau vorhanden.")}
 </div>
 
 <button
 class="emailChatOpenBtn"
-data-open-email="${mail.id}"
+data-open-email="${escapeContactHtml(mail.id)}"
 title="E-Mail öffnen"
 >
 👁
