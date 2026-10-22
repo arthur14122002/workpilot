@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WorkPilot – Anmeldung</title>
+
+    <link rel="stylesheet" href="/css/app-layout.css" />
+    <link rel="stylesheet" href="/css/login.css" />
+
+    <script src="/js/login.js" defer></script>
+</head>
+
+<body>
+    <main class="loginPage">
+        <section class="loginCard">
+
+            <div class="logoWrap">
+                <div class="logoBox">WP</div>
+                <div class="logoText">WorkPilot</div>
+            </div>
+
+            <div class="loginTabs">
+                <button
+                    type="button"
+                    class="loginTab active"
+                    data-view="login"
+                >
+                    Anmelden
+                </button>
+
+                <button
+                    type="button"
+                    class="loginTab"
+                    data-view="register"
+                >
+                    Registrieren
+                </button>
+            </div>
+
+            <!-- ANMELDUNG -->
+            <div class="authView active" id="loginView">
+                <h1>Willkommen zurück</h1>
+                <p>Melde dich bei deinem WorkPilot-Konto an.</p>
+
+                <form id="loginForm">
+                    <label for="loginEmail">E-Mail-Adresse</label>
+                    <input
+                        id="loginEmail"
+                        type="email"
+                        autocomplete="email"
+                        placeholder="name@unternehmen.de"
+                        required
+                    />
+
+                    <label for="loginPassword">Passwort</label>
+                    <input
+                        id="loginPassword"
+                        type="password"
+                        autocomplete="current-password"
+                        placeholder="Dein Passwort"
+                        required
+                    />
+
+                    <button
+                        type="button"
+                        class="textButton forgotLink"
+                        id="forgotPasswordLink"
+                    >
+                        Passwort vergessen?
+                    </button>
+
+                    <button type="submit" class="authSubmit">
+                        Anmelden
+                    </button>
+                </form>
+            </div>
+
+            <!-- REGISTRIERUNG -->
+            <div class="authView" id="registerView">
+                <h1>WorkPilot starten</h1>
+                <p>
+                    Erstelle dein Firmenkonto und starte deine
+                    kostenlose 30-Tage-Testphase.
+                </p>
+
+                <form id="registerForm">
+                    <label for="registerName">Dein Name</label>
+                    <input
+                        id="registerName"
+                        type="text"
+                        autocomplete="name"
+                        placeholder="Max Mustermann"
+                        required
+                    />
+
+                    <label for="registerCompany">Unternehmen</label>
+                    <input
+                        id="registerCompany"
+                        type="text"
+                        autocomplete="organization"
+                        placeholder="Musterbau GmbH"
+                        required
+                    />
+
+                    <label for="registerEmail">Geschäftliche E-Mail</label>
+                    <input
+                        id="registerEmail"
+                        type="email"
+                        autocomplete="email"
+                        placeholder="name@unternehmen.de"
+                        required
+                    />
+
+                    <label for="registerPassword">Passwort</label>
+                    <input
+                        id="registerPassword"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="12"
+                        placeholder="Mindestens 12 Zeichen"
+                        required
+                    />
+
+                    <label class="checkboxLabel">
+                        <input
+                            type="checkbox"
+                            id="registerConsent"
+                            required
+                        />
+                        <span>
+                            Ich akzeptiere die Nutzungsbedingungen
+                            und habe die Datenschutzhinweise gelesen.
+                        </span>
+                    </label>
+
+                    <button type="submit" class="authSubmit">
+                        Kostenlos registrieren
+                    </button>
+                </form>
+
+                <div class="trialNotice">
+                    <span>✓</span>
+                    30 Tage kostenlos · Keine Kreditkarte erforderlich
+                </div>
+            </div>
+
+            <!-- PASSWORT ZURÜCKSETZEN -->
+            <div class="authView" id="forgotView">
+                <h1>Passwort zurücksetzen</h1>
+                <p>
+                    Gib deine E-Mail-Adresse ein. Du erhältst
+                    anschließend einen Link zum Zurücksetzen.
+                </p>
+
+                <form id="forgotForm">
+                    <label for="forgotEmail">E-Mail-Adresse</label>
+                    <input
+                        id="forgotEmail"
+                        type="email"
+                        autocomplete="email"
+                        placeholder="name@unternehmen.de"
+                        required
+                    />
+
+                    <button type="submit" class="authSubmit">
+                        Link anfordern
+                    </button>
+                </form>
+
+                <button
+                    type="button"
+                    class="textButton backButton"
+                    id="backToLogin"
+                >
+                    ← Zurück zur Anmeldung
+                </button>
+            </div>
+
+            <div
+                id="authMessage"
+                class="authMessage"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+
+            <div class="loginFooter">
+                © WorkPilot · Dein digitaler Arbeitsplatz
+            </div>
+
+        </section>
+
+        <aside class="loginInfo">
+            <div class="loginInfoContent">
+                <div class="infoEyebrow">
+                    WORKPILOT BUSINESS SOFTWARE
+                </div>
+
+                <h2>
+                    Weniger Verwaltung.
+                    <span>Mehr Zeit fürs Geschäft.</span>
+                </h2>
+
+                <p>
+                    Angebote, Rechnungen und Kundenkommunikation
+                    an einem zentralen Ort.
+                </p>
+
+                <div class="infoFeatures">
+                    <div>✓ Angebote und Rechnungen erstellen</div>
+                    <div>✓ Kunden und Kontakte verwalten</div>
+                    <div>✓ Arbeitsabläufe automatisieren</div>
+                </div>
+            </div>
+        </aside>
+    </main>
+</body>
+</html>

@@ -29,7 +29,8 @@ const MailComposer =
     require("nodemailer/lib/mail-composer");
 
 const upload = multer({
-storage: multer.memoryStorage()
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 15 * 1024 * 1024, files: 8, fields: 30, parts: 45 }
 });
 
 const openai = new OpenAI({
@@ -74,27 +75,71 @@ const {
 
 let connectedGoogleTokens = null;
 
-app.use(express.json());
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+});
+app.use(express.json({ limit: "1mb" }));
 
-const WORKPILOT_ORIGINS = new Set([
-    "https://workpilot-app.de",
-    "https://www.workpilot-app.de"
-]);
+// CSRF: Schreibzugriffe nur aus der eigenen Origin oder explizit erlaubten Origins.
+// Die tatsächliche Host-Origin wird dynamisch bestimmt, damit lokale Entwicklung
+// und unterschiedliche Deployment-Domains nicht an einer festen Domain scheitern.
+const WORKPILOT_ORIGINS = new Set(
+    (process.env.WORKPILOT_ALLOWED_ORIGINS || "")
+        .split(",")
+        .map(value => value.trim())
+        .filter(Boolean)
+);
+
+function isAllowedMutationOrigin(req) {
+    const originHeader = req.get("Origin");
+    const refererHeader = req.get("Referer");
+    let requestOrigin;
+
+    try {
+        const host = req.get("Host");
+        if (!host || /[\s\/\\@]/.test(host)) return false;
+        // Trust the externally configured origin if behind a reverse proxy;
+        // otherwise use the socket protocol and Host header.
+        const protocol = req.secure ? "https" : "http";
+        requestOrigin = new URL(`${protocol}://${host}`).origin;
+    } catch {
+        return false;
+    }
+
+    let source;
+    try {
+        source = originHeader
+            ? new URL(originHeader).origin
+            : refererHeader
+                ? new URL(refererHeader).origin
+                : null;
+    } catch {
+        return false;
+    }
+
+    if (!source) return false;
+    if (source === requestOrigin || WORKPILOT_ORIGINS.has(source)) return true;
+
+    // HTTPS is commonly terminated at a trusted reverse proxy. Browsers then
+    // send an https Origin while Express sees a plain HTTP backend connection.
+    try {
+        const host = req.get("Host");
+        if (source === new URL(`https://${host}`).origin) return true;
+    } catch {}
+
+    return false;
+}
 
 app.use((req, res, next) => {
-    const safeMethods = ["GET", "HEAD", "OPTIONS"];
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+    if (!req.path.startsWith("/api/")) return next();
 
-    if (safeMethods.includes(req.method)) {
-        return next();
-    }
-
-    if (!req.path.startsWith("/api/")) {
-        return next();
-    }
-
-    const origin = req.get("Origin");
-
-    if (!WORKPILOT_ORIGINS.has(origin)) {
+    if (!isAllowedMutationOrigin(req)) {
         return res.status(403).json({
             ok: false,
             error: "Anfrage aus Sicherheitsgründen blockiert."
@@ -136,10 +181,7 @@ function getCookie(req, name) {
     return null;
 }
 
-app.use((req, res, next) => {
-console.log("REQUEST:", req.method, req.url);
-next();
-});
+
 
 const pendingSessionRefreshes = new Map();
 
@@ -301,6 +343,13 @@ async function requireCompany(req, res, next) {
             });
         }
 
+        if (!data[0].company_id || !["owner", "member"].includes(data[0].role)) {
+            return res.status(403).json({
+                ok: false,
+                error: "Ungültige Firmenrolle. Bitte kontaktiere den Support."
+            });
+        }
+
         req.companyId = data[0].company_id;
         req.companyRole = data[0].role;
 
@@ -314,6 +363,17 @@ async function requireCompany(req, res, next) {
             error: "Firmenzugriff konnte nicht überprüft werden."
         });
     }
+}
+
+// Rollenprüfung auf dem Server: niemals Rollen aus dem Request-Body übernehmen.
+function requireOwner(req, res, next) {
+    if (!req.user?.id || !req.companyId) {
+        return res.status(401).json({ ok: false, error: "Nicht angemeldet." });
+    }
+    if (req.companyRole !== "owner") {
+        return res.status(403).json({ ok: false, error: "Nur Firmeninhaber dürfen diese Aktion ausführen." });
+    }
+    return next();
 }
 
 app.use("/api", (req, res, next) => {
@@ -698,7 +758,7 @@ async function verifySmtpConnection({
 }
 
 
-app.get("/api/mailbox/google/start", async (req, res) => {
+app.get("/api/mailbox/google/start", requireOwner, async (req, res) => {
     try {
         if (!req.companyId || !req.user?.id) {
             return res.status(403).json({
@@ -787,14 +847,16 @@ app.get(
             const { data: membership, error: membershipError } =
                 await supabase
                     .from("company_members")
-                    .select("company_id")
+                    .select("company_id, role")
                     .eq("company_id", companyId)
                     .eq("user_id", req.user.id)
                     .maybeSingle();
 
             if (membershipError) throw membershipError;
 
-            if (!membership) {
+            // A role may have changed since the OAuth flow started.
+            // Only a current company owner may finish connecting a mailbox.
+            if (!membership || membership.role !== "owner") {
                 return res.redirect("/settings?google=error");
             }
 
@@ -3043,7 +3105,7 @@ app.get(
     }
 );
 
-app.post("/api/mailbox/connect", async (req, res) => {
+app.post("/api/mailbox/connect", requireOwner, async (req, res) => {
     const email = String(req.body?.email || "")
         .trim()
         .toLowerCase();
@@ -3162,108 +3224,72 @@ console.log("IMAP MAILBOX SAVED:", {
     }
 });
 
+// Verification codes are scoped to the authenticated user and destination.
+// In-memory throttling is per server process; production requires a shared store.
+const emailVerificationCooldowns = new Map();
+function verificationKey(userId, email) {
+    return `${userId}:${email.trim().toLowerCase()}`;
+}
+function safeCodeEquals(expected, supplied) {
+    const left = crypto.createHash("sha256").update(String(expected)).digest();
+    const right = crypto.createHash("sha256").update(String(supplied)).digest();
+    return crypto.timingSafeEqual(left, right);
+}
 app.post("/api/profile/send-email-verification", async (req, res) => {
-const { email } = req.body;
-
-if (!email) {
-return res.status(400).json({
-ok: false,
-error: "E-Mail-Adresse fehlt."
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+        return res.status(400).json({ ok: false, error: "Ungültige E-Mail-Adresse." });
+    }
+    const key = verificationKey(req.user.id, email);
+    const now = Date.now();
+    const existing = emailVerificationCodes.get(key);
+    const cooldown = emailVerificationCooldowns.get(key) || 0;
+    if (now < cooldown || (existing && now < existing.sentAt + 60_000)) {
+        return res.status(429).json({ ok: false, error: "Bitte warte vor dem nächsten Codeversand." });
+    }
+    const code = String(crypto.randomInt(100000, 1000000));
+    emailVerificationCodes.set(key, { code, expiresAt: now + 10 * 60_000, sentAt: now, attempts: 0 });
+    emailVerificationCooldowns.set(key, now + 60_000);
+    try {
+        const result = await resend.emails.send({
+            from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
+            to: email,
+            subject: "WorkPilot E-Mail-Verifizierung",
+            html: `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6"><p>Ihr WorkPilot-Verifizierungscode lautet:</p><p style="font-size:24px;font-weight:bold">${code}</p><p>Der Code ist 10 Minuten gültig.</p></div>`
+        });
+        if (result.error) throw result.error;
+        return res.json({ ok: true });
+    } catch (error) {
+        emailVerificationCodes.delete(key);
+        console.error("EMAIL VERIFICATION ERROR:", error);
+        return res.status(500).json({ ok: false, error: "Verifizierungs-E-Mail konnte nicht gesendet werden." });
+    }
 });
-}
-
-const code = String(Math.floor(100000 + Math.random() * 900000));
-
-emailVerificationCodes.set(email, {
-code,
-expiresAt: Date.now() + 10 * 60 * 1000
-});
-
-try {
-await resend.emails.send({
-from: `WorkPilot <${process.env.RESEND_FROM_EMAIL}>`,
-to: email,
-subject: "WorkPilot E-Mail-Verifizierung",
-html: `
-<div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6;">
-<p>Ihr WorkPilot-Verifizierungscode lautet:</p>
-
-<p style="font-size: 24px; font-weight: bold;">
-${code}
-</p>
-
-<p>Der Code ist 10 Minuten gültig.</p>
-</div>
-`
-});
-
-res.json({
-ok: true
-});
-
-} catch (error) {
-console.error("EMAIL VERIFICATION ERROR:", error);
-
-res.status(500).json({
-ok: false,
-error: "Verifizierungs-E-Mail konnte nicht gesendet werden."
-});
-}
-});
-
 app.post("/api/profile/verify-email-code", async (req, res) => {
-const { email, code } = req.body;
-
-if (!email || !code) {
-return res.status(400).json({
-ok: false,
-error: "E-Mail oder Code fehlt."
-});
-}
-
-const entry = emailVerificationCodes.get(email);
-
-if (!entry) {
-return res.status(400).json({
-ok: false,
-error: "Kein Verifizierungscode gefunden."
-});
-}
-
-if (Date.now() > entry.expiresAt) {
-emailVerificationCodes.delete(email);
-
-return res.status(400).json({
-ok: false,
-error: "Der Verifizierungscode ist abgelaufen."
-});
-}
-
-if (String(entry.code) !== String(code).trim()) {
-return res.status(400).json({
-ok: false,
-error: "Der Verifizierungscode ist falsch."
-});
-}
-
-emailVerificationCodes.delete(email);
-
-res.json({
-ok: true
-});
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const code = String(req.body?.code || "").trim();
+    if (!email || !/^\d{6}$/.test(code)) {
+        return res.status(400).json({ ok: false, error: "E-Mail oder Code ungültig." });
+    }
+    const key = verificationKey(req.user.id, email);
+    const entry = emailVerificationCodes.get(key);
+    if (!entry) return res.status(400).json({ ok: false, error: "Kein Verifizierungscode gefunden." });
+    if (Date.now() > entry.expiresAt) {
+        emailVerificationCodes.delete(key);
+        return res.status(400).json({ ok: false, error: "Der Verifizierungscode ist abgelaufen." });
+    }
+    entry.attempts++;
+    if (entry.attempts >= 5) emailVerificationCodes.delete(key);
+    if (!safeCodeEquals(entry.code, code)) {
+        return res.status(400).json({ ok: false, error: "Der Verifizierungscode ist falsch." });
+    }
+    emailVerificationCodes.delete(key);
+    return res.json({ ok: true });
 });
 
+// Health checks must not query or expose customer records.
 app.get("/api/health/supabase", async (req, res) => {
-const { data, error } = await supabase
-.from("contacts")
-.select("id")
-.limit(1);
-
-if (error) {
-return res.status(500).json({ ok: false, error: error.message });
-}
-
-res.json({ ok: true, data });
+    return res.json({ ok: true, service: "workpilot-api" });
 });
 
 async function getActiveGoogleMailboxAuth(companyId) {
@@ -3370,7 +3396,7 @@ updated_at: new Date().toISOString()
 return response.data;
 }
 
-app.post("/api/mailbox/google/watch", async (req, res) => {
+app.post("/api/mailbox/google/watch", requireOwner, async (req, res) => {
 try {
 const watch = await startGoogleMailboxWatch(req.companyId);
 
@@ -6127,6 +6153,17 @@ async function findDocumentContact(companyId, recipientEmail, recipientPhone) {
     return null;
 }
 
+// Security: A client-provided contact ID must always belong to the active company.
+async function validateDocumentContact(companyId, contactId) {
+    if (contactId == null || contactId === "") return { valid: true, id: null };
+    if (typeof contactId !== "string" || contactId.length > 128) return { valid: false };
+    const { data, error } = await supabase.from("contacts")
+        .select("id").eq("company_id", companyId)
+        .eq("id", contactId).maybeSingle();
+    if (error) throw error;
+    return { valid: Boolean(data), id: data?.id || null };
+}
+
 app.post("/api/offers", async (req, res) => {
     try {
         const offer = req.body || {};
@@ -6233,7 +6270,14 @@ app.post("/api/offers", async (req, res) => {
 
 app.put("/api/offers/:id", async (req, res) => {
 const { id } = req.params;
-const offer = req.body;
+const offer = req.body || {};
+try {
+    const checked = await validateDocumentContact(req.companyId, offer.contactId);
+    if (!checked.valid) return res.status(403).json({ ok: false, error: "Kontakt gehört nicht zu deiner Firma." });
+} catch (error) {
+    console.error("OFFER CONTACT CHECK ERROR:", error);
+    return res.status(500).json({ ok: false, error: "Kontaktprüfung fehlgeschlagen." });
+}
 
 const { data, error } = await supabase
 .from("offers")
@@ -6317,9 +6361,11 @@ invoice: data
 
 
 app.post("/api/invoices", async (req, res) => {
-const invoice = req.body;
+const invoice = req.body || {};
 
 try {
+    const checked = await validateDocumentContact(req.companyId, invoice.contactId);
+    if (!checked.valid) return res.status(403).json({ ok: false, error: "Kontakt gehört nicht zu deiner Firma." });
     if (!invoice.contactId) {
 invoice.contactId = await findDocumentContact(
     req.companyId,
@@ -6365,7 +6411,14 @@ invoice: data
 
 app.put("/api/invoices/:id", async (req, res) => {
 const { id } = req.params;
-const invoice = req.body;
+const invoice = req.body || {};
+try {
+    const checked = await validateDocumentContact(req.companyId, invoice.contactId);
+    if (!checked.valid) return res.status(403).json({ ok: false, error: "Kontakt gehört nicht zu deiner Firma." });
+} catch (error) {
+    console.error("INVOICE CONTACT CHECK ERROR:", error);
+    return res.status(500).json({ ok: false, error: "Kontaktprüfung fehlgeschlagen." });
+}
 
 const { data, error } = await supabase
 .from("invoices")
@@ -10011,115 +10064,13 @@ error: "E-Mail konnte nicht gesendet werden."
 }
 });
 
-app.post("/api/email-inbound", async (req, res) => {
-
-const {
-from,
-to,
-subject,
-html,
-text
-} = req.body;
-
-if (!from || !to) {
-return res.status(400).json({
-ok: false,
-error: "Fehlende Inbound-Daten."
-});
-}
-
-try {
-
-const matchedContact = await findMatchingContact(from);
-
-const finalBody = html || text || "";
-
-const { data: thread, error: threadError } = await supabase
-.from("email_threads")
-.insert([
-    {
-        company_id: mailbox.company_id,
-        contact_id: matchedContact?.id || null,
-
-subject: subject || "Ohne Betreff",
-
-related_type: "general",
-
-status: "open",
-
-ai_category: "Unsortiert"
-}
-])
-.select()
-.single();
-
-if (threadError) {
-throw threadError;
-}
-
-const { data: message, error: messageError } = await supabase
-.from("email_messages")
-.insert([
-    {
-company_id: mailbox.company_id,
-thread_id: thread.id,
-
-contact_id: matchedContact?.id || null,
-
-direction: "inbound",
-
-sender: from,
-recipient: to,
-
-subject: subject || "Ohne Betreff",
-
-body: finalBody,
-
-message_status: "received"
-}
-])
-.select()
-.single();
-
-if (messageError) {
-throw messageError;
-}
-
-await analyzeInboundEmail(message, thread);
-
-const dashboardEvent = await createDashboardEvent({
-type: "email_received",
-
-title: "Neue E-Mail empfangen",
-
-description: `${from}: ${subject || "Ohne Betreff"}`,
-
-relatedType: "email",
-relatedId: message.id,
-
-priority: "normal",
-
-actionType: "open_email_thread",
-
-metadata: {
-threadId: thread.id
-}
-});
-
-res.json({
-ok: true,
-message
-});
-
-} catch (error) {
-
-console.error("INBOUND EMAIL ERROR:", error);
-
-res.status(500).json({
-ok: false,
-error: "Inbound-E-Mail konnte nicht verarbeitet werden."
-});
-}
+// Disabled until provider webhook authentication and company mapping are implemented.
+// Existing IMAP and Google mailbox import routes are unaffected.
+app.post("/api/email-inbound", (req, res) => {
+    return res.status(503).json({
+        ok: false,
+        error: "Dieser Inbound-Endpunkt ist vorübergehend deaktiviert."
+    });
 });
 
 async function completeManualGoogleMessage({
@@ -10160,7 +10111,8 @@ async function completeManualGoogleMessage({
     } = await supabase
         .from("email_attachments")
         .select("file_path")
-        .eq("message_id", message.id);
+        .eq("message_id", message.id)
+        .eq("company_id", message.company_id);
 
     if (attachmentLookupError) {
         throw attachmentLookupError;
@@ -10211,6 +10163,7 @@ async function completeManualGoogleMessage({
         const { error: attachmentError } = await supabase
             .from("email_attachments")
             .insert([{
+                company_id: message.company_id,
                 message_id: message.id,
                 file_name: fileName,
                 file_size:
@@ -10241,7 +10194,8 @@ async function completeManualGoogleMessage({
             has_attachments: attachments.length > 0,
             content_loaded: false
         })
-        .eq("id", message.id);
+        .eq("id", message.id)
+        .eq("company_id", message.company_id);
 
     if (bodyError) {
         throw bodyError;
@@ -10267,7 +10221,8 @@ async function completeManualGoogleMessage({
         .update({
             content_loaded: true
         })
-        .eq("id", message.id);
+        .eq("id", message.id)
+        .eq("company_id", message.company_id);
 
     if (completeError) {
         throw completeError;
@@ -10976,7 +10931,8 @@ app.post("/api/gmail/webhook", async (req, res) => {
                 gmail_history_id: String(latestHistoryId),
                 updated_at: new Date().toISOString()
             })
-            .eq("id", mailbox.id);
+            .eq("id", mailbox.id)
+            .eq("company_id", mailbox.company_id);
 
         if (cursorError) {
             throw cursorError;
@@ -11002,115 +10958,12 @@ app.post("/api/gmail/webhook", async (req, res) => {
     }
 });
 
-app.delete("/api/mailbox/disconnect", async (req, res) => {
+app.delete("/api/mailbox/disconnect", requireOwner, async (req, res) => {
     return res.status(503).json({ ok: false, error: "Postfach-Trennung bis zur Sicherheitsprüfung deaktiviert." });
 });
 
-/* DEAKTIVIERT: unsichere globale Löschlogik
-app.delete("/api/mailbox/disconnect", async (req, res) => {
-try {
-let auth = null;
+// Intentionally disabled: reconnect/disconnect requires a scoped, transactional implementation.
 
-try {
-const googleMailbox = await getActiveGoogleMailboxAuth(req.companyId);
-auth = googleMailbox.auth;
-} catch {
-auth = null;
-}
-
-if (auth) {
-try {
-const gmail = google.gmail({
-version: "v1",
-auth
-});
-
-await gmail.users.stop({
-userId: "me"
-});
-} catch (stopError) {
-console.error("GOOGLE WATCH STOP ERROR:", stopError);
-}
-}
-
-const { data: attachments, error: attachmentsLoadError } =
-await supabase
-.from("email_attachments")
-.select("file_path");
-
-if (attachmentsLoadError) {
-throw attachmentsLoadError;
-}
-
-const attachmentPaths = (attachments || [])
-.map((attachment) => attachment.file_path)
-.filter(Boolean);
-
-if (attachmentPaths.length) {
-const { error: storageError } = await supabase.storage
-.from("email-attachments")
-.remove(attachmentPaths);
-
-if (storageError) {
-throw storageError;
-}
-}
-
-const { error: attachmentDeleteError } = await supabase
-.from("email_attachments")
-.delete()
-.not("id", "is", null);
-
-if (attachmentDeleteError) {
-throw attachmentDeleteError;
-}
-
-const { error: messageDeleteError } = await supabase
-.from("email_messages")
-.delete()
-.not("id", "is", null);
-
-if (messageDeleteError) {
-throw messageDeleteError;
-}
-
-const { error: threadDeleteError } = await supabase
-.from("email_threads")
-.delete()
-.not("id", "is", null);
-
-if (threadDeleteError) {
-throw threadDeleteError;
-}
-
-const { error: mailboxDeleteError } = await supabase
-.from("mailbox_connections")
-.delete()
-.not("id", "is", null);
-
-if (mailboxDeleteError) {
-throw mailboxDeleteError;
-}
-
-connectedGoogleTokens = null;
-
-res.json({
-ok: true
-});
-
-} catch (error) {
-console.error("MAILBOX DISCONNECT ERROR:", error);
-
-res.status(500).json({
-ok: false,
-error:
-error.message ||
-"Das Postfach konnte nicht vollständig entfernt werden."
-});
-}
-});
-
-*/
 
 app.get("/api/email-inbox", async (req, res) => {
 const { data, error } = await supabase
@@ -11152,9 +11005,18 @@ messages: normalizedMessages
 app.get("/api/email-messages/:id/attachments", async (req, res) => {
 const { id } = req.params;
 
+const { data: parent, error: parentError } = await supabase
+    .from("email_messages")
+    .select("id")
+    .eq("id", id)
+    .eq("company_id", req.companyId)
+    .maybeSingle();
+if (parentError) return res.status(500).json({ ok: false, error: "Anhangprüfung fehlgeschlagen." });
+if (!parent) return res.status(404).json({ ok: false, error: "Nachricht nicht gefunden." });
+
 const { data, error } = await supabase
     .from("email_attachments")
-    .select("*")
+    .select("id, message_id, file_name, file_size, mime_type, content_id, disposition, is_inline, created_at")
     .eq("message_id", id)
     .eq("company_id", req.companyId)
     .order("created_at", { ascending: true });
@@ -11179,7 +11041,7 @@ app.get("/api/email-attachments/:id/open", async (req, res) => {
         const { data: attachment, error: attachmentError } =
             await supabase
                 .from("email_attachments")
-                .select("id, file_path")
+                .select("id, file_path, message_id")
                 .eq("id", id)
                 .eq("company_id", req.companyId)
                 .maybeSingle();
@@ -11194,6 +11056,14 @@ app.get("/api/email-attachments/:id/open", async (req, res) => {
                 error: "Anhang nicht gefunden."
             });
         }
+
+        // Verify ownership of the parent message as well as the attachment row.
+        const { data: parent, error: parentError } = await supabase
+            .from("email_messages").select("id")
+            .eq("id", attachment.message_id)
+            .eq("company_id", req.companyId).maybeSingle();
+        if (parentError) throw parentError;
+        if (!parent) return res.status(404).json({ ok: false, error: "Anhang nicht gefunden." });
 
         const { data, error } = await supabase.storage
             .from("email-attachments")
@@ -11323,27 +11193,27 @@ res.sendFile(path.join(__dirname, "public", "html", "dashboard.html"));
 });
 
 app.post("/api/mailbox/discover", async (req, res) => {
-
-    try {
-
-        const provider = await discoverMailProvider(
-            req.body.email
-        );
-
-        return res.json({
-            ok: true,
-            provider
-        });
-
-    } catch (error) {
-
+    // Only accept a bounded mailbox address; do not pass arbitrary input
+    // into provider discovery or expose internal lookup failures to clients.
+    const email = typeof req.body?.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({
             ok: false,
-            error: error.message
+            error: "Bitte eine gültige E-Mail-Adresse eingeben."
         });
-
     }
-
+    try {
+        const provider = await discoverMailProvider(email);
+        return res.json({ ok: true, provider });
+    } catch (error) {
+        console.error("MAILBOX DISCOVERY ERROR:", error);
+        return res.status(502).json({
+            ok: false,
+            error: "E-Mail-Anbieter konnte nicht ermittelt werden."
+        });
+    }
 });
 
 app.get("/api/mailbox/message/:id/content", async (req, res) => {
