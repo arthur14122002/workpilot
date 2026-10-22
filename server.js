@@ -5553,6 +5553,7 @@ const {
 } = await supabase
     .from("email_messages")
     .select("external_message_id")
+    .eq("company_id", req.companyId)
     .eq("provider", "google")
     .eq("mailbox_email", mailbox.email)
     .or("content_loaded.is.null,content_loaded.eq.false")
@@ -6261,7 +6262,8 @@ const { id } = req.params;
 const { error } = await supabase
 .from("offers")
 .delete()
-.eq("id", id);
+.eq("id", id)
+.eq("company_id", req.companyId);
 
 if (error) {
 return res.status(500).json({ ok: false, error: error.message });
@@ -6337,6 +6339,7 @@ const { data, error } = await supabase
 .from("invoices")
 .insert([
 {
+company_id: req.companyId,
 id: invoice.id,
 contact_id: invoice.contactId || null,
 invoice_number: invoice.invoiceNumber || null,
@@ -11000,6 +11003,11 @@ app.post("/api/gmail/webhook", async (req, res) => {
 });
 
 app.delete("/api/mailbox/disconnect", async (req, res) => {
+    return res.status(503).json({ ok: false, error: "Postfach-Trennung bis zur Sicherheitsprüfung deaktiviert." });
+});
+
+/* DEAKTIVIERT: unsichere globale Löschlogik
+app.delete("/api/mailbox/disconnect", async (req, res) => {
 try {
 let auth = null;
 
@@ -11102,6 +11110,8 @@ error.message ||
 }
 });
 
+*/
+
 app.get("/api/email-inbox", async (req, res) => {
 const { data, error } = await supabase
 .from("email_messages")
@@ -11117,6 +11127,7 @@ ai_category,
 manual_folder
 )
 `)
+.eq("company_id", req.companyId)
 .order("created_at", { ascending: false });
 
 if (error) {
