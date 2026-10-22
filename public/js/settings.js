@@ -149,7 +149,7 @@ iban: document.getElementById("iban").value.trim(),
 bic: document.getElementById("bic").value.trim(),
 vatRate: document.getElementById("vatRate").value,
 paymentTerm: (document.getElementById("paymentTerm")?.value.trim() || existingSettings.paymentTerm || "14 Tage"),
-footerNote: document.getElementById("footerNote").value.trim()
+footerNote: (document.getElementById("footerNote")?.value.trim() || existingSettings.footerNote || "")
 };
 }
 

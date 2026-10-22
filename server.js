@@ -324,6 +324,7 @@ app.use("/api", (req, res, next) => {
 
     const authOnlyRoutes = new Set([
         "GET /auth/me",
+        "GET /auth/company-status",
         "POST /auth/setup-company",
         "POST /auth/logout"
     ]);
@@ -356,6 +357,35 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
             emailConfirmed: Boolean(req.user.email_confirmed_at)
         }
     });
+});
+
+// Status fuer die geschuetzte Frontend-Navigation.
+// Authentifizierung erfolgt ueber das bestehende requireAuth-Middleware.
+app.get("/api/auth/company-status", requireAuth, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from("company_members")
+            .select("company_id, role")
+            .eq("user_id", req.user.id)
+            .limit(2);
+
+        if (error) throw error;
+
+        const hasCompany = Array.isArray(data) && data.length === 1;
+        return res.json({
+            ok: true,
+            emailConfirmed: Boolean(req.user.email_confirmed_at),
+            hasCompany,
+            companyId: hasCompany ? data[0].company_id : null,
+            role: hasCompany ? data[0].role : null
+        });
+    } catch (error) {
+        console.error("COMPANY STATUS ERROR:", error);
+        return res.status(500).json({
+            ok: false,
+            error: "Firmenstatus konnte nicht geladen werden."
+        });
+    }
 });
 
 app.post("/api/auth/setup-company", requireAuth, async (req, res) => {
