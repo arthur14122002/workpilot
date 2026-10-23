@@ -68,7 +68,8 @@ function sanitizeMailHtml(html) {
         const src = img.getAttribute("src") || "";
 
         if (
-            !/^data:image\/(?:png|jpeg|gif|webp);base64,/i.test(src)
+            !/^data:image\/(?:png|jpeg|gif|webp);base64,/i.test(src) &&
+            !/^https:\/\/[^\s<>"']+$/i.test(src)
         ) {
             img.removeAttribute("src");
         }

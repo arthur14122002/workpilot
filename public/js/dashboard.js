@@ -259,8 +259,11 @@ if (hour >= 12 && hour < 18) return "Guten Tag";
 return "Guten Abend";
 }
 
+let dashboardWorkspaceContext = null;
 function renderGreeting() {
-const profile = getSavedJson("workpilot_dashboard_profile", {});
+const profile = dashboardWorkspaceContext
+    ? getSavedJson(`workpilot_dashboard_profile:${dashboardWorkspaceContext.companyId}:${dashboardWorkspaceContext.userId}`, {})
+    : {};
 const greetingName = profile.greetingName || "";
 
 dashboardGreeting.textContent = greetingName
@@ -424,6 +427,10 @@ continue;
 }
 
 const date = new Date(year, month, dayNumber);
+const today = new Date();
+if (date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate()) {
+    day.classList.add("isToday");
+}
 const dateKey = formatDateKey(date);
 const dayEvents = getEventsForDate(events, dateKey);
 
@@ -479,7 +486,7 @@ const net = positions.reduce((sum, position) => {
 return sum + parseMoney(position.total);
 }, 0);
 
-const settings = invoice.companySettings || getSavedJson("workpilot_company_settings", {});
+const settings = invoice.companySettings || (dashboardWorkspaceContext ? getSavedJson(`workpilot_company_settings:${dashboardWorkspaceContext.companyId}:${dashboardWorkspaceContext.userId}`, {}) : {});
 const vatRate = Number(settings.vatRate || 19);
 
 return net + net * (vatRate / 100);
@@ -628,6 +635,12 @@ await renderDashboard();
 }
 
 async function renderDashboard() {
+try {
+    const r = await fetch("/api/workspace-context", {cache:"no-store"});
+    const ctx = await r.json();
+    if (!r.ok || !ctx.ok || !ctx.companyId || !ctx.userId) throw new Error("Firmenkontext fehlt");
+    dashboardWorkspaceContext = ctx;
+} catch (e) { console.error("Dashboard-Firmenkontext:", e); return; }
 // Calendar grid must render even when an API request fails or takes time.
 renderMonthCalendar(calendarEventsCache);
 try {

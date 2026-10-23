@@ -408,6 +408,21 @@ requireAuth(req, res, () => {
     });
 });
 
+// Firmenspezifischer UI-Kontext. Keine Zugangsdaten oder Storage-Pfade ausgeben.
+app.get("/api/workspace-context", requireAuth, requireCompany, async (req, res) => {
+    try {
+        const { data, error } = await supabase.from("mailbox_connections")
+            .select("email, provider")
+            .eq("company_id", req.companyId).eq("is_active", true).limit(2);
+        if (error) throw error;
+        return res.json({ ok: true, companyId: req.companyId, userId: req.user.id,
+            role: req.companyRole, mailbox: data?.length === 1 ? data[0] : null });
+    } catch (error) {
+        console.error("WORKSPACE CONTEXT ERROR:", error);
+        return res.status(500).json({ ok: false, error: "Firmenkontext konnte nicht geladen werden." });
+    }
+});
+
 app.get("/api/auth/me", requireAuth, (req, res) => {
     res.json({
         ok: true,

@@ -91,32 +91,19 @@ return (bytes / 1024).toFixed(1) + " KB";
 return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
+let workpilotMailboxContext = null;
+async function loadMailboxContext() {
+    const response = await fetch("/api/workspace-context", { cache: "no-store" });
+    const context = await response.json();
+    if (!response.ok || !context.ok) throw new Error("Firmenkontext konnte nicht geladen werden.");
+    workpilotMailboxContext = context;
+    return context;
+}
 function renderActiveMailboxInfo() {
-
-    if (!activeCommunicationInfo) {
-        return;
-    }
-
-    const settings =
-        JSON.parse(
-            localStorage.getItem(
-                "workpilot_company_settings"
-            ) || "{}"
-        );
-
-    if (
-        settings.mailboxConnected &&
-        settings.mailboxEmail
-    ) {
-
-        activeCommunicationInfo.textContent =
-            `Postfach verbunden: ${settings.mailboxEmail}`;
-
-        return;
-    }
-
-    activeCommunicationInfo.textContent =
-        "Keine E-Mail verbunden.";
+    if (!activeCommunicationInfo) return;
+    activeCommunicationInfo.textContent = workpilotMailboxContext?.mailbox
+        ? `Postfach verbunden: ${workpilotMailboxContext.mailbox.email}`
+        : "Keine E-Mail verbunden.";
 }
 
 async function getMessageAttachments(messageId) {
@@ -2622,49 +2609,8 @@ showToast(error.message);
 }
 
 function shouldRenderMailAsHtml(message) {
-
-    const html =
-        String(
-            message.body_html || ""
-        ).trim();
-
-    const text =
-        String(
-            message.body || ""
-        ).trim();
-
-
-    if (!html) {
-        return false;
-    }
-
-    const richHtmlPattern =
-        /<(img|table|picture|video|svg|iframe|button)\b|background-image\s*:|cid:/i;
-
-
-    if (
-        richHtmlPattern.test(html)
-    ) {
-        return true;
-    }
-
-    const linkCount =
-        (
-            html.match(
-                /<a\b/gi
-            ) || []
-        ).length;
-
-
-    if (linkCount >= 2) {
-        return true;
-    }
-
-    if (text) {
-        return false;
-    }
-
-    return true;
+    // HTML-Mails auch mit nur einem Link oder ohne Tabellen als HTML rendern.
+    return Boolean(String(message.body_html || "").trim());
 }
 
 async function loadAttachmentPreview(img) {
@@ -3144,9 +3090,10 @@ renderEmails();
 });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 bindFolders();
 
+try { await loadMailboxContext(); } catch (error) { console.error(error); }
 renderActiveMailboxInfo();
 
 renderEmails().then(async () => {
@@ -3872,21 +3819,15 @@ const recipient = composeRecipient.value.trim();
 const subject = composeSubject.value.trim();
 const body = composeBody.value.trim();
 
-const profileSettings = JSON.parse(
-localStorage.getItem("workpilot_company_settings") || "{}"
-);
-
 sendComposeMailBtn.addEventListener("click", async () => {
 
 const recipient = composeRecipient.value.trim();
 const subject = composeSubject.value.trim();
 const body = composeBody.value.trim();
 
-const profileSettings = JSON.parse(
-localStorage.getItem("workpilot_company_settings") || "{}"
-);
-
-if (!profileSettings.mailboxConnected) {
+await loadMailboxContext();
+renderActiveMailboxInfo();
+if (!workpilotMailboxContext?.mailbox) {
 showToast("Bitte verbinde zuerst ein Postfach im Profil.");
 return;
 }

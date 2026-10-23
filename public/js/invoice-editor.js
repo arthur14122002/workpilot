@@ -1,6 +1,6 @@
 const DRAFT_KEY = "workpilot_current_invoice_draft";
 const SAVED_KEY = "workpilot_saved_invoices";
-const SETTINGS_KEY = "workpilot_company_settings";
+let SETTINGS_KEY = null;
 const CONTACTS_KEY = "workpilot_contacts";
 
 let currentDraft = null;
@@ -544,6 +544,12 @@ text.addEventListener("blur", persistDraft);
 }
 
 async function init() {
+try {
+    const r = await fetch("/api/workspace-context", {cache:"no-store"});
+    const ctx = await r.json();
+    if (!r.ok || !ctx.ok || !ctx.companyId || !ctx.userId) throw new Error("Firmenkontext fehlt");
+    SETTINGS_KEY = `workpilot_company_settings:${ctx.companyId}:${ctx.userId}`;
+} catch (e) { console.error("Editor-Firmenkontext:", e); return; }
 const params = new URLSearchParams(window.location.search);
 const isPdfMode = params.get("pdf") === "1";
 

@@ -17,7 +17,7 @@ async function renderMailFrame(container, html) {
 
 iframe.setAttribute(
     "sandbox",
-    "allow-same-origin"
+    "allow-same-origin allow-popups allow-popups-to-escape-sandbox"
 );
 
 iframe.setAttribute(
@@ -62,7 +62,7 @@ iframe.srcdoc = `
 <meta charset="utf-8">
 <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'none'; script-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'"
+    content="default-src 'none'; script-src 'none'; img-src data: https:; style-src 'unsafe-inline'; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'"
 >
 <style>
 html, body {

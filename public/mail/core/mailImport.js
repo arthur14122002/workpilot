@@ -495,6 +495,8 @@ of fetchImapMessagesInBatches(
             mails.push({
                 provider:
                     "imap",
+                mailboxPath: "INBOX",
+                uidValidity: String(uidValidity),
 
                 externalId:
                     `imap:${connection.email}:${message.uid}`,
@@ -789,6 +791,11 @@ console.log(
 
         }
 
+
+        const uidValidity = mailbox.uidValidity;
+        if (uidValidity == null || !/^\d+$/.test(String(uidValidity)) || BigInt(String(uidValidity)) <= 0n) {
+            throw new Error("IMAP UIDVALIDITY fehlt beim Synchronisieren neuer Nachrichten.");
+        }
 
         const startUid =
             Number(lastUid || 0) + 1;

@@ -1,5 +1,5 @@
-const STORAGE_KEY = "workpilot_company_settings";
-const DASHBOARD_PROFILE_KEY = "workpilot_dashboard_profile";
+let STORAGE_KEY = null;
+let DASHBOARD_PROFILE_KEY = null;
 
 const settingsForm = document.getElementById("settingsForm");
 const resetBtn = document.getElementById("resetSettingsBtn");
@@ -104,6 +104,7 @@ const confirmDisconnectMailboxBtn =
     );
 
 function getSavedSettings() {
+if (!STORAGE_KEY) return {};
 try {
 return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
 } catch {
@@ -158,6 +159,7 @@ return data.firstName || "";
 }
 
 function getCommunicationSettings() {
+if (!STORAGE_KEY) return null;
 const saved = localStorage.getItem(STORAGE_KEY);
 
 if (!saved) {
@@ -797,7 +799,25 @@ return;
 });
 });
 
-document.addEventListener("DOMContentLoaded", loadSettings);
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const response = await fetch("/api/workspace-context", { credentials: "same-origin", cache: "no-store" });
+        const context = await response.json();
+        if (!response.ok || !context.ok || !context.companyId || !context.userId) throw new Error("Firmenkontext fehlt.");
+        STORAGE_KEY = `workpilot_company_settings:${context.companyId}:${context.userId}`;
+        DASHBOARD_PROFILE_KEY = `workpilot_dashboard_profile:${context.companyId}:${context.userId}`;
+        const data = getSavedSettings();
+        data.mailboxConnected = Boolean(context.mailbox);
+        data.mailboxEmail = context.mailbox?.email || "";
+        data.mailProvider = context.mailbox?.provider || null;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        loadSettings();
+    } catch (error) {
+        console.error("PROFIL-KONTEXT:", error);
+        settingsForm?.querySelectorAll("input, button, select, textarea").forEach(el => el.disabled = true);
+        if (mailboxConnectionText) mailboxConnectionText.textContent = "Firmenkontext nicht verfügbar.";
+    }
+});
 
 if (closeImportModal) {
 closeImportModal.addEventListener("click", () => {

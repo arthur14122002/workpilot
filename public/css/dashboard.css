@@ -463,3 +463,14 @@ flex-wrap: wrap;
     opacity: 0.5;
     cursor: not-allowed;
 }
+/* Der heutige Tag bleibt auch ohne Termin sichtbar. */
+.calendarDay.isToday .calendarDayNumber {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 5px;
+    border: 2px solid var(--wp-orange, #f97316);
+    border-radius: 999px;
+}
