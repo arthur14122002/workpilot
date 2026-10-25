@@ -474,3 +474,18 @@ flex-wrap: wrap;
     border: 2px solid var(--wp-orange, #f97316);
     border-radius: 999px;
 }
+
+/* Heutigen Kalendertag als gesamtes Tagesfeld hervorheben. */
+.calendarDay.isToday {
+    border: 2px solid var(--wp-orange, #f97316) !important;
+    border-radius: 18px;
+    box-sizing: border-box;
+}
+.calendarDay.isToday .calendarDayNumber {
+    border: 0 !important;
+    border-radius: 0 !important;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    display: block;
+}

@@ -379,7 +379,9 @@ function requireOwner(req, res, next) {
 app.use("/api", (req, res, next) => {
     const publicRoutes = new Set([
         "POST /auth/register",
-        "POST /auth/login"
+        "POST /auth/login",
+        "POST /auth/forgot-password",
+        "POST /auth/reset-password"
     ]);
 
     const authOnlyRoutes = new Set([
@@ -407,6 +409,68 @@ requireAuth(req, res, () => {
         return requireCompany(req, res, next);
     });
 });
+
+// Passwort-Wiederherstellung: öffentliche, generische Antwort gegen Account-Enumeration.
+// Supabase muss als Redirect-URL https://<domain>/reset-password erlauben.
+const passwordRecoveryAttempts = new Map();
+app.post("/api/auth/forgot-password", async (req, res) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+        return res.status(400).json({ ok: false, error: "Bitte gib eine gültige E-Mail-Adresse ein." });
+    }
+    const key = `${req.ip}:${require("crypto").createHash("sha256").update(email).digest("hex")}`;
+    const now = Date.now();
+    for (const [k, v] of passwordRecoveryAttempts) if (v.until < now) passwordRecoveryAttempts.delete(k);
+    const entry = passwordRecoveryAttempts.get(key) || { count: 0, until: now + 3600000 };
+    if (entry.count < 5) {
+        entry.count++;
+        passwordRecoveryAttempts.set(key, entry);
+        try {
+            const base = process.env.WORKPILOT_PUBLIC_URL || "https://workpilot-app.de";
+            const redirectTo = new URL("/reset-password", base).toString();
+            const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, { redirectTo });
+            if (error) console.error("PASSWORD RECOVERY PROVIDER ERROR:", error.message);
+        } catch (error) {
+            console.error("PASSWORD RECOVERY ERROR:", error.message);
+        }
+    }
+    return res.json({ ok: true, message: "Falls ein Konto existiert, erhältst du eine E-Mail." });
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+    const { accessToken, refreshToken, password } = req.body || {};
+    if (typeof accessToken !== "string" || typeof refreshToken !== "string" ||
+        typeof password !== "string" || password.length < 12 || password.length > 128) {
+        return res.status(400).json({ ok: false, error: "Ungültige Anfrage oder Passwort zu kurz." });
+    }
+    try {
+        // Getrennte Auth-Instanz pro Anfrage: keine gemeinsam veränderbare Session.
+        const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+            auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
+        });
+        const { data: sessionData, error: sessionError } = await client.auth.setSession({
+            access_token: accessToken, refresh_token: refreshToken
+        });
+        if (sessionError || !sessionData?.user) {
+            return res.status(401).json({ ok: false, error: "Der Wiederherstellungslink ist ungültig oder abgelaufen." });
+        }
+        const { error } = await client.auth.updateUser({ password });
+        if (error) throw error;
+        await client.auth.signOut().catch(() => {});
+        return res.json({ ok: true });
+    } catch (error) {
+        console.error("PASSWORD RESET ERROR:", error.message);
+        return res.status(400).json({ ok: false, error: "Passwort konnte nicht geändert werden." });
+    }
+});
+
+// Löschvorgänge bleiben absichtlich gesperrt, bis DB-Fremdschlüssel, Storage,
+// Aufbewahrungsfristen und E-Mail-Provider-Verbindungen transaktional geprüft sind.
+// Ein teilweises Löschen wäre bei einem Service-Role-Backend nicht vertretbar.
+for (const route of ["/api/auth/delete-account", "/api/auth/request-company-deletion", "/api/auth/confirm-company-deletion"]) {
+    app.post(route, (req, res) => res.status(503).json({ ok: false,
+        error: "Sichere Kontolöschung noch nicht freigegeben. Bitte kontaktiere den Support." }));
+}
 
 // Firmenspezifischer UI-Kontext. Keine Zugangsdaten oder Storage-Pfade ausgeben.
 app.get("/api/workspace-context", requireAuth, requireCompany, async (req, res) => {
@@ -11161,6 +11225,10 @@ res.sendFile(path.join(__dirname, "public", "html", "contact-create.html"));
 
 app.get("/note-create", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "html", "note-create.html"));
+});
+
+app.get("/reset-password", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "html", "reset-password.html"));
 });
 
 app.get("/login", (req, res) => {

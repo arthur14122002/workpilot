@@ -154,3 +154,34 @@ sessionStorage.removeItem("workpilot_toast");
         }
     }, true);
 })();
+
+// Sidebar-Status ausschließlich anhand der serverseitig geprüften Sitzung setzen.
+document.addEventListener("DOMContentLoaded", async () => {
+    const loginLinks = [...document.querySelectorAll(".sidebarBottom a[href='/login']")];
+    if (!loginLinks.length) return;
+    try {
+        const response = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
+        if (!response.ok) return;
+        const result = await response.json();
+        if (!result?.ok || !result?.user?.id) return;
+        for (const link of loginLinks) {
+            link.textContent = "Abmelden";
+            link.href = "/login";
+            link.addEventListener("click", async event => {
+                event.preventDefault();
+                if (link.dataset.pendingLogout) return;
+                link.dataset.pendingLogout = "1";
+                try {
+                    const logout = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+                    if (!logout.ok) throw new Error("Abmeldung fehlgeschlagen.");
+                    localStorage.removeItem("workpilot_company_settings");
+                    localStorage.removeItem("workpilot_dashboard_profile");
+                    location.assign("/login");
+                } catch (error) {
+                    window.showToast?.(error.message);
+                    delete link.dataset.pendingLogout;
+                }
+            });
+        }
+    } catch (error) { console.warn("Sidebar-Anmeldestatus nicht verfügbar."); }
+});
