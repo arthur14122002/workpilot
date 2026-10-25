@@ -155,67 +155,63 @@ letterNav.appendChild(button);
 });
 }
 
+const contactUiState = { offers: [], invoices: [], events: [], query: "", type: "all", tag: "all" };
+const contactEsc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+const contactLinked = (row, id) => String(row.contact_id ?? row.contactId ?? "") === String(id);
+const contactOpenOffer = row => !["accepted","rejected","angenommen","abgelehnt","cancelled","storniert"].includes(String(row.status || "").toLowerCase());
+const contactOpenInvoice = row => !["paid","bezahlt","cancelled","storniert","void"].includes(String(row.status || "").toLowerCase());
+const contactUpcomingEvent = (row, id) => {
+  const linked = String(row.related_id ?? "") === String(id) && String(row.related_type || "").toLowerCase() === "contact";
+  if (!linked) return false;
+  const date = row.event_date ? new Date(`${row.event_date}T${row.event_time || "00:00"}`) : null;
+  return date && !Number.isNaN(date.getTime()) && date >= new Date();
+};
+function contactTags(contact) {
+  const offer = contactUiState.offers.some(row => contactLinked(row, contact.id) && contactOpenOffer(row));
+  const invoice = contactUiState.invoices.some(row => contactLinked(row, contact.id) && contactOpenInvoice(row));
+  const event = contactUiState.events.some(row => contactUpcomingEvent(row, contact.id));
+  return {offer,invoice,event};
+}
 function renderContacts() {
-const contacts = contactsCache.sort((a, b) => {
-return (a.name || "").localeCompare(b.name || "", "de");
-});
-
-contactsList.innerHTML = "";
-renderLetterNav(contacts);
-
-if (!contacts.length) {
-emptyContacts.style.display = "block";
-return;
+  const contacts = [...contactsCache].sort((a,b) => String(a.name || "").localeCompare(String(b.name || ""), "de"));
+  contactsList.innerHTML = "";
+  renderLetterNav(contacts);
+  emptyContacts.style.display = contacts.length ? "none" : "block";
+  const query = contactUiState.query.trim().toLocaleLowerCase("de");
+  const visible = contacts.filter(contact => {
+    if (activeLetter !== "ALLE" && getContactLetter(contact) !== activeLetter) return false;
+    const company = Boolean(contact.company || contact.company_name);
+    if (contactUiState.type === "company" && !company) return false;
+    if (contactUiState.type === "person" && company) return false;
+    const tags = contactTags(contact);
+    if (contactUiState.tag !== "all" && !tags[contactUiState.tag]) return false;
+    if (query && ![contact.name,contact.company,contact.company_name,contact.email,contact.phone].some(value => String(value || "").toLocaleLowerCase("de").includes(query))) return false;
+    return true;
+  });
+  if (!visible.length && contacts.length) {
+    contactsList.innerHTML = '<p class="contactNoResults">Keine passenden Kontakte gefunden.</p>';
+    return;
+  }
+  visible.forEach(contact => {
+    const name = contact.name || "Unbekannter Kontakt";
+    const company = contact.company || contact.company_name || "–";
+    const initials = name.trim().split(/\s+/).slice(0,2).map(word => word[0] || "").join("").toUpperCase();
+    const tags = contactTags(contact);
+    const tagHtml = [tags.offer ? '<span class="contactTag offer">Angebot</span>' : '',tags.invoice ? '<span class="contactTag invoice">Rechnung</span>' : '',tags.event ? '<span class="contactTag event">Termin</span>' : ''].filter(Boolean).join("") || '<span class="contactNoTags">–</span>';
+    const row = document.createElement("div");
+    row.className = "contactItem";
+    row.innerHTML = `<div class="contactIdentity"><span class="contactAvatar">${contactEsc(initials)}</span><div class="contactInfo"><strong class="contactName">${contactEsc(name)}</strong><span class="contactKind">${company !== "–" ? "Firmenkontakt" : "Privatkontakt"}</span></div></div><div class="contactCompany">${contactEsc(company)}</div><div class="contactDetails"><span>${contactEsc(contact.email || "Keine E-Mail")}</span><span>${contactEsc(contact.phone || "Keine Telefonnummer")}</span></div><div class="contactTags">${tagHtml}</div><div class="contactActions"><button class="btn btnSecondary" data-open="${contactEsc(contact.id)}">Öffnen</button><button class="btn btnSecondary contactDelete" data-delete="${contactEsc(contact.id)}" aria-label="Kontakt löschen" title="Kontakt löschen">Löschen</button></div>`;
+    contactsList.appendChild(row);
+  });
+  bindContactActions();
 }
-
-emptyContacts.style.display = "none";
-
-const visibleContacts =
-activeLetter === "ALLE"
-? contacts
-: contacts.filter((contact) => getContactLetter(contact) === activeLetter);
-
-if (!visibleContacts.length) {
-contactsList.innerHTML = `
-<div class="emptyState">
-<p>Keine Kontakte unter diesem Buchstaben.</p>
-</div>
-`;
-return;
-}
-
-if (activeLetter !== "ALLE") {
-const title = document.createElement("div");
-title.className = "contactSectionTitle";
-title.textContent = `Kontakte unter ${activeLetter}`;
-contactsList.appendChild(title);
-}
-
-visibleContacts.forEach((contact) => {
-const item = document.createElement("div");
-item.className = "contactItem";
-
-item.innerHTML = `
-<div class="contactInfo">
-<div class="contactName">${contact.name || "Unbekannter Kontakt"}</div>
-<div class="contactMeta">
-${contact.email || "Keine E-Mail"} · ${contact.phone || "Keine Telefonnummer"}
-</div>
-<div class="contactMeta">
-${contact.street || ""} ${contact.city ? "· " + contact.city : ""}
-</div>
-</div>
-
-<div class="contactActions">
-<button class="btn btnSecondary" data-open="${contact.id}">Öffnen</button>
-<button class="btn btnSecondary" data-delete="${contact.id}">Löschen</button>
-</div>
-`;
-
-contactsList.appendChild(item);
-});
-
-bindContactActions();
+async function loadContactLinks() {
+  const resources = [["offers", "/api/offers", "offers"],["invoices", "/api/invoices", "invoices"],["events", "/api/calendar-events", "events"]];
+  await Promise.all(resources.map(async ([key,url,field]) => {
+    try { const response = await fetch(url); if (!response.ok) return; const data = await response.json(); if (data.ok && Array.isArray(data[field])) contactUiState[key] = data[field]; }
+    catch (error) { console.warn("Kontaktzuordnungen nicht verfügbar:",key,error); }
+  }));
+  renderContacts();
 }
 
 function openContact(event) {
@@ -233,7 +229,7 @@ showToast("Kontakt wurde gelöscht.");
 
 contactsCache = await apiGetContacts();
 renderContacts();
-renderKpis();
+
 } catch (error) {
 showToast(error.message);
 }
@@ -253,9 +249,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 try {
 contactsCache = await apiGetContacts();
 renderContacts();
+await loadContactLinks();
 } catch (error) {
 showToast(error.message);
 renderContacts();
 }
 });
 
+
+const contactSearchInput = document.getElementById("contactSearch");
+contactSearchInput?.addEventListener("input", event => { contactUiState.query = event.target.value; renderContacts(); });
+document.getElementById("contactTypeFilter")?.addEventListener("change", event => { contactUiState.type = event.target.value; renderContacts(); });
+document.getElementById("contactTagFilter")?.addEventListener("change", event => { contactUiState.tag = event.target.value; renderContacts(); });

@@ -41,7 +41,7 @@ E-Mails
 <div class="pageEyebrow">Übersicht</div>
 <h1 class="pageTitle">Deine Kontakte</h1>
 <p class="pageSubtitle">
-Verwalte Kunden und ordne später Angebote, Rechnungen und Notizen zu.
+Verwalte deine Kontakte und sieh Angebote, Rechnungen und Termine auf einen Blick.
 </p>
 </header>
 
@@ -49,7 +49,7 @@ Verwalte Kunden und ordne später Angebote, Rechnungen und Notizen zu.
 <div class="contactsHeader">
 <div>
 <h2>Kontaktübersicht</h2>
-<p>Wähle einen Buchstaben oder lege einen neuen Kontakt an.</p>
+<p>Alle Kontakte und ihre aktuellen Zuordnungen auf einen Blick.</p>
 </div>
 
 <a class="btn btnPrimary" href="/contact-create">
@@ -57,9 +57,9 @@ Verwalte Kunden und ordne später Angebote, Rechnungen und Notizen zu.
 </a>
 </div>
 
-<div id="letterNav" class="letterNav"></div>
+<div class="contactToolbar"><label class="contactSearch"><span aria-hidden="true">⌕</span><input id="contactSearch" type="search" placeholder="Kontakte suchen …" autocomplete="off" aria-label="Kontakte suchen"></label><select id="contactTypeFilter" aria-label="Kontakttyp"><option value="all">Typ: Alle</option><option value="company">Firmenkontakte</option><option value="person">Privatkontakte</option></select><select id="contactTagFilter" aria-label="Zuordnungen"><option value="all">Tags: Alle</option><option value="offer">Offene Angebote</option><option value="invoice">Offene Rechnungen</option><option value="event">Anstehende Termine</option></select></div><div id="letterNav" class="letterNav"></div><div class="contactTableHead"><span>Kontakt</span><span>Unternehmen</span><span>Kontaktdaten</span><span>Tags</span><span>Aktionen</span></div>
 
-<div id="contactsList" class="contactsList"></div>
+<div id="contactsList" class="contactsList" aria-live="polite"></div>
 
 <div id="emptyContacts" class="emptyState">
 <p>Noch keine Kontakte vorhanden.</p>

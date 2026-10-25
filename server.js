@@ -8575,6 +8575,23 @@ async function triggerDashboardAction({
     }
 
     switch (actionTarget) {
+        case "create_offer_draft": {
+            const threadId = actionPayload.threadId;
+            const messageId = actionPayload.messageId;
+            if (typeof threadId !== "string" || !threadId || typeof messageId !== "string" || !messageId) {
+                return { ok: false, error: "E-Mail-Zuordnung fehlt." };
+            }
+            const { data: thread, error: threadError } = await supabase.from("email_threads")
+                .select("id, contact_id").eq("id", threadId).eq("company_id", companyId).maybeSingle();
+            if (threadError) throw threadError;
+            if (!thread) return { ok: false, error: "E-Mail-Thread nicht gefunden." };
+            const { data: message, error: messageError } = await supabase.from("email_messages")
+                .select("id").eq("id", messageId).eq("thread_id", threadId).eq("company_id", companyId).maybeSingle();
+            if (messageError) throw messageError;
+            if (!message) return { ok: false, error: "E-Mail nicht gefunden." };
+            const contactQuery = thread.contact_id ? `?contactId=${encodeURIComponent(thread.contact_id)}` : "";
+            return { ok: true, type: "navigation", target: `/offer-create${contactQuery}` };
+        }
         case "create_calendar_entry": {
             const threadId = actionPayload.threadId;
 
@@ -8840,6 +8857,12 @@ events: data || []
 
 app.post("/api/calendar-events", async (req, res) => {
 const event = req.body;
+const contactId = event.contactId || null;
+if (contactId) {
+    const { data: contact, error: contactError } = await supabase.from("contacts")
+        .select("id").eq("id", contactId).eq("company_id", req.companyId).maybeSingle();
+    if (contactError || !contact) return res.status(400).json({ ok: false, error: "Kontakt nicht gefunden." });
+}
 
 const { data, error } = await supabase
 .from("calendar_events")
@@ -8854,8 +8877,8 @@ event_date: event.eventDate,
 event_time: event.eventTime || null,
 reminder_at: event.reminderAt || null,
 color: event.color || "orange",
-related_type: event.relatedType || null,
-related_id: event.relatedId || null,
+related_type: contactId ? "contact" : (event.relatedType || null),
+related_id: contactId || event.relatedId || null,
 source: event.source || "manual",
 metadata: event.metadata || {}
 }
@@ -8879,6 +8902,12 @@ event: data
 app.put("/api/calendar-events/:id", async (req, res) => {
 const { id } = req.params;
 const event = req.body;
+const contactId = event.contactId || null;
+if (contactId) {
+    const { data: contact, error: contactError } = await supabase.from("contacts")
+        .select("id").eq("id", contactId).eq("company_id", req.companyId).maybeSingle();
+    if (contactError || !contact) return res.status(400).json({ ok: false, error: "Kontakt nicht gefunden." });
+}
 
 const { data, error } = await supabase
 .from("calendar_events")
@@ -8890,6 +8919,8 @@ event_time: event.eventTime || null,
 reminder_at: event.reminderAt || null,
 color: event.color || "orange",
 status: event.status || "open",
+related_type: contactId ? "contact" : null,
+related_id: contactId,
 metadata: event.metadata || {},
 updated_at: new Date().toISOString()
 })

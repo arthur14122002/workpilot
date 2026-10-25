@@ -175,3 +175,29 @@ grid-template-columns: 1fr;
 }/* WorkPilot Blue V2 flat KPI and notification panels */
 .kpiCard,.kpiGrid>*,.notificationCard,.notificationItem,.dashboardNotification{border-radius:6px!important;box-shadow:none!important}
 .notificationItem,.dashboardNotification{border-left:0!important;border-right:0!important;border-top:0!important;border-bottom:1px solid #e2e9f1!important}
+
+/* Kontaktübersicht – konsistent mit dem WorkPilot Referenzdesign */
+.indexCard{max-width:none!important;padding:20px 16px!important;border:1px solid #dbe3ed!important;border-radius:6px!important}
+.contactsHeader{padding:0 6px 8px;margin-bottom:12px!important}
+.contactToolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.contactSearch{flex:1;min-width:210px;display:flex;gap:9px;align-items:center;background:#fff;border:1px solid #dbe3ed;border-radius:5px;padding:0 12px;color:#6d829d}
+.contactSearch input{height:40px;flex:1;min-width:0;border:0;outline:0;font:inherit;color:#132744;background:transparent}
+.contactToolbar select{height:42px;min-width:150px;border:1px solid #dbe3ed;border-radius:5px;background:#fff;color:#405772;padding:0 10px;font:inherit;font-size:13px}
+.contactToolbar :is(input,select):focus-visible{outline:2px solid #a7cfff;outline-offset:1px}
+.letterNav{background:#f5f8fc!important;border:1px solid #e3eaf2!important;border-radius:5px!important;gap:4px!important;margin:14px 0!important}
+.letterBtn{border-radius:4px!important}.letterBtn.active{background:#0877ee!important;color:white!important;border-color:#0877ee!important}.letterBtn:hover:not(.disabled){background:#eaf3ff!important;border-color:#cbdff8!important;color:#0877ee!important}.letterBtn.active:hover{background:#0877ee!important;color:#fff!important}
+.contactTableHead,.contactItem{display:grid!important;grid-template-columns:minmax(165px,1.35fr) minmax(115px,1fr) minmax(165px,1.25fr) minmax(130px,1.1fr) minmax(140px,.8fr)!important;align-items:center!important;gap:14px!important}
+.contactTableHead{padding:13px 14px;background:#f4f7fb;color:#526781;text-transform:uppercase;font-size:11px;font-weight:750;letter-spacing:.03em;border:1px solid #e2eaf3;border-bottom:0}
+.contactsList{gap:0!important}
+.contactItem{padding:12px 14px!important;background:#fff!important;border:1px solid #e2eaf3!important;border-bottom:0!important;border-radius:0!important;min-height:73px;transition:background .15s ease}
+.contactItem:last-child{border-bottom:1px solid #e2eaf3!important}
+.contactItem:hover{background:#f6f9fd!important;border-color:#e2eaf3!important}
+.contactIdentity{display:flex;align-items:center;gap:10px;min-width:0}
+.contactAvatar{height:40px;width:40px;flex-shrink:0;display:grid;place-items:center;border-radius:6px;background:#e7f1ff;color:#0877ee;font-size:13px;font-weight:750}
+.contactInfo{min-width:0}.contactName{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px!important}.contactKind{display:inline-block;margin-top:4px;padding:3px 5px;background:#f0f4f9;color:#6a7f99;font-size:10px;border-radius:3px}
+.contactCompany,.contactDetails{font-size:12px;color:#354e6f;overflow-wrap:anywhere}.contactDetails{display:flex;flex-direction:column;gap:4px}.contactDetails span:last-child{color:#71839b}
+.contactTags{display:flex;gap:5px;flex-wrap:wrap}.contactTag{display:inline-block;padding:5px 7px;border:1px solid;border-radius:4px;font-size:11px;font-weight:600}.contactTag.offer{background:#e9f3ff;border-color:#cce1ff;color:#086dd8}.contactTag.invoice{background:#fff3e6;border-color:#ffe1bd;color:#a76013}.contactTag.event{background:#e7f7ef;border-color:#c9e9d9;color:#12805b}.contactNoTags{color:#9aa9ba}
+.contactActions{justify-content:flex-end;flex-wrap:wrap;gap:6px!important}.contactActions .btn{border-radius:5px!important;font-size:12px;padding:8px 10px!important}.contactDelete{color:#64748b!important}.contactNoResults{padding:26px;color:#71839b;text-align:center}
+@media(max-width:1120px){.contactTableHead,.contactItem{grid-template-columns:minmax(145px,1.2fr) minmax(110px,.8fr) minmax(140px,1fr) minmax(110px,1fr) minmax(90px,.7fr)!important;gap:9px!important}.contactActions{justify-content:flex-start}}
+@media(max-width:850px){.contactTableHead{display:none!important}.contactItem{grid-template-columns:1fr 1fr!important;align-items:start!important}.contactIdentity{grid-column:1/-1}.contactTags,.contactActions{grid-column:auto}.contactActions{justify-content:flex-end}}
+@media(max-width:480px){.contactItem{grid-template-columns:1fr!important}.contactIdentity,.contactTags,.contactActions{grid-column:1}.contactActions{justify-content:flex-start}}

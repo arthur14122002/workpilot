@@ -101,3 +101,14 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline-color:#0877
 .mailFolder[data-folder="sent"]:before{content:'↗';border:0;background:none;font-size:19px;line-height:10px;color:#657c98}
 .mailFolder[data-folder="trash"]:before{content:'⌫';border:0;background:none;font-size:19px;line-height:10px;color:#657c98}
 .mailFolder[data-folder="spam"]:before{content:'!';border:1.5px solid #657c98;border-radius:3px;background:none;text-align:center;font-size:10px;line-height:9px;color:#657c98}
+
+/* Final pass: mailbox inner surfaces and actions */
+.mailApp .detailMessageItem,.mailApp .mailReplyBox,.mailApp .mailReplyTextarea,.mailApp .mailAttachmentCard,.mailApp .mailAttachmentPreview,.mailApp .aiSuggestedReplyText,.mailApp .mailAiSuggestion,.mailApp .mailAiReply,.mailApp .mailContactBox,.mailApp .mailContactBanner,.mailApp .mailDetailView .detailMessageBody{border-radius:5px!important}
+.mailApp .mailComposeBtn,.mailApp #newMailBtn{background:#0877ee!important;border-color:#0877ee!important;color:white!important;border-radius:5px!important}
+.mailApp .mailComposeBtn:hover,.mailApp #newMailBtn:hover{background:#0564ca!important}
+.mailApp .mailFolders,.mailApp .mailListPanel,.mailApp .mailViewer{border-radius:5px!important;box-shadow:none!important}
+.mailApp .mailFolder strong{background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;min-width:20px!important}
+.mailApp .mailFolder[data-folder="trash"]:before{content:""!important;display:block!important;width:12px!important;height:12px!important;border:1.5px solid #657c98!important;border-top:0!important;border-radius:0 0 2px 2px!important;background:transparent!important;transform:translateY(-40%)!important;left:12px!important}
+.mailApp .mailFolder[data-folder="trash"]:after{content:"";position:absolute;left:10px;top:calc(50% - 9px);width:16px;height:2px;background:#657c98;border-radius:1px}
+.mailApp .mailOriginalFolderIcon{background:none!important;color:#54718e!important}
+.mailApp .mailOriginalFolderRow,.mailApp .mailOriginalFolder{border-radius:5px!important}
