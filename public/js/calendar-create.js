@@ -47,6 +47,7 @@ title,
 eventDate,
 eventTime,
 description,
+contactId: document.getElementById("contactId").value || null,
 reminderAt: getDefaultReminderAt(eventDate, eventTime),
 color: selectedCalendarColor,
 source: "manual"
@@ -107,4 +108,30 @@ if (cancelLink) {
         cancelLink.href = window.getCalendarReturnUrl();
     }
 }
+});
+
+// Kontakte ausschließlich aus dem eingeloggten Unternehmen laden.
+document.addEventListener("DOMContentLoaded", async () => {
+    const select = document.getElementById("contactId");
+    if (!select) return;
+    try {
+        const response = await fetch("/api/contacts");
+        const result = await response.json();
+        if (!response.ok || !result.ok) return;
+        const rows = result.contacts || [];
+        for (const contact of rows) {
+            const option = document.createElement("option");
+            option.value = contact.id;
+            option.textContent = contact.company_name || contact.company || contact.name ||
+                [contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Kontakt";
+            select.appendChild(option);
+        }
+        const params = new URLSearchParams(location.search);
+        if (params.get("contactId") && !select.value) select.value = params.get("contactId");
+        if (typeof eventId !== "undefined" && eventId) {
+            const response = await fetch(`/api/calendar-events/${encodeURIComponent(eventId)}`);
+            const result = await response.json();
+            if (result.ok && result.event?.related_type === "contact") select.value = result.event.related_id || "";
+        }
+    } catch (error) { console.warn("Kontakte konnten nicht geladen werden", error); }
 });
