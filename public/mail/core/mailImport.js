@@ -352,6 +352,14 @@ mails.push({
     }
 }
 
+function requireValidLiveUidValidity(mailboxInfo, folder) {
+    const value = mailboxInfo?.uidValidity;
+    if (value == null || !/^\d+$/.test(String(value)) || BigInt(String(value)) <= 0n) {
+        throw new Error(`IMAP UIDVALIDITY fehlt oder ist ungültig: ${folder}`);
+    }
+    return String(value);
+}
+
 async function importImapMailbox(
     connection,
     range = "30"
@@ -862,6 +870,9 @@ console.log(
                 uid:
                     message.uid,
 
+                mailboxPath: "INBOX",
+                uidValidity: String(uidValidity),
+
                 messageId:
                     message.envelope?.messageId ||
                     null,
@@ -943,9 +954,10 @@ console.log(
 
 if (sentMailbox) {
 
-    await client.mailboxOpen(
+    const sentInfo = await client.mailboxOpen(
         sentMailbox
     );
+    const sentUidValidity = requireValidLiveUidValidity(sentInfo, sentMailbox);
 
     const sentUids =
         await client.search(
@@ -1004,6 +1016,8 @@ if (sentMailbox) {
 
                 uid:
                     message.uid,
+
+                uidValidity: sentUidValidity,
 
                 messageId:
                     message.envelope?.messageId ||
@@ -1076,9 +1090,10 @@ if (sentMailbox) {
 
 if (trashMailbox) {
 
-    await client.mailboxOpen(
+    const trashInfo = await client.mailboxOpen(
         trashMailbox
     );
+    const trashUidValidity = requireValidLiveUidValidity(trashInfo, trashMailbox);
 
     const trashUids =
         await client.search(
@@ -1137,6 +1152,8 @@ if (trashMailbox) {
 
                 uid:
                     message.uid,
+
+                uidValidity: trashUidValidity,
 
                 messageId:
                     message.envelope?.messageId ||
