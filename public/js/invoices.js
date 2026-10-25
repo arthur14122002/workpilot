@@ -191,6 +191,40 @@ ${contact.name}
 `;
 }
 
+const wpRechnungenState = {page:1, size:8};
+function wpEsc(v) { return String(v ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function wpFilterRechnungen(rows) {
+ const query=(document.getElementById('wp-search')?.value||'').toLocaleLowerCase('de').trim();
+ const status=document.getElementById('wp-filter-status')?.value||'';
+ const assigned=document.getElementById('wp-filter-assigned')?.value||'';
+ const from=document.getElementById('wp-filter-from')?.value||'';
+ const to=document.getElementById('wp-filter-to')?.value||'';
+ return rows.filter(row=>{
+ const date=String(row.invoiceDate||row.createdAt||'').slice(0,10);
+ const normalized=/^\d{2}\.\d{2}\.\d{4}$/.test(date)?date.slice(6)+'-'+date.slice(3,5)+'-'+date.slice(0,2):date;
+ if(status && (row.status||'open')!==status) return false;
+ if(assigned==='yes'&&!row.contactId || assigned==='no'&&row.contactId) return false;
+ if(from && normalized<from || to && normalized>to) return false;
+ if(query && ![row.invoiceNumber,row.recipientName,getContactName(row.contactId)].some(v=>String(v||'').toLocaleLowerCase('de').includes(query)))return false;
+ return true;
+ });
+}
+function wpUpdateRechnungenStats(rows) {
+ const stats={all:rows.length,open:0,paid:0,overdue:0};
+ rows.forEach(r=>{const key=r.status||'open';if(key in stats)stats[key]++;});
+ Object.entries(stats).forEach(([key,value])=>{const el=document.getElementById('wp-stat-'+key);if(el)el.textContent=value;});
+}
+function wpPaginationRechnungen(total) {
+ const el=document.getElementById('wp-pagination');if(!el)return;
+ const pages=Math.max(1,Math.ceil(total/wpRechnungenState.size));
+ wpRechnungenState.page=Math.min(wpRechnungenState.page,pages);
+ el.replaceChildren();
+ const info=document.createElement('span');info.textContent=`${total?((wpRechnungenState.page-1)*wpRechnungenState.size+1):0}–${Math.min(total,wpRechnungenState.page*wpRechnungenState.size)} von ${total} Rechnungen`;el.append(info);
+ const actions=document.createElement('div');actions.className='wp-page-actions';
+ for(const [label,target,disabled] of [['‹',wpRechnungenState.page-1,wpRechnungenState.page===1],...Array.from({length:Math.min(pages,7)},(_,i)=>[String(i+1),i+1,false]),['›',wpRechnungenState.page+1,wpRechnungenState.page===pages]]){
+ const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=disabled;b.className='wp-page-button'+(target===wpRechnungenState.page&&label===String(target)?' active':'');b.addEventListener('click',()=>{wpRechnungenState.page=target;renderInvoices();});actions.append(b);
+ }el.append(actions);
+}
 async function renderInvoices() {
 let invoices = [];
 
@@ -201,6 +235,10 @@ showToast(error.message);
 }
 
 invoicesList.innerHTML = "";
+wpUpdateRechnungenStats(invoices);
+invoices=wpFilterRechnungen(invoices);
+wpPaginationRechnungen(invoices.length);
+invoices=invoices.slice((wpRechnungenState.page-1)*wpRechnungenState.size,wpRechnungenState.page*wpRechnungenState.size);
 
 if (!invoices.length) {
 emptyInvoices.style.display = "block";
@@ -224,6 +262,7 @@ item.innerHTML = `
 <div class="invoiceMeta">Rechnungsdatum: ${invoice.invoiceDate || "-"}</div>
 
 </div>
+<div class="wp-row-date">${wpEsc(invoice.invoiceDate || "–")}</div>
 
 <div class="invoiceActions">
 <select class="statusSelect" data-status="${invoice.id}">
@@ -543,3 +582,10 @@ sendInvoiceMailBtn.disabled = false;
 sendInvoiceMailBtn.textContent = "E-Mail senden";
 }
 });
+
+// WorkPilot Blue V2: client-side filtering and paging; original API handlers remain unchanged.
+for(const id of ['wp-search','wp-filter-status','wp-filter-assigned','wp-filter-from','wp-filter-to']){
+ const el=document.getElementById(id);if(el)el.addEventListener(id==='wp-search'?'input':'change',()=>{wpRechnungenState.page=1;renderInvoices();});
+}
+const wpExportButton=document.getElementById('wp-export');
+if(wpExportButton)wpExportButton.addEventListener('click',()=>{showToast('Der vollständige Export wird im Rechnungs- und Angebotsmodul ergänzt.');});

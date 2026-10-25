@@ -330,3 +330,11 @@ button:focus-visible, a:focus-visible { outline: 2px solid #0869e8; outline-offs
 .modalCard { border-radius: 8px !important; }
 .notice { border-radius: 6px; }
 @media(max-width:850px) { .sidebar { width: 100%; height: auto; position: static; } .content { padding: 22px 16px; } }
+/* WorkPilot Blue V2 – unify residual old orange/radius treatments */
+:root {--wp-orange:#0869e8;--wp-orange-light:#eaf2ff;--wp-shadow:none}
+.navCounter{background:transparent!important;color:#0869e8!important;border-radius:0!important;min-width:24px!important;font-variant-numeric:tabular-nums}
+.toastMessage{background:#1459b8;border-radius:6px;box-shadow:0 5px 15px rgba(15,40,80,.1)}
+.card,.notice,.iconButton,.btn,.modalCard {border-radius:6px!important}
+/* Flat contact lists and blue-only interface */
+.contactCard,.contactItem,.notificationItem,.dashboardNotification{border-radius:6px!important;box-shadow:none!important}
+.contactCard,.contactItem{border-left:0!important;border-right:0!important;border-top:0!important;border-bottom:1px solid #dce4ef!important}

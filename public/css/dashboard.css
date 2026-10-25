@@ -489,3 +489,7 @@ flex-wrap: wrap;
     padding: 0;
     display: block;
 }
+/* WorkPilot Blue V2 dashboard */
+.calendarDay.isToday{border-radius:6px!important;border-color:#0869e8!important;background:#eef5ff!important}
+.kpiCard,.dashboardKpi,.notificationCard,.notificationItem,.dashboardNotification,.calendarDay,.dashboardCard{border-radius:6px!important;box-shadow:none!important}
+.notificationItem,.dashboardNotification{border-left:0!important;border-right:0!important;border-top:0!important;border-bottom:1px solid #e2e9f1!important}

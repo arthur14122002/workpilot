@@ -172,4 +172,6 @@ grid-template-columns: repeat(2, 1fr);
 .kpiGrid {
 grid-template-columns: 1fr;
 }
-}
+}/* WorkPilot Blue V2 flat KPI and notification panels */
+.kpiCard,.kpiGrid>*,.notificationCard,.notificationItem,.dashboardNotification{border-radius:6px!important;box-shadow:none!important}
+.notificationItem,.dashboardNotification{border-left:0!important;border-right:0!important;border-top:0!important;border-bottom:1px solid #e2e9f1!important}

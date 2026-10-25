@@ -1348,3 +1348,7 @@ gap: 10px;
 
     background: rgba(0, 0, 0, 0.38);
 }
+/* WorkPilot Blue V2 mailbox surface; message content renderer remains untouched */
+:root{--wp-orange:#0869e8;--wp-orange-dark:#0755bd;--wp-orange-soft:#eaf2ff}
+.mailOriginalFolderAddBtn,.mailFolderBtn,.mailFolderItem,.mailSidebar,.mailList,.mailDetail,.mailCard,.mailItem,.mailComposeBtn,.mailOriginalNewMailBtn{border-radius:6px!important}
+.mailCounter,.mailFolderCount,.folderCounter{border-radius:0!important;background:transparent!important;color:#0869e8!important;font-variant-numeric:tabular-nums}

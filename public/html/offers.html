@@ -8,6 +8,8 @@
 
 <link rel="stylesheet" href="/css/app-layout.css" />
 <link rel="stylesheet" href="/css/offers.css" />
+<link rel="stylesheet" href="/css/workpilot-blue-v2.css" />
+<link rel="stylesheet" href="/css/workpilot-blue-v2.css" />
 </head>
 <body>
 <div class="appShell">
@@ -49,6 +51,8 @@ Verwalte, bearbeite und ordne deine Angebote Kontakten zu.
 </p>
 </header>
 
+<section class="wp-summary" aria-label="Statistik"><div class="wp-stat"><span>Alle Angebote</span><strong id="wp-stat-all">0</strong></div><div class="wp-stat"><span>Offene Angebote</span><strong id="wp-stat-open">0</strong></div><div class="wp-stat"><span>Angenommene Angebote</span><strong id="wp-stat-accepted">0</strong></div><div class="wp-stat"><span>Abgelehnte Angebote</span><strong id="wp-stat-rejected">0</strong></div></section>
+<section class="wp-summary" aria-label="Statistik"><div class="wp-stat"><span>Alle Angebote</span><strong id="wp-stat-all">0</strong></div><div class="wp-stat"><span>Offene Angebote</span><strong id="wp-stat-open">0</strong></div><div class="wp-stat"><span>Angenommene Angebote</span><strong id="wp-stat-accepted">0</strong></div><div class="wp-stat"><span>Abgelehnte Angebote</span><strong id="wp-stat-rejected">0</strong></div></section>
 <section class="card offersCard">
 <div class="offersHeader">
 <div>
@@ -63,11 +67,13 @@ Noch nicht zugeordnete Angebote bleiben ebenfalls hier sichtbar.
 </a>
 </div>
 
-<div id="offersList" class="offersList"></div>
+<div class="wp-toolbar"><input type="search" id="wp-search" placeholder="Angebote suchen…" aria-label="Suche"/><select id="wp-filter-status" aria-label="Status"><option value="">Status: Alle</option><option value="open">Offene Angebote</option><option value="accepted">Angenommene Angebote</option><option value="rejected">Abgelehnte Angebote</option></select><select id="wp-filter-assigned" aria-label="Zuordnung"><option value="">Zuordnung: Alle</option><option value="yes">Zugeordnet</option><option value="no">Nicht zugeordnet</option></select><label class="wp-date-label">Zeitraum <input type="date" id="wp-filter-from" aria-label="Von"/><input type="date" id="wp-filter-to" aria-label="Bis"/></label><button type="button" id="wp-export" class="btn btnSecondary">Exportieren</button></div><div class="wp-table-head"><span>NUMMER / KUNDE</span><span>ERSTELLT AM</span><span>STATUS / ZUORDNUNG / AKTIONEN</span></div><div class="wp-toolbar"><input type="search" id="wp-search" placeholder="Angebote suchen…" aria-label="Suche"/><select id="wp-filter-status" aria-label="Status"><option value="">Status: Alle</option><option value="open">Offene Angebote</option><option value="accepted">Angenommene Angebote</option><option value="rejected">Abgelehnte Angebote</option></select><select id="wp-filter-assigned" aria-label="Zuordnung"><option value="">Zuordnung: Alle</option><option value="yes">Zugeordnet</option><option value="no">Nicht zugeordnet</option></select><label class="wp-date-label">Zeitraum <input type="date" id="wp-filter-from" aria-label="Von"/><input type="date" id="wp-filter-to" aria-label="Bis"/></label><button type="button" id="wp-export" class="btn btnSecondary">Exportieren</button></div><div class="wp-table-head"><span>NUMMER / KUNDE</span><span>ERSTELLT AM</span><span>STATUS / ZUORDNUNG / AKTIONEN</span></div><div id="offersList" class="offersList"></div>
 
 <div id="emptyOffers" class="emptyState">
 <p>Noch keine Angebote vorhanden.</p>
 </div>
+<div id="wp-pagination" class="wp-pagination"></div>
+<div id="wp-pagination" class="wp-pagination"></div>
 </section>
 </main>
 </div>

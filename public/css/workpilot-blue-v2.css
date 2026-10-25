@@ -1,0 +1,39 @@
+/* WorkPilot Blue V2 – Angebote und Rechnungen, ohne Änderung der API */
+:root {--wp-orange:#0869e8;--wp-orange-light:#eaf2ff;--wp-shadow:none}
+body {background:#f5f8fc;color:#15253f}
+.card,.offerItem,.invoiceItem,.modalCard,.contactCard,.notificationItem {border-radius:6px!important;box-shadow:none!important;border-color:#dce4ef!important}
+.offersCard,.invoicesCard {padding:0!important;overflow:hidden}
+.offersHeader,.invoicesHeader {padding:24px 24px 14px!important;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.wp-summary {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:20px 0}
+.wp-stat {background:white;border:1px solid #dce4ef;border-radius:6px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.wp-stat span {font-size:13px;color:#526784}.wp-stat strong {font-size:28px;color:#142944;font-weight:750}
+.wp-toolbar {padding:12px 24px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wp-toolbar input,.wp-toolbar select {height:40px;border:1px solid #dce4ef;background:#fff;border-radius:5px;padding:0 12px;color:#334766;font:inherit;font-size:13px;min-width:0}
+.wp-toolbar #wp-search {flex:1 1 190px}.wp-date-label {display:flex;align-items:center;gap:6px;color:#60728a;font-size:12px}.wp-date-label input {width:135px}
+.wp-table-head {display:grid;grid-template-columns:minmax(155px,1.4fr) minmax(105px,.65fr) minmax(200px,1.25fr) minmax(270px,1.5fr);padding:14px 22px;background:#f5f8fc;border-top:1px solid #e2e9f1;border-bottom:1px solid #e2e9f1;color:#5d7290;font-size:11px;font-weight:750;letter-spacing:.04em}
+.offersList,.invoicesList {padding:0 20px!important}
+.offerItem,.invoiceItem {display:grid!important;grid-template-columns:minmax(155px,1.4fr) minmax(105px,.65fr) minmax(200px,1.25fr) minmax(270px,1.5fr);align-items:center;gap:10px!important;padding:14px 4px!important;margin:0!important;border:0!important;border-bottom:1px solid #e2e9f1!important;background:white!important;box-shadow:none!important}
+.offerInfo,.invoiceInfo {min-width:0;display:contents!important}
+.offerListTitle,.invoiceTitle {grid-column:1;grid-row:1;color:#132843;font-weight:650;overflow-wrap:anywhere}
+.offerMeta,.invoiceMeta {font-size:12px;color:#62738b}
+.offerInfo .offerMeta:first-of-type,.invoiceInfo .invoiceMeta:first-of-type {grid-column:1;grid-row:2}
+.offerActions,.invoiceActions {grid-column:3/5;grid-row:1/3;display:flex!important;align-items:center;justify-content:flex-end;gap:7px!important;flex-wrap:wrap;min-width:0}
+.offerActions .statusSelect,.invoiceActions .statusSelect {width:115px!important;min-width:100px!important;max-width:125px!important;flex:0 1 115px!important;height:36px;padding:0 6px!important;border-radius:5px!important}
+.offerActions .contactAssignWrap,.invoiceActions .contactAssignWrap {min-width:110px;max-width:165px;flex:0 1 140px}
+.offerActions .contactAssignBtn,.invoiceActions .contactAssignBtn {max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:5px!important}
+.offerActions .btn,.invoiceActions .btn {padding:9px 11px!important;font-size:12px!important;min-width:0!important;border-radius:5px!important}
+.wp-pagination {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px;color:#5c7190;font-size:13px;flex-wrap:wrap}
+.wp-page-actions {display:flex;gap:5px}.wp-page-button {background:white;border:1px solid #dce4ef;border-radius:5px;padding:8px 13px;color:#2b4465;cursor:pointer}.wp-page-button.active {background:#0869e8;color:white}.wp-page-button:disabled {opacity:.4;cursor:default}
+.navCounter {background:none!important;color:#0869e8!important;border-radius:0!important;min-width:25px!important;font-variant-numeric:tabular-nums}
+@media(max-width:1100px){.wp-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.wp-table-head{display:none}.offerItem,.invoiceItem{display:flex!important;flex-wrap:wrap;align-items:center}.offerInfo,.invoiceInfo{display:block!important;flex:1 1 180px}.offerActions,.invoiceActions{display:flex!important;flex:1 1 100%}}
+@media(max-width:650px){.wp-summary{grid-template-columns:1fr 1fr;gap:8px}.wp-stat{padding:12px}.wp-toolbar{padding:12px}.wp-date-label{flex-wrap:wrap}.offersHeader,.invoicesHeader{padding:16px!important}}
+
+/* Three aligned table columns, actions preserve existing button behavior */
+.wp-table-head,.offerItem,.invoiceItem {grid-template-columns:minmax(150px,1.2fr) minmax(105px,.65fr) minmax(480px,2.5fr)!important}
+.offerInfo,.invoiceInfo{display:block!important;grid-column:1;grid-row:1}
+.wp-row-date{grid-column:2;grid-row:1;color:#60728a;font-size:13px}
+.offerActions,.invoiceActions{grid-column:3;grid-row:1}
+@media(max-width:1100px){.offerItem,.invoiceItem{display:flex!important}.wp-row-date{flex:0 1 140px}.offerActions,.invoiceActions{flex:1 1 100%}}
+/* Shared legacy orange clean-up */
+:root{--wp-orange:#0869e8;--wp-orange-dark:#0755bd;--wp-orange-soft:#eaf2ff}
+button:not(.wp-page-button),.btn,.navLink,input,select,textarea{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif}
