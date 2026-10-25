@@ -185,3 +185,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     } catch (error) { console.warn("Sidebar-Anmeldestatus nicht verfügbar."); }
 });
+
+// Visual-only: indicate the current navigation item.
+try {
+  const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+  document.querySelectorAll('.sidebar .navLink[href]').forEach(link => {
+    const href = new URL(link.getAttribute('href'), window.location.origin).pathname.replace(/\/$/, '') || '/';
+    const selected = href === currentPath || (href === '/offers' && currentPath.startsWith('/offer-')) || (href === '/invoices' && currentPath.startsWith('/invoice-')) || (href === '/contacts' && currentPath.startsWith('/contact-'));
+    if (selected) { link.classList.add('active'); link.setAttribute('aria-current','page'); }
+    else { link.classList.remove('active'); link.removeAttribute('aria-current'); }
+  });
+} catch (_) {}

@@ -532,3 +532,19 @@ background: var(--wp-orange-soft);
         pointer-events: auto;
     }
 }
+/* Matching offer / invoice management surfaces */
+.offersCard, .invoicesCard { max-width: none; padding: 24px; }
+.offersHeader, .invoicesHeader { padding-bottom: 20px; border-bottom: 1px solid #e4eaf2; margin-bottom: 0; align-items: center; }
+.offersHeader h2, .invoicesHeader h2 { color: #102340; font-size: 20px; font-weight: 750; }
+.offersList, .invoicesList { gap: 0; }
+.offerItem, .invoiceItem { border: 0; border-bottom: 1px solid #e5ebf3; border-radius: 0; padding: 16px 8px; gap: 14px; box-shadow: none; }
+.offerItem:hover, .invoiceItem:hover { border-color: #dbe6f5; background: #f5f9ff; }
+.offerInfo, .invoiceInfo { flex: 1; min-width: 145px; }
+.offerListTitle, .invoiceTitle { font-size: 14px; font-weight: 700; color: #142b4a; }
+.offerActions, .invoiceActions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.offerActions button, .invoiceActions button, .offerActions select, .invoiceActions select { border-radius: 5px; font-size: 13px; }
+.offerBadge, .invoiceBadge, .statusBadge { border-radius: 4px; padding: 5px 9px; }
+.statusSelect { min-width: 125px; }
+.contactSelect { min-width: 150px; }
+@media(max-width:1050px) { .offerItem, .invoiceItem { flex-wrap: wrap; } .offerActions, .invoiceActions { justify-content: flex-start; } }
+@media(max-width:600px) { .offersHeader, .invoicesHeader { flex-direction: column; align-items: stretch; } .offersCard, .invoicesCard { padding: 16px; } }

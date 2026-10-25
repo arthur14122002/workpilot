@@ -21,3 +21,8 @@ gap: 18px;
 .buttonRow {
 margin-top: 8px;
 }
+
+/* Align contact and note forms with WorkPilot Blue */
+.content a.btn, .content a[class*="Button"] { text-decoration: none !important; }
+.content button, .content input, .content select, .content textarea, .content label, .content .btn { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; }
+.content input::placeholder, .content textarea::placeholder { font-family: inherit; font-style: normal; font-weight: 400; color: #91a0b5; }
