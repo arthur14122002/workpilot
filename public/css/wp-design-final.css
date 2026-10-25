@@ -61,3 +61,43 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline-color:#0877
 @media(max-width:1280px){.wp-toolbar{grid-template-columns:minmax(180px,1fr) repeat(2,minmax(130px,.65fr))}.wp-date-label{grid-column:1/3}.wp-toolbar #wp-export{justify-self:end}.wp-table-head,.offerItem,.invoiceItem{grid-template-columns:minmax(135px,1.25fr) minmax(85px,.7fr) minmax(90px,.7fr) minmax(105px,.85fr) minmax(195px,1.4fr)!important;gap:7px!important}.offerActions .btn,.invoiceActions .btn{padding:8px 7px!important}}
 @media(max-width:900px){.wp-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}.wp-table-head{display:none!important}.offerItem,.invoiceItem{grid-template-columns:minmax(110px,1fr) minmax(85px,.8fr)!important;gap:9px!important;padding:14px 0!important}.offerInfo,.invoiceInfo{grid-column:1!important}.wp-row-date{grid-column:2!important}.wp-status-cell{grid-column:1;grid-row:2}.wp-assignment-cell{grid-column:2;grid-row:2}.offerActions,.invoiceActions{grid-column:1/-1!important;grid-row:3!important;justify-content:flex-start!important}.wp-toolbar{grid-template-columns:1fr 1fr}.wp-toolbar #wp-search{grid-column:1/-1}.wp-date-label{grid-column:1/-1}.wp-toolbar #wp-export{grid-column:1/-1;justify-self:start}}
 @media(max-width:650px){.content{padding:18px 12px}.wp-stat{padding:12px!important}.wp-stat:before{display:none}.sidebar{width:205px}.wp-toolbar{grid-template-columns:1fr}.wp-toolbar>*{grid-column:1/-1!important}.wp-date-label{flex-wrap:wrap}}
+
+/* WorkPilot detail polish — real selectors used by current pages */
+:root{--wp-orange:#0877ee!important;--wp-orange-dark:#0564ca!important;--wp-orange-soft:#eaf3ff!important}
+/* Mailbox columns, cards, actions */
+.mailFolders,.mailListPanel,.mailViewer{border-radius:6px!important;border:1px solid #dbe3ed!important;box-shadow:none!important}
+.mailComposeBtn,.composeMailBtn{background:#0877ee!important;color:#fff!important;border:1px solid #0877ee!important;border-radius:5px!important;box-shadow:none!important}
+.mailComposeBtn:hover,.composeMailBtn:hover{background:#0564ca!important}
+.mailFolder,.mailOriginalFolder,.mailOriginalFolderRow,.mailOriginalFolderMenu,.mailOriginalFolderMenuItem,.mailOriginalFolderEditBtn,.mailOriginalFolderAddBtn,.emailThreadItem,.mailMessage,.mailMessageCard,.mailMessageBubble,.mailReplyBox,.mailReplyTextarea,.mailAttachmentCard,.mailAttachmentPreview,.mailAttachmentItem,.mailAttachmentViewer,.mailAttachmentOpenBtn,.mailDetailView,.mailDetailHeader,.mailAttachmentsView,.aiSuggestedReplyText,.mailAiSuggestion,.mailAiReply,.contactCreateBtn,.mailContactBox,.mailContactBanner,.mailContactAssign,.mailPlainText,.mailDetailType{border-radius:5px!important}
+.mailFolder strong,.mailOriginalFolderCount{min-width:18px!important;width:auto!important;height:auto!important;padding:0!important;border:0!important;background:transparent!important;border-radius:0!important;color:#526b89!important;font-size:12px!important;font-weight:650!important}
+.mailFolder.active strong,.mailOriginalFolder.active .mailOriginalFolderCount{background:transparent!important;color:#0877ee!important}
+.mailOriginalFolderIcon{color:#54718e!important;font-size:0!important;display:inline-flex!important;align-items:center;justify-content:center;width:18px;height:18px}
+.mailOriginalFolderIcon:before{content:'';display:block;width:15px;height:11px;border:1.7px solid currentColor;border-radius:2px;clip-path:polygon(0 0,40% 0,49% 22%,100% 22%,100% 100%,0 100%);background:#eaf3ff}
+.mailOriginalFolder:hover,.mailFolder:hover,.mailFolder.active{background:#eaf3ff!important;color:#0869d8!important}
+.mailReplyTextarea:focus,.mailFolder:focus-visible,.mailOriginalFolder:focus-visible{border-color:#0877ee!important;outline-color:#0877ee!important;box-shadow:0 0 0 3px rgba(8,119,238,.10)!important}
+/* Dashboard notifications */
+.dashboardTrashBtn{border-radius:5px!important;border:1px solid #dbe3ed!important;box-shadow:none!important;background:#fff!important;color:#526b89!important}
+.dashboardTrashBtn:hover{border-color:#b7cce6!important;background:#eef5ff!important;color:#0877ee!important}
+/* Contacts — restrained letter selector, consistent dividers */
+.letterNav{display:flex!important;gap:4px!important;flex-wrap:wrap!important;padding:7px!important;background:#f4f7fb!important;border:1px solid #e0e7f0!important;border-radius:6px!important;margin-bottom:14px!important}
+.letterBtn{border:1px solid transparent!important;background:transparent!important;color:#516782!important;border-radius:4px!important;padding:7px 9px!important;min-width:29px!important}
+.letterBtn:hover:not(.disabled),.letterBtn.active{border-color:#c6d9f3!important;background:#e5f0ff!important;color:#0869d8!important}
+.letterBtn.disabled{opacity:.33!important}
+.contactsList{gap:0!important}.contactItem{border:0!important;border-top:1px solid #e1e7ef!important;border-radius:0!important;margin:0!important}.contactItem:last-child{border-bottom:1px solid #e1e7ef!important}.contactItem:hover{border-color:#e1e7ef!important;background:#f6f9fd!important}
+/* Overview status + assignment share a row height and wider contact space */
+.wp-table-head,.offerItem,.invoiceItem{grid-template-columns:minmax(160px,1.4fr) minmax(95px,.7fr) minmax(95px,.75fr) minmax(180px,1.75fr) minmax(195px,1.35fr)!important;gap:9px!important}
+.wp-table-head span:last-child{text-align:left!important}
+.wp-status-cell select,.wp-assignment-cell .contactAssignBtn{height:36px!important;min-height:36px!important;box-sizing:border-box!important;display:flex!important;align-items:center!important}
+.wp-assignment-cell .contactAssignWrap{width:100%!important;max-width:100%!important}
+.wp-assignment-cell .contactAssignBtn{width:100%!important;max-width:100%!important;text-align:left!important;justify-content:flex-start!important;padding:7px 10px!important}
+.offerActions,.invoiceActions{justify-content:flex-start!important}
+.wp-stat:nth-child(3):before{content:'✓'!important;background:#e5f6ed!important;color:#19865b!important}
+.wp-stat:nth-child(4):before{content:'➤'!important;background:#eaf3ff!important;color:#0877ee!important}
+@media(max-width:1280px){.wp-table-head,.offerItem,.invoiceItem{grid-template-columns:minmax(130px,1.2fr) minmax(83px,.65fr) minmax(90px,.75fr) minmax(150px,1.5fr) minmax(185px,1.4fr)!important}}
+@media(max-width:900px){.offerItem,.invoiceItem{grid-template-columns:minmax(110px,1fr) minmax(85px,.8fr)!important}.offerActions,.invoiceActions{justify-content:flex-start!important}}
+
+.mailFolder{position:relative!important;padding-left:34px!important}
+.mailFolder:before{content:'';position:absolute;left:11px;top:50%;transform:translateY(-50%);width:13px;height:10px;border:1.5px solid #657c98;border-radius:2px;background:#f0f5fc}
+.mailFolder[data-folder="sent"]:before{content:'↗';border:0;background:none;font-size:19px;line-height:10px;color:#657c98}
+.mailFolder[data-folder="trash"]:before{content:'⌫';border:0;background:none;font-size:19px;line-height:10px;color:#657c98}
+.mailFolder[data-folder="spam"]:before{content:'!';border:1.5px solid #657c98;border-radius:3px;background:none;text-align:center;font-size:10px;line-height:9px;color:#657c98}

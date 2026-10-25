@@ -662,7 +662,7 @@ button.dataset.folder =
             "mailOriginalFolderIcon";
 
         icon.textContent =
-            "📁";
+            "";
 
 
         const name =
