@@ -264,12 +264,14 @@ item.innerHTML = `
 </div>
 <div class="wp-row-date">${wpEsc(invoice.invoiceDate || "–")}</div>
 
-<div class="invoiceActions">
+<div class="wp-status-cell">
 <select class="statusSelect" data-status="${invoice.id}">
 <option value="open" ${invoice.status === "open" || !invoice.status ? "selected" : ""}>Offen</option>
 <option value="paid" ${invoice.status === "paid" ? "selected" : ""}>Bezahlt</option>
 <option value="overdue" ${invoice.status === "overdue" ? "selected" : ""}>Überfällig</option>
 </select>
+</div>
+<div class="wp-assignment-cell">
 
 <div class="contactAssignWrap">
 
@@ -295,6 +297,8 @@ item.innerHTML = `
 
 </div>
 
+</div>
+<div class="invoiceActions">
 <button class="btn btnSecondary" data-open="${invoice.id}">Öffnen</button>
 
 <button class="btn btnPrimary sendBtn" data-send="${invoice.id}">

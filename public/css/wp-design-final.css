@@ -1,0 +1,63 @@
+/* WorkPilot UI refresh — presentation only. No API or database changes. */
+:root{--wp-orange:#0877ee;--wp-orange-dark:#0564ca;--wp-orange-soft:#eaf3ff;--wp-border:#dbe3ed;--wp-radius:6px;--wp-shadow:none}
+body{background:#f4f7fb;color:#142640;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif}
+a,button,input,select,textarea{font-family:inherit}a.btn{text-decoration:none}
+.sidebar{width:258px;padding:18px 12px;border-color:#e1e8f1}
+.logoWrap{padding:0 12px 17px;margin-bottom:14px;border-bottom:1px solid #e1e8f1}
+.logoBox{background:#0877ee;color:white;border:0;border-radius:4px;width:39px;height:39px}
+.navGroup{gap:3px}.navLink{display:flex;align-items:center;gap:12px;border-radius:5px;padding:12px 16px;font-size:14px;color:#405673}
+.navLink.active{background:#e7f0fe;color:#0869d8;border-left:2px solid #0877ee;font-weight:650}.navLink:hover{background:#f0f5fc;color:#0869d8}
+.navCounter{margin-left:auto;min-width:24px;text-align:right;background:transparent!important;color:#315a8c!important;border:0!important;border-radius:0!important}
+.sidebarBottom{padding-top:12px;border-top:1px solid #e1e8f1}
+.content{min-width:0;padding:28px 26px 48px}.pageTitle{font-size:31px;letter-spacing:-.035em}.pageEyebrow{text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+.card,.modalCard,.mailboxConnectBox,.statCard,.notificationItem,.calendarDayModal,.calendarEventItem,.calendarDay,.contactCard,.contactItem,.emailSidebar,.emailThreadsPanel,.emailContentPanel{border-radius:6px!important;box-shadow:none!important}
+.btn,.btnPrimary,.btnSecondary,button:not(.calendarDay){border-radius:5px}
+.btnPrimary,.btn.btnPrimary{background:#0877ee!important;border-color:#0877ee!important;color:white!important}.btnPrimary:hover,.btn.btnPrimary:hover{background:#0564ca!important}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline-color:#0877ee!important;border-color:#0877ee!important}
+/* Overview metrics */
+.dashboardStats{gap:14px!important}.statCard{border:1px solid #dbe3ed!important;background:#fff!important;border-radius:5px!important;box-shadow:none!important;min-width:0}
+.statCard span{font-size:13px!important;color:#536780!important}.statCard strong{color:#122844!important}
+/* Calendar and dialogs */
+.calendarNavBtn{border:1px solid #dbe3ed!important;background:#fff!important;color:#35506d!important;border-radius:5px!important;width:36px!important;height:36px!important}
+.calendarDay{border:1px solid #e1e7f0!important;border-radius:5px!important}.calendarDay:hover{border-color:#0877ee!important;background:#edf5ff!important}
+.calendarDayModal,.modalCard{border:1px solid #dbe3ed!important;border-radius:7px!important;box-shadow:0 16px 50px rgba(18,43,74,.16)!important}
+.calendarDayModal button,.calendarDayModal input{border-radius:5px!important}
+/* Notifications and contact rows */
+.notificationItem,.contactCard,.contactItem{border:0!important;border-top:1px solid #e1e7ef!important;border-radius:0!important;background:#fff!important}
+.notificationItem:last-child,.contactCard:last-child,.contactItem:last-child{border-bottom:1px solid #e1e7ef!important}
+.notificationItem:hover,.contactCard:hover,.contactItem:hover{background:#f6f9fd!important}
+/* Mail: blue, compact, restrained */
+.emailSidebar,.emailThreadsPanel,.emailContentPanel,.emailColumn,.mailboxConnectBox{border-radius:5px!important}
+.emailSidebar button,.emailSidebar a,.emailSidebar .folderItem,.emailSidebar .folderRow{border-radius:5px!important}
+.emailSidebar [class*="Counter"],.emailSidebar [class*="count"],.emailSidebar [class*="Count"]{border-radius:0!important;background:transparent!important;color:#54708e!important}
+.emailSidebar [class*="folderIcon"],.emailSidebar [class*="FolderIcon"]{color:#64748b!important}
+/* Offers & invoices — five aligned columns; no overlapping status/select/buttons */
+.offersCard,.invoicesCard{max-width:none!important;padding:0!important;overflow:hidden}
+.offersHeader,.invoicesHeader{padding:20px 22px 12px!important;margin:0!important;align-items:center}
+.offersHeader h2,.invoicesHeader h2{font-size:21px}.offersHeader p,.invoicesHeader p{font-size:13px}
+.wp-summary{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;margin:18px 0!important}
+.wp-stat{position:relative;border:1px solid #dbe3ed!important;border-radius:5px!important;min-height:90px;padding:17px 16px 15px 72px!important;justify-content:center;gap:5px!important}
+.wp-stat:before{content:'▤';position:absolute;left:17px;top:19px;width:39px;height:39px;border-radius:6px;background:#e7f1ff;color:#0877ee;display:grid;place-items:center;font-size:23px}
+.wp-stat:nth-child(2):before{content:'◷';background:#fff0e5;color:#d47b22}.wp-stat:nth-child(3):before{content:'➤';background:#eaf3ff;color:#0877ee}.wp-stat:nth-child(4):before{content:'✓';background:#e5f6ed;color:#19865b}
+.wp-stat span{font-size:13px}.wp-stat strong{font-size:25px;line-height:1.1}
+.wp-toolbar{display:grid!important;grid-template-columns:minmax(170px,2.2fr) minmax(120px,.8fr) minmax(140px,1fr) minmax(220px,1.35fr) auto;gap:10px!important;padding:12px 22px 14px!important;align-items:center}
+.wp-toolbar #wp-search{width:100%;flex:none}.wp-toolbar select{width:100%;min-width:0}.wp-date-label{display:flex;gap:5px;align-items:center;white-space:nowrap;font-size:11px}.wp-date-label input{width:112px!important;padding:0 5px!important;font-size:11px!important}.wp-toolbar #wp-export{white-space:nowrap;height:40px}
+.wp-table-head,.offerItem,.invoiceItem{display:grid!important;grid-template-columns:minmax(165px,1.45fr) minmax(105px,.8fr) minmax(95px,.75fr) minmax(140px,1fr) minmax(215px,1.55fr)!important;gap:12px!important;align-items:center!important}
+.wp-table-head{padding:13px 20px!important;background:#f4f7fb!important;font-size:11px!important;letter-spacing:.025em!important}
+.offersList,.invoicesList{padding:0 20px!important;gap:0!important}
+.offerItem,.invoiceItem{border:0!important;border-bottom:1px solid #e4eaf1!important;border-radius:0!important;margin:0!important;padding:10px 0!important;background:#fff!important;min-height:58px}
+.offerItem:hover,.invoiceItem:hover{background:#f8fbff!important}
+.offerInfo,.invoiceInfo{display:block!important;grid-column:1!important;grid-row:1!important;min-width:0}
+.offerListTitle,.invoiceTitle{font-size:13px!important;font-weight:650}.offerMeta,.invoiceMeta{font-size:12px!important;line-height:1.4}.offerInfo .offerMeta:last-child,.invoiceInfo .invoiceMeta:last-child{display:none}
+.wp-row-date{grid-column:2!important;grid-row:1!important;font-size:12px!important;color:#435872}
+.wp-status-cell{grid-column:3;grid-row:1;min-width:0}.wp-assignment-cell{grid-column:4;grid-row:1;min-width:0}
+.wp-status-cell select{width:100%!important;min-width:0!important;max-width:125px!important;padding:8px 7px!important;border-radius:5px!important;font-size:12px!important;background:#fff6ed!important;color:#a75c0d!important;border:1px solid #f3dfca!important}
+.wp-status-cell:has(option[value="accepted"]:checked) select,.wp-status-cell:has(option[value="paid"]:checked) select{background:#e7f7ef!important;color:#117b52!important;border-color:#d2ebdc!important}
+.wp-status-cell:has(option[value="rejected"]:checked) select,.wp-status-cell:has(option[value="overdue"]:checked) select{background:#fff0ef!important;color:#b5372e!important;border-color:#f4d8d5!important}
+.wp-assignment-cell .contactAssignWrap{display:flex;gap:4px;max-width:100%;min-width:0}.wp-assignment-cell .contactAssignBtn{max-width:100%!important;min-width:0!important;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;border-radius:4px!important;font-size:12px!important}
+.offerActions,.invoiceActions{grid-column:5!important;grid-row:1!important;display:flex!important;justify-content:flex-end!important;flex-wrap:nowrap!important;gap:6px!important;min-width:0}
+.offerActions .btn,.invoiceActions .btn{font-size:12px!important;padding:9px 10px!important;white-space:nowrap;flex-shrink:0}
+.wp-pagination{border-top:1px solid #e3eaf2!important;margin-top:0;padding:16px 22px!important}
+@media(max-width:1280px){.wp-toolbar{grid-template-columns:minmax(180px,1fr) repeat(2,minmax(130px,.65fr))}.wp-date-label{grid-column:1/3}.wp-toolbar #wp-export{justify-self:end}.wp-table-head,.offerItem,.invoiceItem{grid-template-columns:minmax(135px,1.25fr) minmax(85px,.7fr) minmax(90px,.7fr) minmax(105px,.85fr) minmax(195px,1.4fr)!important;gap:7px!important}.offerActions .btn,.invoiceActions .btn{padding:8px 7px!important}}
+@media(max-width:900px){.wp-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}.wp-table-head{display:none!important}.offerItem,.invoiceItem{grid-template-columns:minmax(110px,1fr) minmax(85px,.8fr)!important;gap:9px!important;padding:14px 0!important}.offerInfo,.invoiceInfo{grid-column:1!important}.wp-row-date{grid-column:2!important}.wp-status-cell{grid-column:1;grid-row:2}.wp-assignment-cell{grid-column:2;grid-row:2}.offerActions,.invoiceActions{grid-column:1/-1!important;grid-row:3!important;justify-content:flex-start!important}.wp-toolbar{grid-template-columns:1fr 1fr}.wp-toolbar #wp-search{grid-column:1/-1}.wp-date-label{grid-column:1/-1}.wp-toolbar #wp-export{grid-column:1/-1;justify-self:start}}
+@media(max-width:650px){.content{padding:18px 12px}.wp-stat{padding:12px!important}.wp-stat:before{display:none}.sidebar{width:205px}.wp-toolbar{grid-template-columns:1fr}.wp-toolbar>*{grid-column:1/-1!important}.wp-date-label{flex-wrap:wrap}}

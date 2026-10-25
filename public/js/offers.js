@@ -245,12 +245,14 @@ Erstellt am ${offer.offerDate || "-"}
 </div>
 <div class="wp-row-date">${wpEsc(offer.offerDate || "–")}</div>
 
-<div class="offerActions">
+<div class="wp-status-cell">
 <select class="statusSelect" data-status="${offer.id}">
 <option value="open" ${offer.status === "open" || !offer.status ? "selected" : ""}>Offen</option>
 <option value="accepted" ${offer.status === "accepted" ? "selected" : ""}>Angenommen</option>
 <option value="rejected" ${offer.status === "rejected" ? "selected" : ""}>Abgelehnt</option>
 </select>
+</div>
+<div class="wp-assignment-cell">
 
 <div class="contactAssignWrap">
 
@@ -276,6 +278,8 @@ Erstellt am ${offer.offerDate || "-"}
 
 </div>
 
+</div>
+<div class="offerActions">
 <button class="btn btnSecondary" data-open="${offer.id}">Öffnen</button>
 <button
 class="btn btnPrimary sendOfferMailBtn"
