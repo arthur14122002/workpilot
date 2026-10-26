@@ -145,7 +145,7 @@ if (!hasContacts) {
 button.classList.add("disabled");
 }
 
-if (activeLetter === letter) {
+if (activeLetter === letter && !(letter === "ALLE" && favoritesOnly)) {
 button.classList.add("active");
 }
 
@@ -153,6 +153,7 @@ button.addEventListener("click", () => {
 if (!hasContacts) return;
 
 activeLetter = letter;
+if(letter === "ALLE") favoritesOnly = false;
 currentContactPage=1;
 renderContacts();
 });
@@ -161,7 +162,7 @@ letterNav.appendChild(button);
 if (letter === "ALLE") {
   const star=document.createElement("button");star.type="button";star.className="letterBtn favoriteLetterBtn"+(favoritesOnly?" active":"");
   star.innerHTML=window.wpIcon?.("star",16)||"☆";star.title="Favoriten";star.setAttribute("aria-label","Nur Favoriten anzeigen");
-  star.setAttribute("aria-pressed",String(favoritesOnly));star.addEventListener("click",()=>{favoritesOnly=!favoritesOnly;activeLetter="ALLE";currentContactPage=1;renderContacts()});letterNav.appendChild(star);
+  star.setAttribute("aria-pressed",String(favoritesOnly));star.addEventListener("click",()=>{favoritesOnly=true;activeLetter="ALLE";currentContactPage=1;renderContacts()});letterNav.appendChild(star);
 }
 });
 }

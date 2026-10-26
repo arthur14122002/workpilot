@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const result = await response.json();
         if (!result?.ok || !result?.user?.id) return;
         for (const link of loginLinks) {
-            link.textContent = "Abmelden";
+            link.innerHTML = `${window.wpIcon?.("log-out",19) || ""}<span>Abmelden</span>`;
             link.href = "/login";
             link.addEventListener("click", async event => {
                 event.preventDefault();
