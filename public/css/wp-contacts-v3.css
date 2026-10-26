@@ -19,3 +19,33 @@
 .mailOriginalFolderRow::before,.mailOriginalFolder::before{box-shadow:none!important}
 .mailFolder[data-folder="trash"]::before{border-radius:0 0 2px 2px!important}
 @media(max-width:1050px){.wpContactMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.wpContactMetrics{grid-template-columns:1fr}.wpContactPagination{flex-wrap:wrap}}
+
+/* Abschlusskorrekturen */
+.navGroup .navLink,.sidebarBottom .navLink{display:flex!important;justify-content:flex-start!important;align-items:center!important;gap:12px!important;text-align:left!important}
+.navLink .wpNavIcon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px}
+.navLink .wpNavText{display:inline-block;flex:0 1 auto!important;margin:0!important;text-align:left!important}
+.navLink .navCounter{margin-left:auto!important}
+.logoutAction .wpNavIcon{display:inline-flex;vertical-align:middle;margin-right:8px}
+.wpContactMetricIcon3{background:#fff7d9!important;color:#c58a00!important}
+.contactToolbar{display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;gap:10px!important}
+.contactToolbar .contactSearch{flex:1 1 46%!important;min-width:160px!important}
+.contactToolbar select{flex:0 1 180px;min-width:115px!important;max-width:210px}
+#exportContacts{flex:none;white-space:nowrap}
+.favoriteLetterBtn{color:#c58a00!important;display:inline-flex;align-items:center;justify-content:center}
+.favoriteLetterBtn.active{background:#fff2bd!important;color:#a77300!important;border-color:#e6c56a!important}
+.contactIdentity{align-items:center!important;gap:9px!important}
+.contactFavoriteBtn{flex:0 0 20px;align-self:center!important;order:0;display:inline-flex;justify-content:center;align-items:center}
+.contactAvatar{order:1}.contactInfo{order:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px}.contactKind{margin-top:0!important}
+.wpNoteEntry{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #e2e9f1}
+.wpNoteContent{min-width:0;overflow-wrap:anywhere}.wpNoteContent strong{display:block;font-weight:500}.wpNoteContent small{display:block;color:#74849a;margin-top:4px}
+.wpNoteDelete{display:inline-grid;place-items:center;flex:none;background:#fff;border:1px solid #e2e9f1;border-radius:4px;color:#a34b4b;padding:7px;cursor:pointer}
+.mailApp .wpFolderSvg::before{display:none!important;content:none!important}
+.mailApp .wpFolderSvg{display:flex!important;align-items:center!important;gap:10px!important;padding-left:13px!important}
+.mailApp .wpFolderSvg .wpMailFolderIcon{display:inline-flex;align-items:center;flex:none;color:#657c98}
+.mailApp .wpFolderSvg strong{margin-left:auto}
+.mailApp .mailOriginalFolder::before,.mailApp .mailOriginalFolderRow::before{display:none!important;content:none!important}
+.mailApp .mailOriginalFolder{padding-left:14px!important}
+.mailApp .mailOriginalFolderIcon{display:inline-flex!important}
+.mailApp .mailOriginalFolderLeft{gap:10px!important}
+.mailApp [class*="contactAssignment"],.mailApp [class*="contactLink"],.mailApp [class*="noContact"]{border-radius:5px!important}
+@media(max-width:760px){.contactToolbar{flex-wrap:wrap!important}.contactToolbar .contactSearch{flex-basis:100%!important}.contactToolbar select{flex:1 1 130px}}

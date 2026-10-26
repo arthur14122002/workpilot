@@ -196,3 +196,8 @@ try {
     else { link.classList.remove('active'); link.removeAttribute('aria-current'); }
   });
 } catch (_) {}
+
+// Einheitliche Navigation und Abmelde-Symbole
+document.querySelectorAll('.wpNavIcon[data-icon]').forEach(el => { if(window.wpIcon) el.innerHTML=window.wpIcon(el.dataset.icon,19); });
+
+document.querySelectorAll('.wpMailFolderIcon[data-icon]').forEach(el=>{if(window.wpIcon)el.innerHTML=window.wpIcon(el.dataset.icon,18)});

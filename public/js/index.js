@@ -158,6 +158,11 @@ renderContacts();
 });
 
 letterNav.appendChild(button);
+if (letter === "ALLE") {
+  const star=document.createElement("button");star.type="button";star.className="letterBtn favoriteLetterBtn"+(favoritesOnly?" active":"");
+  star.innerHTML=window.wpIcon?.("star",16)||"☆";star.title="Favoriten";star.setAttribute("aria-label","Nur Favoriten anzeigen");
+  star.setAttribute("aria-pressed",String(favoritesOnly));star.addEventListener("click",()=>{favoritesOnly=!favoritesOnly;activeLetter="ALLE";currentContactPage=1;renderContacts()});letterNav.appendChild(star);
+}
 });
 }
 
@@ -190,8 +195,8 @@ function renderContactMetrics() {
 function renderContacts() {
   renderContactMetrics();
   const contacts = [...contactsCache].sort((a,b) => Number(isFavorite(b)) - Number(isFavorite(a)) || String(a.name || "").localeCompare(String(b.name || ""), "de"));
-  document.getElementById("contactAllTab")?.classList.toggle("active", !favoritesOnly);
-  document.getElementById("contactFavoritesTab")?.classList.toggle("active", favoritesOnly);
+  
+  
   contactsList.innerHTML = "";
   renderLetterNav(contacts);
   emptyContacts.style.display = contacts.length ? "none" : "block";
@@ -227,7 +232,7 @@ function renderContacts() {
     const tagHtml = [tags.offer ? '<span class="contactTag offer">Angebot</span>' : '',tags.invoice ? '<span class="contactTag invoice">Rechnung</span>' : '',tags.event ? '<span class="contactTag event">Termin</span>' : ''].filter(Boolean).join("") || '<span class="contactNoTags">–</span>';
     const row = document.createElement("div");
     row.className = "contactItem";
-    row.innerHTML = `<div class="contactIdentity"><span class="contactAvatar">${contactEsc(initials)}</span><div class="contactInfo"><strong class="contactName">${contactEsc(name)}</strong><button type="button" class="contactFavoriteBtn ${isFavorite(contact) ? "isFavorite" : ""}" data-favorite="${contactEsc(contact.id)}" aria-label="${isFavorite(contact) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}" aria-pressed="${isFavorite(contact)}" title="${isFavorite(contact) ? "Favorit entfernen" : "Favorit hinzufügen"}">${window.wpIcon?.("star",17)||"☆"}</button><span class="contactKind">${isCompanyContact(contact) ? "Firmenkontakt" : "Privatkontakt"}</span></div></div><div class="contactCompany">${contactEsc(company)}</div><div class="contactDetails"><span>${contactEsc(contact.email || "Keine E-Mail")}</span><span>${contactEsc(contact.phone || "Keine Telefonnummer")}</span></div><div class="contactTags">${tagHtml}</div><div class="contactActions"><button class="btn btnSecondary" data-open="${contactEsc(contact.id)}">Öffnen</button><button class="btn btnSecondary contactDelete" data-delete="${contactEsc(contact.id)}" aria-label="Kontakt löschen" title="Kontakt löschen">Löschen</button></div>`;
+    row.innerHTML = `<div class="contactIdentity"><button type="button" class="contactFavoriteBtn ${isFavorite(contact) ? "isFavorite" : ""}" data-favorite="${contactEsc(contact.id)}" aria-label="${isFavorite(contact) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}" aria-pressed="${isFavorite(contact)}" title="${isFavorite(contact) ? "Favorit entfernen" : "Favorit hinzufügen"}">${window.wpIcon?.("star",17)||"☆"}</button><span class="contactAvatar">${contactEsc(initials)}</span><div class="contactInfo"><strong class="contactName">${contactEsc(name)}</strong><span class="contactKind">${isCompanyContact(contact) ? "Firmenkontakt" : "Privatkontakt"}</span></div></div><div class="contactCompany">${contactEsc(company)}</div><div class="contactDetails"><span>${contactEsc(contact.email || "Keine E-Mail")}</span><span>${contactEsc(contact.phone || "Keine Telefonnummer")}</span></div><div class="contactTags">${tagHtml}</div><div class="contactActions"><button class="btn btnSecondary" data-open="${contactEsc(contact.id)}">Öffnen</button><button class="btn btnSecondary contactDelete" data-delete="${contactEsc(contact.id)}" aria-label="Kontakt löschen" title="Kontakt löschen">Löschen</button></div>`;
     contactsList.appendChild(row);
   });
   bindContactActions();
@@ -304,3 +309,10 @@ document.getElementById("contactTagFilter")?.addEventListener("change", event =>
 
 document.getElementById("contactAllTab")?.addEventListener("click", () => { favoritesOnly=false; activeLetter="ALLE"; currentContactPage=1; renderContacts(); });
 document.getElementById("contactFavoritesTab")?.addEventListener("click", () => { favoritesOnly=true; activeLetter="ALLE"; currentContactPage=1; renderContacts(); });
+
+// CSV-Export nur aus den vom Backend für diese Firma gelieferten Kontakten
+document.getElementById('exportContacts')?.addEventListener('click',()=>{
+ const clean=v=>{const t=String(v??'');return '"'+(/^[=+@\-\t\r]/.test(t)?"'":"")+t.replace(/"/g,'""')+'"'};
+ const rows=[['Name','Unternehmen','E-Mail','Telefon','Typ','Favorit'],...contactsCache.map(c=>[c.name,c.company||c.company_name,c.email,c.phone,isCompanyContact(c)?'Firma':'Privat',isFavorite(c)?'Ja':'Nein'])];
+ const csv='\uFEFF'+rows.map(row=>row.map(clean).join(';')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='WorkPilot_Kontakte.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
