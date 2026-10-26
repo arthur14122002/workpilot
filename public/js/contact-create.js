@@ -62,6 +62,7 @@ return result.contact;
 
 function fillForm(contact) {
 contactName.value = contact.name || "";
+document.getElementById("contactType").value = contact.data?.contact_type || (contact.company || contact.company_name ? "company" : "person");
 contactEmail.value = contact.email || "";
 contactPhone.value = contact.phone || "";
 contactStreet.value = contact.street || "";
@@ -74,7 +75,8 @@ name: contactName.value.trim(),
 email: contactEmail.value.trim(),
 phone: contactPhone.value.trim(),
 street: contactStreet.value.trim(),
-city: contactCity.value.trim()
+city: contactCity.value.trim(),
+data: {contact_type: document.getElementById("contactType").value}
 };
 }
 

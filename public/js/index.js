@@ -8,6 +8,11 @@ const letterNav = document.getElementById("letterNav");
 
 let activeLetter = "ALLE";
 let contactsCache = [];
+let favoritesOnly = false;
+let currentContactPage = 1;
+const CONTACTS_PER_PAGE = 8;
+const isFavorite = contact => contact?.data?.is_favorite === true;
+const isCompanyContact = contact => contact?.data?.contact_type === "company" || (contact?.data?.contact_type !== "person" && Boolean(contact.company || contact.company_name));
 
 async function apiGetContacts() {
 const response = await fetch("/api/contacts");
@@ -148,6 +153,7 @@ button.addEventListener("click", () => {
 if (!hasContacts) return;
 
 activeLetter = letter;
+currentContactPage=1;
 renderContacts();
 });
 
@@ -172,15 +178,28 @@ function contactTags(contact) {
   const event = contactUiState.events.some(row => contactUpcomingEvent(row, contact.id));
   return {offer,invoice,event};
 }
+function renderContactMetrics() {
+  const el=document.getElementById('contactMetrics'); if(!el) return;
+  const count=contactsCache.length;
+  const companies=contactsCache.filter(isCompanyContact).length;
+  const people=count-companies;
+  const favorites=contactsCache.filter(isFavorite).length;
+  const cards=[['users','Alle Kontakte',count,'Gespeicherte Kontakte'],['building-2','Firmenkontakte',companies,'Unternehmen'],['users','Privatkontakte',people,'Personen'],['star','Favoriten',favorites,'Markierte Kontakte']];
+  el.innerHTML=cards.map(([icon,label,value,sub],i)=>`<div class="wpContactMetric"><div class="wpContactMetricIcon wpContactMetricIcon${i}">${window.wpIcon?.(icon,22)||''}</div><div><div class="wpContactMetricLabel">${label}</div><div class="wpContactMetricValue">${value}</div><div class="wpContactMetricSub">${sub}</div></div></div>`).join('');
+}
 function renderContacts() {
-  const contacts = [...contactsCache].sort((a,b) => String(a.name || "").localeCompare(String(b.name || ""), "de"));
+  renderContactMetrics();
+  const contacts = [...contactsCache].sort((a,b) => Number(isFavorite(b)) - Number(isFavorite(a)) || String(a.name || "").localeCompare(String(b.name || ""), "de"));
+  document.getElementById("contactAllTab")?.classList.toggle("active", !favoritesOnly);
+  document.getElementById("contactFavoritesTab")?.classList.toggle("active", favoritesOnly);
   contactsList.innerHTML = "";
   renderLetterNav(contacts);
   emptyContacts.style.display = contacts.length ? "none" : "block";
   const query = contactUiState.query.trim().toLocaleLowerCase("de");
   const visible = contacts.filter(contact => {
     if (activeLetter !== "ALLE" && getContactLetter(contact) !== activeLetter) return false;
-    const company = Boolean(contact.company || contact.company_name);
+    if (favoritesOnly && !isFavorite(contact)) return false;
+    const company = isCompanyContact(contact);
     if (contactUiState.type === "company" && !company) return false;
     if (contactUiState.type === "person" && company) return false;
     const tags = contactTags(contact);
@@ -192,7 +211,15 @@ function renderContacts() {
     contactsList.innerHTML = '<p class="contactNoResults">Keine passenden Kontakte gefunden.</p>';
     return;
   }
-  visible.forEach(contact => {
+  const pages=Math.max(1,Math.ceil(visible.length/CONTACTS_PER_PAGE));
+  currentContactPage=Math.min(Math.max(1,currentContactPage),pages);
+  const pagination=document.getElementById('contactPagination');
+  if(pagination){
+    const buttons=Array.from({length:pages},(_,i)=>`<button type="button" data-page="${i+1}" class="${currentContactPage===i+1?'active':''}" aria-label="Seite ${i+1}" ${currentContactPage===i+1?'aria-current="page"':''}>${i+1}</button>`).join('');
+    pagination.innerHTML=`<span>${visible.length?((currentContactPage-1)*CONTACTS_PER_PAGE+1):0}–${Math.min(currentContactPage*CONTACTS_PER_PAGE,visible.length)} von ${visible.length} Kontakten</span><div class="wpContactPageButtons"><button type="button" data-page="${Math.max(1,currentContactPage-1)}" ${currentContactPage===1?'disabled':''}>‹</button>${buttons}<button type="button" data-page="${Math.min(pages,currentContactPage+1)}" ${currentContactPage===pages?'disabled':''}>›</button></div>`;
+    pagination.querySelectorAll('[data-page]').forEach(btn=>btn.addEventListener('click',()=>{currentContactPage=Number(btn.dataset.page);renderContacts();}));
+  }
+  visible.slice((currentContactPage-1)*CONTACTS_PER_PAGE,currentContactPage*CONTACTS_PER_PAGE).forEach(contact => {
     const name = contact.name || "Unbekannter Kontakt";
     const company = contact.company || contact.company_name || "–";
     const initials = name.trim().split(/\s+/).slice(0,2).map(word => word[0] || "").join("").toUpperCase();
@@ -200,7 +227,7 @@ function renderContacts() {
     const tagHtml = [tags.offer ? '<span class="contactTag offer">Angebot</span>' : '',tags.invoice ? '<span class="contactTag invoice">Rechnung</span>' : '',tags.event ? '<span class="contactTag event">Termin</span>' : ''].filter(Boolean).join("") || '<span class="contactNoTags">–</span>';
     const row = document.createElement("div");
     row.className = "contactItem";
-    row.innerHTML = `<div class="contactIdentity"><span class="contactAvatar">${contactEsc(initials)}</span><div class="contactInfo"><strong class="contactName">${contactEsc(name)}</strong><span class="contactKind">${company !== "–" ? "Firmenkontakt" : "Privatkontakt"}</span></div></div><div class="contactCompany">${contactEsc(company)}</div><div class="contactDetails"><span>${contactEsc(contact.email || "Keine E-Mail")}</span><span>${contactEsc(contact.phone || "Keine Telefonnummer")}</span></div><div class="contactTags">${tagHtml}</div><div class="contactActions"><button class="btn btnSecondary" data-open="${contactEsc(contact.id)}">Öffnen</button><button class="btn btnSecondary contactDelete" data-delete="${contactEsc(contact.id)}" aria-label="Kontakt löschen" title="Kontakt löschen">Löschen</button></div>`;
+    row.innerHTML = `<div class="contactIdentity"><span class="contactAvatar">${contactEsc(initials)}</span><div class="contactInfo"><strong class="contactName">${contactEsc(name)}</strong><button type="button" class="contactFavoriteBtn ${isFavorite(contact) ? "isFavorite" : ""}" data-favorite="${contactEsc(contact.id)}" aria-label="${isFavorite(contact) ? "Aus Favoriten entfernen" : "Als Favorit markieren"}" aria-pressed="${isFavorite(contact)}" title="${isFavorite(contact) ? "Favorit entfernen" : "Favorit hinzufügen"}">${window.wpIcon?.("star",17)||"☆"}</button><span class="contactKind">${isCompanyContact(contact) ? "Firmenkontakt" : "Privatkontakt"}</span></div></div><div class="contactCompany">${contactEsc(company)}</div><div class="contactDetails"><span>${contactEsc(contact.email || "Keine E-Mail")}</span><span>${contactEsc(contact.phone || "Keine Telefonnummer")}</span></div><div class="contactTags">${tagHtml}</div><div class="contactActions"><button class="btn btnSecondary" data-open="${contactEsc(contact.id)}">Öffnen</button><button class="btn btnSecondary contactDelete" data-delete="${contactEsc(contact.id)}" aria-label="Kontakt löschen" title="Kontakt löschen">Löschen</button></div>`;
     contactsList.appendChild(row);
   });
   bindContactActions();
@@ -236,6 +263,19 @@ showToast(error.message);
 }
 
 function bindContactActions() {
+document.querySelectorAll("[data-favorite]").forEach(button => button.addEventListener("click", async () => {
+  const id = button.dataset.favorite;
+  const contact = contactsCache.find(row => String(row.id) === id);
+  if (!contact) return;
+  button.disabled = true;
+  try {
+    const response = await fetch(`/api/contacts/${encodeURIComponent(id)}/favorite`, {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({favorite:!isFavorite(contact)})});
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || "Favorit konnte nicht gespeichert werden.");
+    contactsCache = contactsCache.map(row => String(row.id) === id ? result.contact : row);
+    renderContacts();
+  } catch (error) { button.disabled = false; showToast(error.message); }
+}));
 document.querySelectorAll("[data-open]").forEach((button) => {
 button.addEventListener("click", openContact);
 });
@@ -258,6 +298,9 @@ renderContacts();
 
 
 const contactSearchInput = document.getElementById("contactSearch");
-contactSearchInput?.addEventListener("input", event => { contactUiState.query = event.target.value; renderContacts(); });
-document.getElementById("contactTypeFilter")?.addEventListener("change", event => { contactUiState.type = event.target.value; renderContacts(); });
-document.getElementById("contactTagFilter")?.addEventListener("change", event => { contactUiState.tag = event.target.value; renderContacts(); });
+contactSearchInput?.addEventListener("input", event => { contactUiState.query = event.target.value; currentContactPage=1; renderContacts(); });
+document.getElementById("contactTypeFilter")?.addEventListener("change", event => { contactUiState.type = event.target.value; currentContactPage=1; renderContacts(); });
+document.getElementById("contactTagFilter")?.addEventListener("change", event => { contactUiState.tag = event.target.value; currentContactPage=1; renderContacts(); });
+
+document.getElementById("contactAllTab")?.addEventListener("click", () => { favoritesOnly=false; activeLetter="ALLE"; currentContactPage=1; renderContacts(); });
+document.getElementById("contactFavoritesTab")?.addEventListener("click", () => { favoritesOnly=true; activeLetter="ALLE"; currentContactPage=1; renderContacts(); });

@@ -6036,7 +6036,17 @@ contact: data
 app.put("/api/contacts/:id", async (req, res) => {
 const { id } = req.params;
 const { name, email, phone, street, city, data } = req.body;
+const requestedType = data?.contact_type;
+if (requestedType !== undefined && !["company", "person"].includes(requestedType)) return res.status(400).json({ok:false,error:"Ungültiger Kontakttyp."});
 
+const { data: existingContact, error: existingError } = await supabase.from("contacts")
+.select("data").eq("id", id).eq("company_id", req.companyId).maybeSingle();
+if (existingError) return res.status(500).json({ok:false,error:"Kontakt konnte nicht geladen werden."});
+if (!existingContact) return res.status(404).json({ok:false,error:"Kontakt nicht gefunden."});
+const existingMetadata = existingContact.data && typeof existingContact.data === "object" && !Array.isArray(existingContact.data) ? existingContact.data : {};
+const incomingMetadata = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+// The generic contact editor must not accidentally clear the persisted favorite flag.
+const safeMetadata = {...existingMetadata, ...incomingMetadata, is_favorite: existingMetadata.is_favorite === true};
 const { data: updatedContact, error } = await supabase
 .from("contacts")
 .update({
@@ -6045,7 +6055,7 @@ email,
 phone,
 street,
 city,
-data: data || {},
+data: safeMetadata,
 updated_at: new Date().toISOString()
 })
 
@@ -6065,6 +6075,23 @@ res.json({
 ok: true,
 contact: updatedContact
 });
+});
+
+// Tenant-scoped contact favorite update. Favorites live in the existing contacts.data JSON.
+app.patch("/api/contacts/:id/favorite", async (req, res) => {
+  const favorite = req.body?.favorite;
+  if (typeof favorite !== "boolean") return res.status(400).json({ ok:false, error:"Ungültiger Favoritenwert." });
+  const { data: contact, error: readError } = await supabase.from("contacts")
+    .select("id,data").eq("id", req.params.id).eq("company_id", req.companyId).maybeSingle();
+  if (readError) return res.status(500).json({ ok:false, error:"Kontakt konnte nicht geladen werden." });
+  if (!contact) return res.status(404).json({ ok:false, error:"Kontakt nicht gefunden." });
+  const metadata = contact.data && typeof contact.data === "object" && !Array.isArray(contact.data) ? contact.data : {};
+  const { data: updated, error } = await supabase.from("contacts")
+    .update({ data:{...metadata, is_favorite:favorite}, updated_at:new Date().toISOString() })
+    .eq("id", req.params.id).eq("company_id", req.companyId).select().maybeSingle();
+  if (error) return res.status(500).json({ ok:false, error:"Favorit konnte nicht gespeichert werden." });
+  if (!updated) return res.status(404).json({ ok:false, error:"Kontakt nicht gefunden." });
+  return res.json({ok:true, contact:updated});
 });
 
 app.get("/api/offers", async (req, res) => {
@@ -6139,8 +6166,10 @@ name,
 email,
 phone,
 street,
-city
+city,
+data: contactData
 } = req.body;
+if (contactData?.contact_type !== undefined && !["company", "person"].includes(contactData.contact_type)) return res.status(400).json({ok:false,error:"Ungültiger Kontakttyp."});
 
 const { data, error } = await supabase
 .from("contacts")
@@ -6150,6 +6179,7 @@ const { data, error } = await supabase
 company_id: req.companyId,
 name,
 email,
+data: {contact_type: contactData?.contact_type === "company" ? "company" : "person"},
 phone: phone || null,
 street: street || null,
 city: city || null

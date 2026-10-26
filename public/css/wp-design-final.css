@@ -112,3 +112,11 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline-color:#0877
 .mailApp .mailFolder[data-folder="trash"]:after{content:"";position:absolute;left:10px;top:calc(50% - 9px);width:16px;height:2px;background:#657c98;border-radius:1px}
 .mailApp .mailOriginalFolderIcon{background:none!important;color:#54718e!important}
 .mailApp .mailOriginalFolderRow,.mailApp .mailOriginalFolder{border-radius:5px!important}
+
+/* Contact favorites: accessible tabs and real star control */
+.contactFilterTabs{display:flex;gap:8px;margin:10px 0 12px;align-items:center}
+.contactFilterTab{background:#fff;border:1px solid #dbe3ed;border-radius:5px;color:#435873;font-weight:650;padding:9px 17px;cursor:pointer}
+.contactFilterTab.active{background:#0877ee;border-color:#0877ee;color:#fff}
+.contactFavoriteBtn{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:22px;line-height:1;padding:0 5px;vertical-align:middle}
+.contactFavoriteBtn.isFavorite{color:#e8a23c}.contactFavoriteBtn:focus-visible{outline:2px solid #0877ee;outline-offset:2px}
+.contactInfo{min-width:0}.contactName{display:inline-block;max-width:calc(100% - 35px);overflow:hidden;text-overflow:ellipsis;vertical-align:middle}

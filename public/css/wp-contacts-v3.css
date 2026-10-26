@@ -1,0 +1,21 @@
+/* WorkPilot Blue — final visual consistency pass, frontend only */
+.navLink{display:flex!important;align-items:center;gap:11px!important}.navLink>.wpIcon{flex:none;opacity:.83}.navLink.active>.wpIcon{opacity:1}
+.wpIcon{display:inline-block;vertical-align:middle;flex-shrink:0}
+.wpContactMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:19px}
+.wpContactMetric{display:flex;gap:14px;align-items:center;min-height:94px;padding:18px;border:1px solid #dbe3ed;border-radius:6px;background:white;box-shadow:none}
+.wpContactMetricIcon{width:43px;height:43px;border-radius:5px;background:#e8f1ff;color:#0877ee;display:grid;place-items:center;flex:none}
+.wpContactMetricIcon1{background:#e8f6ef;color:#188653}.wpContactMetricIcon2{background:#fff2e4;color:#c87522}.wpContactMetricIcon3{background:#f0edff;color:#7957cb}
+.wpContactMetricLabel{font-size:12px;color:#61738c}.wpContactMetricValue{font-size:26px;line-height:1.35;font-weight:750;color:#1a2d48}.wpContactMetricSub{font-size:11px;color:#8a98aa}
+.wpContactPagination{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 12px;border-top:1px solid #e2e9f1;color:#65758d;font-size:12px}
+.wpContactPageButtons{display:flex;gap:5px;align-items:center}.wpContactPageButtons button{border:1px solid #dbe3ed;background:white;color:#536981;border-radius:4px;min-width:31px;height:31px;cursor:pointer}.wpContactPageButtons button.active{background:#0877ee;color:white;border-color:#0877ee}.wpContactPageButtons button:disabled{opacity:.35;cursor:default}
+.contactFavoriteBtn .wpIcon{fill:none;stroke:#96a5b9}.contactFavoriteBtn.isFavorite .wpIcon{fill:#f4b13b;stroke:#e5a135}.contactFavoriteBtn{align-self:flex-start}
+.contactItem,.contactTableHead{border-color:#e1e8f1!important}.contactItem:hover{outline:0!important;box-shadow:none!important}
+.contactPage .metricIcon,.contactPage .feedIcon{display:grid!important}.contactPage .metric{align-items:center!important}.contactPage .metricIcon{background:#e8f1ff;color:#0877ee}.contactPage .metric:nth-child(2) .metricIcon{background:#e7f6ed;color:#19865b}.contactPage .metric:nth-child(3) .metricIcon{background:#fff2e5;color:#c67824}.contactPage .metric:nth-child(4) .metricIcon{background:#e9f1ff;color:#3d76b7}.contactPage .metric:nth-child(5) .metricIcon{background:#e7f7ef;color:#19865b}.contactPage .metric:nth-child(6) .metricIcon{background:#f0edff;color:#7957cb}
+.contactPage .metric{min-height:96px}.contactPage .contactTabs button{border-radius:0!important}.contactPage .contactTabs button.active{border-radius:0!important}
+/* Email columns and nested suggestion/message surfaces */
+.mailApp .detailAiReply,.mailApp .detailAiReply *:not(.wpIcon),.mailApp .detailMessageBody,.mailApp .detailMessageItem,.mailApp .mailReplyBox,.mailApp .mailAttachmentCard,.mailApp .mailAttachmentItem,.mailApp .mailAttachmentPreview,.mailApp .mailAiSuggestion,.mailApp .mailAiReply,.mailApp .aiSuggestedReplyText,.mailApp .mailOriginalFolder,.mailApp .mailOriginalFolderRow{border-radius:5px!important}
+.mailApp .composeMailBtn,.mailApp .mailComposeBtn,.mailApp #newMailBtn{background:#0877ee!important;color:#fff!important;border-color:#0877ee!important;border-radius:5px!important}
+.mailOriginalFolderIcon::before{border-radius:2px!important}
+.mailOriginalFolderRow::before,.mailOriginalFolder::before{box-shadow:none!important}
+.mailFolder[data-folder="trash"]::before{border-radius:0 0 2px 2px!important}
+@media(max-width:1050px){.wpContactMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.wpContactMetrics{grid-template-columns:1fr}.wpContactPagination{flex-wrap:wrap}}

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/css/app-layout.css" />
 <link rel="stylesheet" href="/css/index.css" />
 <link rel="stylesheet" href="/css/wp-design-final.css" />
+<link rel="stylesheet" href="/css/wp-contacts-v3.css" />
 </head>
 <body>
 <div class="appShell">
@@ -45,6 +46,7 @@ Verwalte deine Kontakte und sieh Angebote, Rechnungen und Termine auf einen Blic
 </p>
 </header>
 
+<section class="wpContactMetrics" id="contactMetrics" aria-label="Kontaktstatistik"></section>
 <section class="card indexCard">
 <div class="contactsHeader">
 <div>
@@ -57,10 +59,11 @@ Verwalte deine Kontakte und sieh Angebote, Rechnungen und Termine auf einen Blic
 </a>
 </div>
 
-<div class="contactToolbar"><label class="contactSearch"><span aria-hidden="true">⌕</span><input id="contactSearch" type="search" placeholder="Kontakte suchen …" autocomplete="off" aria-label="Kontakte suchen"></label><select id="contactTypeFilter" aria-label="Kontakttyp"><option value="all">Typ: Alle</option><option value="company">Firmenkontakte</option><option value="person">Privatkontakte</option></select><select id="contactTagFilter" aria-label="Zuordnungen"><option value="all">Tags: Alle</option><option value="offer">Offene Angebote</option><option value="invoice">Offene Rechnungen</option><option value="event">Anstehende Termine</option></select></div><div id="letterNav" class="letterNav"></div><div class="contactTableHead"><span>Kontakt</span><span>Unternehmen</span><span>Kontaktdaten</span><span>Tags</span><span>Aktionen</span></div>
+<div class="contactToolbar"><label class="contactSearch"><span aria-hidden="true">⌕</span><input id="contactSearch" type="search" placeholder="Kontakte suchen …" autocomplete="off" aria-label="Kontakte suchen"></label><select id="contactTypeFilter" aria-label="Kontakttyp"><option value="all">Typ: Alle</option><option value="company">Firmenkontakte</option><option value="person">Privatkontakte</option></select><select id="contactTagFilter" aria-label="Zuordnungen"><option value="all">Tags: Alle</option><option value="offer">Offene Angebote</option><option value="invoice">Offene Rechnungen</option><option value="event">Anstehende Termine</option></select></div><div class="contactFilterTabs" role="group" aria-label="Kontaktliste"><button type="button" id="contactAllTab" class="contactFilterTab active">Alle</button><button type="button" id="contactFavoritesTab" class="contactFilterTab">★ Favoriten</button></div><div id="letterNav" class="letterNav"></div><div class="contactTableHead"><span>Kontakt</span><span>Unternehmen</span><span>Kontaktdaten</span><span>Tags</span><span>Aktionen</span></div>
 
 <div id="contactsList" class="contactsList" aria-live="polite"></div>
 
+<div id="contactPagination" class="wpContactPagination"></div>
 <div id="emptyContacts" class="emptyState">
 <p>Noch keine Kontakte vorhanden.</p>
 </div>
@@ -68,6 +71,7 @@ Verwalte deine Kontakte und sieh Angebote, Rechnungen und Termine auf einen Blic
 </main>
 </div>
 
+<script src="/js/wp-icons.js"></script>
 <script src="/js/app-layout.js"></script>
 <script src="/js/index.js"></script>
 </body>
