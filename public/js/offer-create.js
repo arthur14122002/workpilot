@@ -136,8 +136,9 @@ requestPoints: collectRequestPoints().map(p => p.description),
 offerNumber: createOfferNumber(),
 offerDate: formatDate(today),
 validUntil: formatDate(addDays(today, validDays)),
-introText: "vielen Dank für Ihre Anfrage. Gerne unterbreiten wir Ihnen folgendes Angebot:",
-closingText: "Ich freue mich auf Ihre Rückmeldung und stehe für Rückfragen jederzeit zur Verfügung.",
+introText: document.getElementById("offerIntro").value.trim(),
+closingText: document.getElementById("offerClosing").value.trim(),
+template: document.getElementById("offerTemplate").value,
 positions: collectRequestPoints(),
 companySettings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
 };
@@ -200,3 +201,29 @@ createRequestPoint();
 });
 
 document.addEventListener("DOMContentLoaded", preloadContact);
+
+// Visuelle Dokumentvorschau: keine Server-/PDF-Funktion, nur der lokale Entwurf.
+function renderOfferLivePreview() {
+ const byId = id => document.getElementById(id);
+ const recipient = [byId('recipientName').value,byId('recipientStreet').value,byId('recipientCity').value].filter(Boolean).join('\n');
+ byId('previewRecipient').textContent = recipient || 'Kunde / Empfänger';
+ byId('previewIntro').textContent = byId('offerIntro').value;
+ byId('previewClosing').textContent = byId('offerClosing').value;
+ byId('offerLivePaper').dataset.template = byId('offerTemplate').value;
+ byId('previewDate').textContent = new Date().toLocaleDateString('de-DE');
+ const tbody = byId('previewPositions'); tbody.replaceChildren();
+ let sum = 0;
+ collectRequestPoints().forEach((point,i) => {
+  const qty = parseDecimal(point.quantity), price = parseDecimal(point.unitPrice), total = qty * price; sum += total;
+  const tr = document.createElement('tr');
+  [i+1,point.description,point.quantity,point.unit,price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}),total.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})].forEach(v => {const td=document.createElement('td');td.textContent=String(v);tr.appendChild(td);});
+  tbody.appendChild(tr);
+ });
+ if (!tbody.children.length) {const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.textContent='Noch keine Positionen';tr.appendChild(td);tbody.appendChild(tr);}
+ byId('previewTotal').textContent=sum.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+}
+document.getElementById('offerCreateForm').addEventListener('input',renderOfferLivePreview);
+document.getElementById('offerCreateForm').addEventListener('change',renderOfferLivePreview);
+const wpOriginalUpdateCreateTotals = updateCreateTotals;
+updateCreateTotals = function(){wpOriginalUpdateCreateTotals();renderOfferLivePreview();};
+renderOfferLivePreview();
