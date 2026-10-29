@@ -55,6 +55,8 @@ return;
 }
 
 activeOfferForMail = offer;
+const attachmentLabel = document.getElementById("offerMailAttachmentName");
+if (attachmentLabel) attachmentLabel.textContent = `Angebot-${String(offer.offerNumber || offer.id).replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
 
 offerMailRecipient.value =
 offer.recipientEmail || "";

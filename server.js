@@ -9432,7 +9432,7 @@ function normalizeSuggestedReply(
     ].join("\n");
 }
 
-async function createOfferPdfBuffer(offerId, baseUrl) {
+async function createOfferPdfBuffer(offerId, baseUrl, authCookie = "") {
 const browser = await puppeteer.launch({
 headless: "new",
 args: ["--no-sandbox", "--disable-setuid-sandbox"]
@@ -9440,8 +9440,9 @@ args: ["--no-sandbox", "--disable-setuid-sandbox"]
 
 try {
 const page = await browser.newPage();
+if (authCookie) await page.setExtraHTTPHeaders({cookie: authCookie});
 
-const pdfUrl = `${baseUrl}/offer-editor?id=${offerId}&pdf=1`;
+const pdfUrl = `${baseUrl}/offer-editor?id=${encodeURIComponent(offerId)}&pdf=1`;
 console.log("PDF URL:", pdfUrl);
 
 await page.goto(pdfUrl, {
@@ -9449,9 +9450,7 @@ waitUntil: "domcontentloaded",
 timeout: 20000
 });
 
-await page.waitForSelector("#offerDocument .offerPage", {
-timeout: 20000
-});
+await page.waitForFunction(() => document.body.dataset.pdfReady === "true" && !!document.querySelector("#offerDocument .offerPage"), {timeout: 20000});
 
 await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -9515,6 +9514,29 @@ await browser.close();
 }
 }
 
+// Authenticated, tenant-scoped offer PDF download. Reuses the same renderer as mail attachments.
+app.get("/api/offers/:id/pdf", async (req, res) => {
+    try {
+        const { data: offer, error } = await supabase.from("offers")
+            .select("id, offer_number").eq("id", req.params.id)
+            .eq("company_id", req.companyId).maybeSingle();
+        if (error) throw error;
+        if (!offer) return res.status(404).json({ok:false,error:"Angebot nicht gefunden."});
+        const protocol = req.protocol === "https" ? "https" : "http";
+        const baseUrl = `${protocol}://${req.get("host")}`;
+        const pdf = await createOfferPdfBuffer(offer.id, baseUrl, req.headers.cookie || "");
+        if (pdf.subarray(0, 5).toString() !== "%PDF-") throw new Error("PDF-Generierung fehlgeschlagen");
+        const safeNumber = String(offer.offer_number || offer.id).replace(/[^a-zA-Z0-9_-]/g, "_");
+        res.set("Content-Type", "application/pdf");
+        res.set("Cache-Control", "private, no-store");
+        res.set("Content-Disposition", `attachment; filename="Angebot-${safeNumber}.pdf"`);
+        return res.send(pdf);
+    } catch (error) {
+        console.error("OFFER PDF ERROR:", error);
+        return res.status(500).json({ok:false,error:"PDF konnte nicht erstellt werden."});
+    }
+});
+
 app.post("/api/send-offer-email", async (req, res) => {
 const { offerId, to, subject, message } = req.body;
 
@@ -9566,7 +9588,7 @@ throw threadError;
 }
 
 const baseUrl = `https://${req.get("host")}`;
-const pdfBuffer = await createOfferPdfBuffer(offer.id, baseUrl);
+const pdfBuffer = await createOfferPdfBuffer(offer.id, baseUrl, req.headers.cookie || "");
 
 const html = `
 <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #111827;">

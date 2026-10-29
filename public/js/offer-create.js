@@ -1,4 +1,5 @@
-const DRAFT_KEY = "workpilot_current_offer_draft";
+let DRAFT_KEY = null;
+let SETTINGS_KEY = null;
 const requestPoints = document.getElementById("requestPoints");
 const addRequestPointBtn = document.getElementById("addRequestPointBtn");
 
@@ -46,56 +47,56 @@ const random = Math.floor(1000 + Math.random() * 9000);
 return `WP-${year}-${random}`;
 }
 
-function createRequestPoint(value = "") {
+function escapeField(value) {
+return String(value ?? "").replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+function parseDecimal(value) {
+const text = String(value ?? "").trim().replace(/\s/g, "");
+if (!text) return 0;
+const normalized = text.includes(",") ? text.replace(/\./g, "").replace(",", ".") : text;
+const number = Number(normalized);
+return Number.isFinite(number) ? number : 0;
+}
+function createRequestPoint(value = {}) {
+const position = typeof value === "string" ? {description: value} : value;
 const wrapper = document.createElement("div");
 wrapper.className = "requestPoint";
-
 wrapper.innerHTML = `
-<textarea
-class="requestPointInput"
-placeholder="z. B. Wohnzimmer streichen, weiß, ca. 60qm"
->${value}</textarea>
-
-<button
-type="button"
-class="btn btnSecondary requestPointRemove"
->
-–
-</button>
-`;
-
-const removeBtn = wrapper.querySelector(".requestPointRemove");
-
-removeBtn.addEventListener("click", () => {
-if (requestPoints.children.length === 1) {
-return;
-}
-
-wrapper.remove();
+<div class="wpPositionGrid">
+<label>Beschreibung<textarea class="requestPointInput" placeholder="Leistung oder Artikel" rows="2">${escapeField(position.description || "")}</textarea></label>
+<label>Menge<input class="requestQty" inputmode="decimal" value="${escapeField(position.quantity ?? "1")}" /></label>
+<label>Einheit<input class="requestUnit" value="${escapeField(position.unit || "Stk.")}" /></label>
+<label>Einzelpreis (€)<input class="requestPrice" inputmode="decimal" value="${escapeField(position.unitPrice ?? "")}" /></label>
+<label>Gesamt (€)<output class="requestTotal">0,00 €</output></label>
+<button type="button" class="btn btnSecondary requestPointRemove" aria-label="Position entfernen">Entfernen</button>
+</div>`;
+wrapper.querySelector(".requestPointRemove").addEventListener("click", () => {
+if (requestPoints.children.length > 1) wrapper.remove();
+updateCreateTotals();
 });
-
+wrapper.addEventListener("input", updateCreateTotals);
 requestPoints.appendChild(wrapper);
+updateCreateTotals();
 }
-
 function collectRequestPoints() {
-const fields = document.querySelectorAll(".requestPointInput");
-
-return Array.from(fields)
-.map((field) => field.value.trim())
-.filter(Boolean);
+return [...requestPoints.querySelectorAll(".requestPoint")].map((row, index) => {
+const quantity = parseDecimal(row.querySelector(".requestQty").value);
+const unitPrice = parseDecimal(row.querySelector(".requestPrice").value);
+return {pos:index + 1, description:row.querySelector(".requestPointInput").value.trim(),
+quantity:row.querySelector(".requestQty").value.trim(), unit:row.querySelector(".requestUnit").value.trim(),
+unitPrice:row.querySelector(".requestPrice").value.trim(), total:(quantity * unitPrice).toFixed(2)};
+}).filter(item => item.description);
 }
-
-function buildPositionsFromPoints(points) {
-return points.map((point, index) => ({
-pos: index + 1,
-description: point,
-quantity: "",
-unit: "",
-unitPrice: "",
-total: ""
-}));
+function updateCreateTotals() {
+let sum = 0;
+requestPoints.querySelectorAll(".requestPoint").forEach(row => {
+const total = parseDecimal(row.querySelector(".requestQty").value) * parseDecimal(row.querySelector(".requestPrice").value);
+row.querySelector(".requestTotal").textContent = total.toLocaleString("de-DE", {style:"currency",currency:"EUR"});
+sum += total;
+});
+const output = document.getElementById("offerCreateNet");
+if (output) output.textContent = sum.toLocaleString("de-DE", {style:"currency",currency:"EUR"});
 }
-
 function createPositionDescription(text, trade) {
 const tradeLabels = {
 maler: "Ausführung der Malerarbeiten gemäß Anfrage",
@@ -113,10 +114,13 @@ return `${base}: ${text}`;
 
 function createOfferDraft(event) {
 event.preventDefault();
+if (!DRAFT_KEY || !SETTINGS_KEY) { showToast("Bitte melde dich an, um ein Angebot zu erstellen."); return; }
 
 const today = new Date();
 const validDays = document.getElementById("validDays").value;
 const offerId = crypto.randomUUID();
+
+if (!collectRequestPoints().length) { showToast("Bitte mindestens eine Position beschreiben."); return; }
 
 const draft = {
 id: offerId,
@@ -128,15 +132,14 @@ recipientName: document.getElementById("recipientName").value.trim(),
 recipientStreet: document.getElementById("recipientStreet").value.trim(),
 recipientCity: document.getElementById("recipientCity").value.trim(),
 recipientEmail: document.getElementById("recipientEmail").value.trim(),
-requestPoints: collectRequestPoints(),
+requestPoints: collectRequestPoints().map(p => p.description),
 offerNumber: createOfferNumber(),
 offerDate: formatDate(today),
 validUntil: formatDate(addDays(today, validDays)),
 introText: "vielen Dank für Ihre Anfrage. Gerne unterbreiten wir Ihnen folgendes Angebot:",
 closingText: "Ich freue mich auf Ihre Rückmeldung und stehe für Rückfragen jederzeit zur Verfügung.",
-positions: buildPositionsFromPoints(
-collectRequestPoints()
-)
+positions: collectRequestPoints(),
+companySettings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
 };
 
 console.log("CONTACT ID:", getContactIdFromUrl());
@@ -177,6 +180,18 @@ console.error(error);
 }
 
 offerCreateForm.addEventListener("submit", createOfferDraft);
+(async () => {
+ try {
+  const response = await fetch("/api/workspace-context", {cache:"no-store"});
+  const context = await response.json();
+  if (!response.ok || !context.ok || !context.companyId || !context.userId) throw new Error("Firmenkontext fehlt");
+  DRAFT_KEY = `workpilot_current_offer_draft:${context.companyId}:${context.userId}`;
+  SETTINGS_KEY = `workpilot_company_settings:${context.companyId}:${context.userId}`;
+ } catch (error) {
+  console.error(error); offerCreateForm.querySelector('[type="submit"]').disabled = true;
+  showToast("Bitte melde dich zuerst an.");
+ }
+})();
 
 createRequestPoint();
 

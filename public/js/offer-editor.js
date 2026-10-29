@@ -1,4 +1,4 @@
-const DRAFT_KEY = "workpilot_current_offer_draft";
+let DRAFT_KEY = null;
 let SETTINGS_KEY = null;
 const SAVED_KEY = "workpilot_saved_offers";
 const CONTACTS_KEY = "workpilot_contacts";
@@ -13,6 +13,7 @@ const addPositionBtn = document.getElementById("addPositionBtn");
 const saveOfferBtn = document.getElementById("saveOfferBtn");
 const editorNotice = document.getElementById("editorNotice");
 const printBtn = document.getElementById("printBtn");
+const exportCsvBtn = document.getElementById("exportCsvBtn");
 const convertToInvoiceBtn = document.getElementById("convertToInvoiceBtn");
 
 function euro(value) {
@@ -24,15 +25,11 @@ currency: "EUR"
 }
 
 function parseMoney(value) {
-if (!value) return 0;
-
-return Number(
-String(value)
-.replace("€", "")
-.replace(/\./g, "")
-.replace(",", ".")
-.trim()
-) || 0;
+const text = String(value ?? "").trim().replace(/€/g, "").replace(/\s/g, "");
+if (!text) return 0;
+const normalized = text.includes(",") ? text.replace(/\./g, "").replace(",", ".") : text;
+const number = Number(normalized);
+return Number.isFinite(number) ? number : 0;
 }
 
 function getSavedJson(key, fallback) {
@@ -97,6 +94,11 @@ return;
 }
 }
 
+// Gespeicherte Firmeneinstellungen haben Vorrang vor browserlokalen Werten.
+if (currentDraft.companySettings && typeof currentDraft.companySettings === "object") {
+    companySettings = currentDraft.companySettings;
+}
+
 if (!currentDraft.positions || !Array.isArray(currentDraft.positions)) {
 currentDraft.positions = [];
 }
@@ -126,10 +128,10 @@ return String(value || "")
 
 function calculateTotalsRaw() {
 const net = currentDraft.positions.reduce((sum, position) => {
-return sum + parseMoney(position.total);
+return sum + parseMoney(position.quantity) * parseMoney(position.unitPrice);
 }, 0);
 
-const vatRate = Number(companySettings.vatRate ?? 19);
+const vatRate = Number(companySettings.vatRate ?? 0);
 const vat = net * (vatRate / 100);
 const gross = net + vat;
 
@@ -160,6 +162,7 @@ ${escapeHtml(company.companyName || "Absender")} · ${escapeHtml(company.street 
 </div>
 
 <div class="offerMeta">
+${/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(company.logoDataUrl || "") ? `<img class="companyOfferLogo" src="${company.logoDataUrl}" alt="Firmenlogo" />` : ""}
 <div class="metaCompany">${escapeHtml(company.companyName || "Ihre Firma")}</div>
 <div>${escapeHtml(company.street || "")}</div>
 <div>${escapeHtml(company.city || "")}</div>
@@ -255,6 +258,12 @@ return page;
 
 function createPositionRow(position, index) {
 const row = document.createElement("tr");
+const pdfMode = document.body.classList.contains("pdfMode");
+if (pdfMode) {
+ const total = parseMoney(position.quantity) * parseMoney(position.unitPrice);
+ row.innerHTML = `<td>${index + 1}</td><td class="pdfDescription">${escapeHtml(position.description)}</td><td>${escapeHtml(position.quantity || "1")}</td><td>${escapeHtml(position.unit)}</td><td>${euro(parseMoney(position.unitPrice))}</td><td>${euro(total)}</td><td></td>`;
+ return row;
+}
 
 row.innerHTML = `
 <td>
@@ -273,7 +282,7 @@ row.innerHTML = `
 <input class="priceInput" data-index="${index}" data-field="unitPrice" value="${escapeHtml(position.unitPrice || "")}" placeholder="0,00" />
 </td>
 <td>
-<input class="totalInput" data-index="${index}" data-field="total" value="${escapeHtml(position.total || "")}" placeholder="0,00" />
+<input class="totalInput" value="${escapeHtml((parseMoney(position.quantity) * parseMoney(position.unitPrice)).toFixed(2).replace(".", ","))}" readonly aria-label="Berechneter Gesamtpreis" />
 </td>
 <td>
 <button type="button" class="iconBtn" title="Position löschen" data-delete="${index}">-</button>
@@ -284,6 +293,8 @@ return row;
 }
 
 function renderDocument() {
+if (!currentDraft) return;
+if (offerDocument) offerDocument.dataset.template = currentDraft.template || "modern";
 const pagesData = [[]];
 
 currentDraft.positions.forEach((position, index) => {
@@ -304,6 +315,7 @@ renderPagesFromData(pagesData, false);
 
 renderPagesFromData(pagesData, true);
 
+offerDocument.dataset.template = currentDraft.template || "modern";
 const finalPages = offerDocument.querySelectorAll(".offerPage");
 const finalLastPage = finalPages[finalPages.length - 1];
 
@@ -379,7 +391,7 @@ updateRowTotal(index);
 }
 
 persistDraft();
-renderDocument();
+if (field === "quantity" || field === "unitPrice") renderDocument();
 }
 
 function autoResizeTextarea(textarea) {
@@ -565,23 +577,67 @@ try {
     const ctx = await r.json();
     if (!r.ok || !ctx.ok || !ctx.companyId || !ctx.userId) throw new Error("Firmenkontext fehlt");
     SETTINGS_KEY = `workpilot_company_settings:${ctx.companyId}:${ctx.userId}`;
+    DRAFT_KEY = `workpilot_current_offer_draft:${ctx.companyId}:${ctx.userId}`;
 } catch (e) { console.error("Editor-Firmenkontext:", e); return; }
 await loadData();
+if (!currentDraft) return;
+const templateSelect = document.getElementById("offerTemplateSelect");
+if (templateSelect) {
+templateSelect.value = currentDraft.template || "modern";
+templateSelect.addEventListener("change", () => { currentDraft.template = templateSelect.value; persistDraft(); renderDocument(); });
+}
 renderDocument();
 
 const params = new URLSearchParams(window.location.search);
 
 if (params.get("pdf") === "1") {
-document.body.dataset.pdfReady = "true";
+ await Promise.all([...document.querySelectorAll(".companyOfferLogo")].map(img => img.decode().catch(() => {})));
+ document.body.dataset.pdfReady = "true";
 }
 
 addPositionBtn.addEventListener("click", addPosition);
 saveOfferBtn.addEventListener("click", saveOffer);
-convertToInvoiceBtn.addEventListener(
-"click",
-convertToInvoice
-);
-printBtn.addEventListener("click", () => window.print());
+convertToInvoiceBtn.disabled = true;
+convertToInvoiceBtn.title = "Nach Fertigstellung des Rechnungseditors verfügbar";
+exportCsvBtn?.addEventListener("click", () => {
+ persistDraft();
+ const fields = [["Pos.", "Beschreibung", "Menge", "Einheit", "Einzelpreis EUR", "Gesamtpreis EUR"]];
+ currentDraft.positions.forEach((position, index) => {
+   const qty = parseMoney(position.quantity), price = parseMoney(position.unitPrice);
+   fields.push([index + 1, position.description || "", position.quantity || "", position.unit || "", price.toFixed(2).replace(".", ","), (qty * price).toFixed(2).replace(".", ",")]);
+ });
+ const quote = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
+ const csv = "\uFEFF" + fields.map(row => row.map(quote).join(";")).join("\r\n");
+ const url = URL.createObjectURL(new Blob([csv], {type:"text/csv;charset=utf-8"}));
+ const a = document.createElement("a"); a.href = url;
+ a.download = `Angebot-${String(currentDraft.offerNumber || "Positionen").replace(/[^a-zA-Z0-9_-]/g, "_")}.csv`;
+ document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+});
+printBtn.textContent = "PDF herunterladen";
+printBtn.addEventListener("click", async () => {
+    if (!currentDraft?.id) return;
+    printBtn.disabled = true;
+    try {
+        // Änderungen im Editor zuerst speichern, damit der PDF-Inhalt aktuell ist.
+        persistDraft();
+        const response = await fetch("/api/offers", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({...currentDraft, companySettings})
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error || "Speichern fehlgeschlagen");
+        const pdf = await fetch(`/api/offers/${encodeURIComponent(currentDraft.id)}/pdf`);
+        if (!pdf.ok) { const err = await pdf.json().catch(() => ({})); throw new Error(err.error || "PDF konnte nicht geladen werden"); }
+        const blob = await pdf.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Angebot-${String(currentDraft.offerNumber || currentDraft.id).replace(/[^a-zA-Z0-9_-]/g,"_")}.pdf`;
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch(error) { showToast(error.message); }
+    finally { printBtn.disabled = false; }
+});
 }
 
 document.addEventListener("DOMContentLoaded", init);

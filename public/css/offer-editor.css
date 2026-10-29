@@ -338,3 +338,4 @@ background: #ffffff;
 body.pdfMode .offerDocument {
 margin: 0 auto;
 }
+.companyOfferLogo{max-width:155px;max-height:68px;object-fit:contain;display:block;margin-bottom:12px}body.pdfMode .wpOfferToolbar{display:none!important}body.pdfMode .offerPage{border:0!important;border-radius:0!important;box-shadow:none!important}body.pdfMode .offerTable td{overflow-wrap:anywhere;vertical-align:top}body.pdfMode .pdfDescription{white-space:pre-wrap}body.pdfMode .editableText{background:none!important;outline:0!important}body.pdfMode .offerDocument{gap:0!important}body.pdfMode .offerPage{break-after:page;page-break-after:always}body.pdfMode .offerPage:last-child{break-after:auto;page-break-after:auto}

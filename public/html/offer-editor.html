@@ -9,14 +9,15 @@
 <link rel="stylesheet" href="/css/offer-editor.css" />
 <link rel="stylesheet" href="/css/wp-design-final.css" />
 <link rel="stylesheet" href="/css/wp-contacts-v3.css" />
+<link rel="stylesheet" href="/css/wp-offer-upgrade.css" />
 </head>
 <body>
 <div class="appShell">
 <aside class="sidebar">
 <div>
 <div class="logoWrap">
-<div class="logoBox">WP</div>
-<div class="logoText">WorkPilot</div>
+<img class="wpBrandSymbol" src="/assets/workpilot-w.svg" alt="" />
+<div class="wpBrandCopy"><div class="logoText">WorkPilot</div><div class="wpBrandTagline">DEIN BUSINESS. EIN SYSTEM.</div></div>
 </div>
 
 <nav class="navGroup">
@@ -49,6 +50,7 @@ Prüfe den Text und trage Menge, Einheitspreis und Positionen ein.
 <div class="editorActions">
 <a class="btn btnSecondary" href="/offer-create">Zurück</a>
 <button class="btn btnSecondary" id="addPositionBtn">Position hinzufügen</button>
+<button class="btn btnSecondary" id="exportCsvBtn" type="button">Positionen als CSV</button>
 <button class="btn btnSecondary" id="printBtn">Drucken / PDF</button>
 <button class="btn btnPrimary" id="saveOfferBtn">Speichern</button>
 <button class="btn btnPrimary" id="convertToInvoiceBtn">
@@ -56,6 +58,7 @@ In Rechnung umwandeln
 </button>
 </div>
 
+<div class="wpOfferToolbar"><label for="offerTemplateSelect">Dokumentvorlage <select id="offerTemplateSelect"><option value="modern">Modern</option><option value="classic">Klassisch</option><option value="compact">Kompakt</option></select></label></div>
 <div id="offerDocument" class="offerDocument"></div>
 
 <div class="notice" id="editorNotice">Angebot wurde gespeichert.</div>

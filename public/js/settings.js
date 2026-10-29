@@ -150,7 +150,8 @@ iban: document.getElementById("iban").value.trim(),
 bic: document.getElementById("bic").value.trim(),
 vatRate: document.getElementById("vatRate").value,
 paymentTerm: (document.getElementById("paymentTerm")?.value.trim() || existingSettings.paymentTerm || "14 Tage"),
-footerNote: (document.getElementById("footerNote")?.value.trim() || existingSettings.footerNote || "")
+footerNote: (document.getElementById("footerNote")?.value.trim() || ""),
+logoDataUrl: existingSettings.logoDataUrl || ""
 };
 }
 
@@ -210,6 +211,7 @@ const data = JSON.parse(saved);
 fillForm(data);
 updateVerificationUi(data);
 updateMailboxUi(data);
+updateCompanyLogoPreview(data.logoDataUrl);
 handleGoogleCallbackResult();
 } catch (error) {
 console.error("Firmendaten konnten nicht geladen werden:", error);
@@ -307,6 +309,37 @@ showToast("Google-Postfach konnte nicht verbunden werden.");
 window.history.replaceState({}, document.title, "/settings");
 }
 }
+
+function updateCompanyLogoPreview(src) {
+ const img = document.getElementById("companyLogoPreview");
+ if (!img) return;
+ img.style.display = src ? "block" : "none";
+ if (src) img.src = src; else img.removeAttribute("src");
+}
+const companyLogoFile = document.getElementById("companyLogoFile");
+companyLogoFile?.addEventListener("change", async () => {
+ const file = companyLogoFile.files?.[0]; if (!file) return;
+ if (file.size > 2 * 1024 * 1024 || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+   showToast("Bitte ein PNG-, JPG- oder WebP-Bild unter 2 MB auswählen."); companyLogoFile.value = ""; return;
+ }
+ try {
+   const image = await createImageBitmap(file);
+   const scale = Math.min(1, 500 / Math.max(image.width, image.height));
+   const canvas = document.createElement("canvas"); canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale);
+   canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+   const dataUrl = canvas.toDataURL("image/png"); image.close();
+   const settings = getSavedSettings(); settings.logoDataUrl = dataUrl;
+   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+   updateCompanyLogoPreview(dataUrl);
+   showToast("Logo vorbereitet. Bitte Firmendaten speichern.");
+ } catch(e) { console.error(e); showToast("Logo konnte nicht gelesen werden."); }
+ companyLogoFile.value = "";
+});
+document.getElementById("removeCompanyLogo")?.addEventListener("click", () => {
+ const settings = getSavedSettings(); delete settings.logoDataUrl;
+ localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); updateCompanyLogoPreview("");
+ showToast("Firmenlogo entfernt.");
+});
 
 function saveSettings(event) {
 event.preventDefault();
