@@ -222,6 +222,8 @@ function renderOfferLivePreview() {
  if (!tbody.children.length) {const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.textContent='Noch keine Positionen';tr.appendChild(td);tbody.appendChild(tr);}
  byId('previewTotal').textContent=sum.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 }
+document.getElementById('offerDateDisplay').value = new Date().toLocaleDateString('de-DE');
+document.getElementById('scrollToPreview').addEventListener('click', () => document.getElementById('offerLivePaper').scrollIntoView({behavior:'smooth',block:'center'}));
 document.getElementById('offerCreateForm').addEventListener('input',renderOfferLivePreview);
 document.getElementById('offerCreateForm').addEventListener('change',renderOfferLivePreview);
 const wpOriginalUpdateCreateTotals = updateCreateTotals;

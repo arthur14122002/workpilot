@@ -1,0 +1,36 @@
+/* Second design pass: offer workspace, intentionally no new backend features. */
+.wpOfferWorkspace{padding:26px 26px 56px!important;background:#f6f9fd}
+.wpOfferTop{align-items:center;margin-bottom:22px}
+.wpOfferTop .pageEyebrow{font-size:12px;color:#58718d;font-weight:600;text-transform:none;letter-spacing:0}
+.wpOfferTop .pageTitle{font-size:28px;letter-spacing:-.035em;color:#0d2442;margin:7px 0 4px}
+.wpOfferTop .pageSubtitle{color:#667c97;margin:0;font-size:14px}
+.wpTopActions .btn{min-height:42px;padding:0 20px;border-radius:3px;font-size:13px;font-weight:650}
+.wpOfferColumns{grid-template-columns:minmax(0,1.15fr) minmax(360px,.9fr);gap:16px}
+.wpOfferFields,.wpPreviewSide{gap:12px}
+.wpPanel{padding:21px 22px;border-color:#e0e8f1;border-radius:4px;box-shadow:0 1px 5px #0b264009}
+.wpPanel h2{font-size:16px;letter-spacing:-.02em}
+.wpStep{width:30px;height:30px;font-size:17px;background:#e8f2ff;color:#0867e8}
+.wpCustomerGrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:15px 18px}
+.wpCustomerGrid .wpAddressGroup{grid-row:span 2}
+.wpAddressGroup input+input{margin-top:7px}
+.wpDateGroup{display:grid;gap:12px}
+.wpCustomerGrid .wpEmailField{grid-column:1/-1}
+.wpPanel input[readonly]{background:#f6f8fb;color:#63748a}
+.wpPositionsTableHeader{display:grid;grid-template-columns:minmax(135px,2fr) 63px 63px 87px 87px 62px;gap:7px;padding:11px 9px;background:#f1f5fa;border:1px solid #dce5ef;border-bottom:0;font-size:10px;font-weight:700;color:#233b56}
+.wpPanel .wpPositionGrid{grid-template-columns:minmax(135px,2fr) 63px 63px 87px 87px 62px;gap:7px;border-radius:0;padding:9px;border:1px solid #e0e7f0}
+.wpPanel .wpPositionGrid label{font-size:0}
+.wpPanel .wpPositionGrid label textarea,.wpPanel .wpPositionGrid label input{font-size:12px;margin-top:0}
+.wpPanel .wpPositionGrid label .requestTotal{display:flex;align-items:center;min-height:35px;font-size:11px;white-space:nowrap}
+.wpPanel .wpPositionGrid .requestPointRemove{font-size:11px;padding:5px 3px;white-space:normal}
+.wpCreateSummary{display:flex;justify-content:flex-end;gap:20px;font-size:13px}
+.wpExtraGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.wpPreviewPanel{background:#f1f6fc;padding:14px}
+.wpPreviewPanel .wpPanelHead{padding:2px 4px}
+.wpPaper{min-height:690px;padding:37px 29px}
+.wpPaperHead{min-height:120px}
+.wpPaperFoot{color:#8a8a8a}
+.wpExportUpcoming{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 12px}
+.wpExportUpcoming span{padding:12px 5px;border:1px dashed #cbd7e7;text-align:center;font-size:11px;color:#71839b;background:#f8fafc}
+.logoWrap{gap:8px}.wpBrandSymbol{width:49px;height:49px;object-fit:contain}.wpBrandCopy .logoText{letter-spacing:-.035em}.wpBrandTagline{font-size:8px;letter-spacing:.07em;color:#587aab}
+@media(max-width:1400px){.wpOfferColumns{grid-template-columns:minmax(0,1fr)}.wpPreviewSide{max-width:900px}}
+@media(max-width:750px){.wpCustomerGrid,.wpExtraGrid{grid-template-columns:1fr}.wpCustomerGrid .wpEmailField{grid-column:auto}.wpCustomerGrid .wpAddressGroup{grid-row:auto}.wpPositionsTableHeader{display:none}.wpPanel .wpPositionGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.wpPanel .wpPositionGrid label{font-size:11px}.wpPanel .wpPositionGrid label:first-child{grid-column:1/-1}.wpExportUpcoming{grid-template-columns:1fr}.wpOfferTop .pageTitle{font-size:23px}}
