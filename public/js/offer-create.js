@@ -63,21 +63,25 @@ const wrapper = document.createElement("div");
 wrapper.className = "requestPoint";
 wrapper.innerHTML = `
 <div class="wpPositionGrid">
+<span class="wpRowNumber" aria-label="Positionsnummer"></span>
 <label>Beschreibung<textarea class="requestPointInput" placeholder="Leistung oder Artikel" rows="2">${escapeField(position.description || "")}</textarea></label>
 <label>Menge<input class="requestQty" inputmode="decimal" value="${escapeField(position.quantity ?? "1")}" /></label>
 <label>Einheit<input class="requestUnit" value="${escapeField(position.unit || "Stk.")}" /></label>
 <label>Einzelpreis (€)<input class="requestPrice" inputmode="decimal" value="${escapeField(position.unitPrice ?? "")}" /></label>
 <label>Gesamt (€)<output class="requestTotal">0,00 €</output></label>
-<button type="button" class="btn btnSecondary requestPointRemove" aria-label="Position entfernen">Entfernen</button>
+<button type="button" class="btn btnSecondary requestPointRemove" aria-label="Position entfernen"><span data-icon="trash-2" aria-hidden="true"></span></button>
 </div>`;
 wrapper.querySelector(".requestPointRemove").addEventListener("click", () => {
 if (requestPoints.children.length > 1) wrapper.remove();
+renumberOfferRows();
 updateCreateTotals();
 });
 wrapper.addEventListener("input", updateCreateTotals);
 requestPoints.appendChild(wrapper);
+renumberOfferRows();
 updateCreateTotals();
 }
+function renumberOfferRows() { requestPoints.querySelectorAll(".wpRowNumber").forEach((el,i) => el.textContent = String(i+1)); }
 function collectRequestPoints() {
 return [...requestPoints.querySelectorAll(".requestPoint")].map((row, index) => {
 const quantity = parseDecimal(row.querySelector(".requestQty").value);
@@ -96,6 +100,8 @@ sum += total;
 });
 const output = document.getElementById("offerCreateNet");
 if (output) output.textContent = sum.toLocaleString("de-DE", {style:"currency",currency:"EUR"});
+const discount = Math.min(100,Math.max(0,parseDecimal(document.getElementById("offerDiscount")?.value)));
+const grand = document.getElementById("offerCreateGrand"); if(grand) grand.textContent=(sum*(1-discount/100)).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 }
 function createPositionDescription(text, trade) {
 const tradeLabels = {
@@ -138,6 +144,8 @@ offerDate: formatDate(today),
 validUntil: formatDate(addDays(today, validDays)),
 introText: document.getElementById("offerIntro").value.trim(),
 closingText: document.getElementById("offerClosing").value.trim(),
+subject: document.getElementById("offerSubject").value.trim(),
+discountPercent: parseDecimal(document.getElementById("offerDiscount").value),
 template: document.getElementById("offerTemplate").value,
 positions: collectRequestPoints(),
 companySettings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
@@ -220,10 +228,17 @@ function renderOfferLivePreview() {
   tbody.appendChild(tr);
  });
  if (!tbody.children.length) {const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.textContent='Noch keine Positionen';tr.appendChild(td);tbody.appendChild(tr);}
+ sum *= 1-Math.min(100,Math.max(0,parseDecimal(byId('offerDiscount').value)))/100;
  byId('previewTotal').textContent=sum.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 }
 document.getElementById('offerDateDisplay').value = new Date().toLocaleDateString('de-DE');
-document.getElementById('scrollToPreview').addEventListener('click', () => document.getElementById('offerLivePaper').scrollIntoView({behavior:'smooth',block:'center'}));
+document.getElementById('discardOffer').addEventListener('click', () => { if(confirm('Ungespeicherte Eingaben verwerfen und zur Angebotsübersicht zurückkehren?')) window.location.href='/offers'; });
+document.getElementById('newCustomerBtn').addEventListener('click', () => { window.location.href='/contact-create?returnTo='+encodeURIComponent('/offer-create'); });
+const customerSelect=document.getElementById('customerSelect');
+customerSelect.addEventListener('change', async () => { if(!customerSelect.value)return; try { const c=await apiGetContact(customerSelect.value); document.getElementById('recipientName').value=c.name||''; document.getElementById('recipientStreet').value=c.street||''; document.getElementById('recipientCity').value=c.city||''; document.getElementById('recipientEmail').value=c.email||''; renderOfferLivePreview(); } catch(e){console.warn('Kunde konnte nicht geladen werden',e);} });
+// Kundenliste wird nur dann gefüllt, wenn die vorhandene Kontakt-API ein lesbares Array liefert.
+(async()=>{try{const r=await fetch('/api/contacts');if(!r.ok)return;const data=await r.json();const list=Array.isArray(data)?data:(Array.isArray(data.contacts)?data.contacts:[]);for(const c of list){if(!c.id)continue;const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.name||c.company_name||'Kontakt';customerSelect.appendChild(opt);}}catch(e){console.warn('Kundenliste nicht verfügbar',e);}})();
+document.getElementById('offerDiscount').addEventListener('input',()=>{updateCreateTotals();renderOfferLivePreview();});
 document.getElementById('offerCreateForm').addEventListener('input',renderOfferLivePreview);
 document.getElementById('offerCreateForm').addEventListener('change',renderOfferLivePreview);
 const wpOriginalUpdateCreateTotals = updateCreateTotals;
