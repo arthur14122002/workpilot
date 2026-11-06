@@ -64,11 +64,11 @@ wrapper.className = "requestPoint";
 wrapper.innerHTML = `
 <div class="wpPositionGrid">
 <span class="wpRowNumber" aria-label="Positionsnummer"></span>
-<label>Beschreibung<textarea class="requestPointInput" placeholder="Leistung oder Artikel" rows="2">${escapeField(position.description || "")}</textarea></label>
-<label>Menge<input class="requestQty" inputmode="decimal" value="${escapeField(position.quantity ?? "1")}" /></label>
-<label>Einheit<input class="requestUnit" value="${escapeField(position.unit || "Stk.")}" /></label>
-<label>Einzelpreis (€)<input class="requestPrice" inputmode="decimal" value="${escapeField(position.unitPrice ?? "")}" /></label>
-<label>Gesamt (€)<output class="requestTotal">0,00 €</output></label>
+<label class="wpCellDescription"><textarea class="requestPointInput" placeholder="Leistung oder Artikel" rows="1">${escapeField(position.description || "")}</textarea></label>
+<label class="wpCellQty">Menge<input class="requestQty" inputmode="decimal" value="${escapeField(position.quantity ?? "1")}" /></label>
+<label class="wpCellUnit">Einheit<input class="requestUnit" value="${escapeField(position.unit || "Stk.")}" /></label>
+<label class="wpCellPrice">Einzelpreis (€)<input class="requestPrice" inputmode="decimal" value="${escapeField(position.unitPrice ?? "")}" /></label>
+<label class="wpCellTotal">Gesamt (€)<output class="requestTotal">0,00 €</output></label>
 <button type="button" class="btn btnSecondary requestPointRemove" aria-label="Position entfernen"><span data-icon="trash-2" aria-hidden="true"></span></button>
 </div>`;
 wrapper.querySelector(".requestPointRemove").addEventListener("click", () => {
@@ -78,6 +78,7 @@ updateCreateTotals();
 });
 wrapper.addEventListener("input", updateCreateTotals);
 requestPoints.appendChild(wrapper);
+if (window.wpRenderIcons) window.wpRenderIcons(wrapper);
 renumberOfferRows();
 updateCreateTotals();
 }

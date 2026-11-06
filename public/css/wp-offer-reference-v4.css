@@ -1,0 +1,32 @@
+/* Design round 4: consistent visible icons and reference-style position grid. */
+.wpOfferWorkspace [data-icon]{display:inline-flex;align-items:center;justify-content:center;flex:none;vertical-align:middle}
+.wpOfferWorkspace [data-icon] svg{width:17px;height:17px;display:block}
+.wpTopActions .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px}
+.wpNewCustomerBtn{border:1px solid #a8caff!important;color:#075be0!important;background:#f8fbff!important;font-size:12px!important;font-weight:650!important;padding:0 11px!important}
+.wpNewCustomerBtn:hover{background:#e8f2ff!important}
+.wpAddPositionBtn{display:inline-flex!important;align-items:center;gap:7px;background:#0768f8!important;color:#fff!important;border:1px solid #0768f8!important;padding:9px 13px!important;font-size:12px!important;font-weight:650!important}
+.wpPositionsTableHeader,.wpPanel .wpPositionGrid{grid-template-columns:27px minmax(140px,2.5fr) minmax(50px,.65fr) minmax(55px,.7fr) minmax(72px,.95fr) minmax(78px,.95fr) 48px!important;gap:0!important}
+.wpPositionsTableHeader{border:1px solid #dce5ef!important;border-bottom:0!important;background:#edf3f9!important;padding:0!important;min-height:34px;align-items:stretch!important}
+.wpPositionsTableHeader>span{display:flex;align-items:center;padding:7px 6px;border-right:1px solid #dce5ef;font-size:10px;white-space:nowrap}
+.wpPositionsTableHeader>span:first-child{justify-content:center}
+.wpPositionsTableHeader>span:last-child{border-right:0;justify-content:center}
+#requestPoints{border:1px solid #dce5ef;border-top:0}
+#requestPoints .requestPoint+.requestPoint{border-top:1px solid #dce5ef}
+.wpPanel #requestPoints .wpPositionGrid{padding:0!important;border:0!important;background:#fff!important;min-height:43px;align-items:stretch!important}
+.wpPanel #requestPoints .wpPositionGrid>.wpRowNumber,.wpPanel #requestPoints .wpPositionGrid>label,.wpPanel #requestPoints .wpPositionGrid>.requestPointRemove{border-right:1px solid #e1e8f1;min-width:0;display:flex;align-items:center;padding:5px 5px!important;margin:0!important}
+.wpPanel #requestPoints .wpPositionGrid>.wpRowNumber{justify-content:center}
+.wpPanel #requestPoints .wpPositionGrid>label{font-size:0!important}
+.wpPanel #requestPoints .wpPositionGrid>label input,.wpPanel #requestPoints .wpPositionGrid>label textarea{margin:0!important;min-height:30px!important;height:30px!important;width:100%;border:1px solid transparent!important;border-radius:2px!important;box-shadow:none!important;padding:4px 5px!important;background:transparent!important;font-size:12px!important;resize:none!important;line-height:20px}
+.wpPanel #requestPoints .wpPositionGrid>label input:focus,.wpPanel #requestPoints .wpPositionGrid>label textarea:focus{border-color:#85b6fa!important;background:#fff!important;outline:0}
+.wpPanel #requestPoints .wpPositionGrid>.wpCellPrice input{text-align:right}
+.wpPanel #requestPoints .wpPositionGrid>.wpCellTotal output{width:100%;text-align:right;justify-content:flex-end;min-height:30px!important;font-size:11px!important;white-space:nowrap}
+.wpPanel #requestPoints .wpPositionGrid>.requestPointRemove{border-right:0;justify-content:center;background:#fff!important;color:#36516c!important}
+.wpPanel #requestPoints .wpPositionGrid>.requestPointRemove:hover{color:#c32d3c!important;background:#fff3f3!important}
+.wpTotals{width:min(100%,330px)!important;margin-top:14px!important}
+.wpTotals>div{grid-template-columns:1fr 120px!important}
+.wpExportPanel h2{display:flex;align-items:center;gap:9px}
+.wpExportUpcoming button{border:1px solid #d7e3f1!important;border-radius:4px!important;background:#fff!important;opacity:1!important;color:#506783!important;border-style:solid!important;display:flex!important;gap:7px!important;align-items:center!important;justify-content:center!important}
+.wpExportUpcoming button:disabled{cursor:not-allowed;opacity:.75!important}
+.wpExportUpcoming button [data-icon] svg{width:19px;height:19px}
+.wpPreviewSide{align-self:start}
+@media(max-width:720px){.wpPositionsTableHeader{display:none!important}.wpPanel #requestPoints .wpPositionGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:9px!important;gap:6px!important}.wpPanel #requestPoints .wpPositionGrid>.wpRowNumber{grid-column:1/-1}.wpPanel #requestPoints .wpPositionGrid>.wpCellDescription{grid-column:1/-1}.wpPanel #requestPoints .wpPositionGrid>label{font-size:11px!important;border-right:0}.wpPanel #requestPoints .wpPositionGrid>.wpCellPrice,.wpPanel #requestPoints .wpPositionGrid>.wpCellTotal{grid-column:auto}.wpPanel #requestPoints .wpPositionGrid>.requestPointRemove{grid-column:1/-1}}
