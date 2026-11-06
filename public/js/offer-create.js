@@ -119,49 +119,91 @@ const base = tradeLabels[trade] || tradeLabels.allgemein;
 return `${base}: ${text}`;
 }
 
-function createOfferDraft(event) {
-event.preventDefault();
-if (!DRAFT_KEY || !SETTINGS_KEY) { showToast("Bitte melde dich an, um ein Angebot zu erstellen."); return; }
+let editingOfferId = new URLSearchParams(location.search).get("id");
+let editingOffer = null;
+let isSavingOffer = false;
 
-const today = new Date();
-const validDays = document.getElementById("validDays").value;
-const offerId = crypto.randomUUID();
+function buildOfferPayload() {
+ const today = new Date();
+ const dateText = document.getElementById("offerDateDisplay").value || formatDate(today);
+ const days = Number(document.getElementById("validDays").value) || 14;
+ const points = collectRequestPoints();
+ return {
+  ...(editingOffer || {}),
+  id: editingOfferId || crypto.randomUUID(),
+  createdAt: editingOffer?.createdAt || today.toISOString(),
+  contactId: customerSelect.value || getContactIdFromUrl() || editingOffer?.contactId || null,
+  status: editingOffer?.status || "open",
+  recipientName: document.getElementById("recipientName").value.trim(),
+  recipientStreet: document.getElementById("recipientStreet").value.trim(),
+  recipientCity: document.getElementById("recipientCity").value.trim(),
+  recipientEmail: document.getElementById("recipientEmail").value.trim(),
+  requestPoints: points.map(p => p.description),
+  offerNumber: editingOffer?.offerNumber || createOfferNumber(),
+  offerDate: dateText,
+  validUntil: formatDate(addDays(today, days)),
+  introText: document.getElementById("offerIntro").value.trim(),
+  closingText: document.getElementById("offerClosing").value.trim(),
+  subject: document.getElementById("offerSubject").value.trim(),
+  discountPercent: Math.min(100,Math.max(0,parseDecimal(document.getElementById("offerDiscount").value))),
+  footerMode: document.getElementById("footerMode").value,
+  template: document.getElementById("offerTemplate").value,
+  currency: document.getElementById("offerCurrency").value,
+  taxMode: document.getElementById("offerTax").value,
+  positions: points,
+  companySettings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
+ };
+}
 
-if (!collectRequestPoints().length) { showToast("Bitte mindestens eine Position beschreiben."); return; }
+async function createOfferDraft(event) {
+ event.preventDefault();
+ if(isSavingOffer) return;
+ if (!DRAFT_KEY || !SETTINGS_KEY) { showToast("Bitte melde dich an, um ein Angebot zu erstellen."); return; }
+ const points=collectRequestPoints();
+ if (!points.length || points.some(p => !p.description)) {showToast("Bitte mindestens eine Position ausfüllen.");return;}
+ if (points.some(p => parseDecimal(p.quantity) <= 0 || parseDecimal(p.unitPrice) < 0)) {showToast("Bitte Mengen und Preise prüfen.");return;}
+ if (!document.getElementById("recipientName").value.trim()) {showToast("Bitte einen Empfänger angeben.");return;}
+ const payload=buildOfferPayload();
+ const submit=offerCreateForm.querySelector('[type="submit"]');
+ isSavingOffer=true; submit.disabled=true;
+ try {
+  const response=await fetch(editingOfferId ? `/api/offers/${encodeURIComponent(editingOfferId)}` : '/api/offers', {
+   method:editingOfferId ? 'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+  });
+  const result=await response.json();
+  if(!response.ok || !result.ok) throw new Error(result.error || 'Angebot konnte nicht gespeichert werden.');
+  editingOfferId=payload.id; editingOffer=payload;
+  localStorage.removeItem(DRAFT_KEY);
+  history.replaceState(null,'',`/offer-create?id=${encodeURIComponent(payload.id)}`);
+  document.getElementById('offerNumberDisplay').value=payload.offerNumber;
+  document.querySelector('.pageTitle').textContent='Angebot bearbeiten';
+  submit.textContent='Änderungen speichern';
+  showToast('Angebot erfolgreich gespeichert.');
+ } catch(error){console.error(error);showToast(error.message || 'Speichern fehlgeschlagen.');}
+ finally {isSavingOffer=false;submit.disabled=false;}
+}
 
-const draft = {
-id: offerId,
-createdAt: new Date().toISOString(),
-contactId: getContactIdFromUrl(),
-status: "open",
-
-recipientName: document.getElementById("recipientName").value.trim(),
-recipientStreet: document.getElementById("recipientStreet").value.trim(),
-recipientCity: document.getElementById("recipientCity").value.trim(),
-recipientEmail: document.getElementById("recipientEmail").value.trim(),
-requestPoints: collectRequestPoints().map(p => p.description),
-offerNumber: createOfferNumber(),
-offerDate: formatDate(today),
-validUntil: formatDate(addDays(today, validDays)),
-introText: document.getElementById("offerIntro").value.trim(),
-closingText: document.getElementById("offerClosing").value.trim(),
-subject: document.getElementById("offerSubject").value.trim(),
-discountPercent: parseDecimal(document.getElementById("offerDiscount").value),
-template: document.getElementById("offerTemplate").value,
-positions: collectRequestPoints(),
-companySettings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
-};
-
-console.log("CONTACT ID:", getContactIdFromUrl());
-console.log("DRAFT:", draft);
-
-localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-
-showToast("Angebot wird vorbereitet.");
-
-setTimeout(() => {
-window.location.href = "/offer-editor";
-}, 500);
+async function loadExistingOffer() {
+ if (!editingOfferId) return;
+ const submit=offerCreateForm.querySelector('[type="submit"]');submit.disabled=true;
+ try {
+  const response=await fetch(`/api/offers/${encodeURIComponent(editingOfferId)}`,{cache:'no-store'});
+  const result=await response.json();
+  if(!response.ok || !result.ok || !result.offer) throw new Error('Angebot nicht gefunden oder kein Zugriff.');
+  const row=result.offer;const d=row.data || {};
+  editingOffer={...d,id:row.id,contactId:row.contact_id,offerNumber:row.offer_number || d.offerNumber,status:row.status};
+  const fields={recipientName:d.recipientName,recipientStreet:d.recipientStreet,recipientCity:d.recipientCity,recipientEmail:d.recipientEmail,offerSubject:d.subject,offerIntro:d.introText,offerClosing:d.closingText,offerDiscount:d.discountPercent,offerTemplate:d.template,footerMode:d.footerMode,offerCurrency:d.currency,offerTax:d.taxMode,offerDateDisplay:d.offerDate,offerNumberDisplay:row.offer_number || d.offerNumber};
+  for(const [id,value] of Object.entries(fields)){const el=document.getElementById(id);if(el && value!==undefined && value!==null)el.value=value;}
+  if(d.validUntil && d.offerDate){const parse=x=>{const m=String(x).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;};const a=parse(d.offerDate),b=parse(d.validUntil);if(a&&b){const days=Math.round((b-a)/86400000);const valid=document.getElementById('validDays');if([...valid.options].some(o=>Number(o.value)===days))valid.value=String(days);}}
+  if(row.contact_id){customerSelect.value=row.contact_id; if(![...customerSelect.options].some(o=>o.value===row.contact_id)){const opt=document.createElement('option');opt.value=row.contact_id;opt.textContent=d.recipientName||'Ausgewählter Kunde';customerSelect.appendChild(opt);customerSelect.value=row.contact_id;}}
+  requestPoints.replaceChildren();
+  for(const p of (Array.isArray(d.positions)&&d.positions.length?d.positions:(d.requestPoints||[])))createRequestPoint(p);
+  if(!requestPoints.children.length)createRequestPoint();
+  document.querySelector('.pageTitle').textContent='Angebot bearbeiten';
+  submit.textContent='Änderungen speichern';
+  renderOfferLivePreview();
+ }catch(error){console.error(error);showToast(error.message);submit.disabled=true;return;}
+ submit.disabled=false;
 }
 
 async function preloadContact() {
@@ -209,7 +251,7 @@ addRequestPointBtn.addEventListener("click", () => {
 createRequestPoint();
 });
 
-document.addEventListener("DOMContentLoaded", preloadContact);
+document.addEventListener("DOMContentLoaded", () => { if (!editingOfferId) preloadContact(); });
 
 // Visuelle Dokumentvorschau: keine Server-/PDF-Funktion, nur der lokale Entwurf.
 function renderOfferLivePreview() {
@@ -219,7 +261,7 @@ function renderOfferLivePreview() {
  byId('previewIntro').textContent = byId('offerIntro').value;
  byId('previewClosing').textContent = byId('offerClosing').value;
  byId('offerLivePaper').dataset.template = byId('offerTemplate').value;
- byId('previewDate').textContent = new Date().toLocaleDateString('de-DE');
+ byId('previewDate').textContent = byId('offerDateDisplay').value || new Date().toLocaleDateString('de-DE');
  const tbody = byId('previewPositions'); tbody.replaceChildren();
  let sum = 0;
  collectRequestPoints().forEach((point,i) => {
@@ -233,15 +275,22 @@ function renderOfferLivePreview() {
  byId('previewTotal').textContent=sum.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 }
 document.getElementById('offerDateDisplay').value = new Date().toLocaleDateString('de-DE');
-document.getElementById('discardOffer').addEventListener('click', () => { if(confirm('Ungespeicherte Eingaben verwerfen und zur Angebotsübersicht zurückkehren?')) window.location.href='/offers'; });
+document.getElementById('discardOffer').addEventListener('click', () => {
+ if(!confirm('Ungespeicherte Änderungen verwerfen? Bereits gespeicherte Angebote bleiben erhalten.'))return;
+ if(DRAFT_KEY)localStorage.removeItem(DRAFT_KEY);
+ window.location.href='/offers';
+});
 document.getElementById('newCustomerBtn').addEventListener('click', () => { window.location.href='/contact-create?returnTo='+encodeURIComponent('/offer-create'); });
 const customerSelect=document.getElementById('customerSelect');
 customerSelect.addEventListener('change', async () => { if(!customerSelect.value)return; try { const c=await apiGetContact(customerSelect.value); document.getElementById('recipientName').value=c.name||''; document.getElementById('recipientStreet').value=c.street||''; document.getElementById('recipientCity').value=c.city||''; document.getElementById('recipientEmail').value=c.email||''; renderOfferLivePreview(); } catch(e){console.warn('Kunde konnte nicht geladen werden',e);} });
 // Kundenliste wird nur dann gefüllt, wenn die vorhandene Kontakt-API ein lesbares Array liefert.
-(async()=>{try{const r=await fetch('/api/contacts');if(!r.ok)return;const data=await r.json();const list=Array.isArray(data)?data:(Array.isArray(data.contacts)?data.contacts:[]);for(const c of list){if(!c.id)continue;const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.name||c.company_name||'Kontakt';customerSelect.appendChild(opt);}}catch(e){console.warn('Kundenliste nicht verfügbar',e);}})();
+(async()=>{try{const r=await fetch('/api/contacts');if(!r.ok)return;const data=await r.json();const list=Array.isArray(data)?data:(Array.isArray(data.contacts)?data.contacts:[]);for(const c of list){if(!c.id)continue;if([...customerSelect.options].some(o=>o.value===c.id))continue;const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.name||c.company_name||'Kontakt';customerSelect.appendChild(opt);}}catch(e){console.warn('Kundenliste nicht verfügbar',e);}})();
 document.getElementById('offerDiscount').addEventListener('input',()=>{updateCreateTotals();renderOfferLivePreview();});
 document.getElementById('offerCreateForm').addEventListener('input',renderOfferLivePreview);
 document.getElementById('offerCreateForm').addEventListener('change',renderOfferLivePreview);
 const wpOriginalUpdateCreateTotals = updateCreateTotals;
 updateCreateTotals = function(){wpOriginalUpdateCreateTotals();renderOfferLivePreview();};
 renderOfferLivePreview();
+
+// Vorhandene Angebote werden auf derselben Seite geladen und bearbeitet.
+loadExistingOffer();
